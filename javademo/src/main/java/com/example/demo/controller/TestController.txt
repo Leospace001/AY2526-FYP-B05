@@ -1,0 +1,22 @@
+// src/main/java/com/example/demo/controller/TestController.java
+package com.example.demo.controller;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+import com.example.demo.entity.Student;
+
+@RestController
+public class TestController {
+
+    private final Student student;
+
+    public TestController(Student student) {
+        this.student = student;
+    }
+
+    @GetMapping("/test")
+    public Student testEndpoint() {
+        this.student.setFirstName("Hello");
+        return this.student;
+    }
+}

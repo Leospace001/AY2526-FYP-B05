@@ -1,0 +1,19 @@
+// src/main/java/com/example/demo/service/OrderMessageConsumer.java
+package com.example.demo.service;
+
+import com.example.demo.config.RabbitConfig;
+import com.example.demo.dto.OrderRequest;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Service;
+
+@Service
+public class OrderMessageConsumer {
+
+    @RabbitListener(queues = RabbitConfig.ORDER_QUEUE)
+    public void handleOrderMessage(OrderRequest order) {
+        System.out.println("[CONSUMER] Received order for customer: " + order.getCustomerId());
+        // Process the order asynchronously (e.g., charge payment, notify warehouse)
+        System.out.println("[CONSUMER] Processing order: Product ID = "
+                           + order.getProductId() + ", Quantity = " + order.getQuantity());
+    }
+}

@@ -1,0 +1,25 @@
+// src/main/java/com/example/demo/controller/OrderController.java
+package com.example.demo.controller;
+
+import com.example.demo.dto.OrderRequest;
+import com.example.demo.service.OrderMessageProducer;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class OrderController {
+
+    private final OrderMessageProducer producer;
+
+    public OrderController(OrderMessageProducer producer) {
+        this.producer = producer;
+    }
+
+    @PostMapping("/orders")
+    public String createOrder(@RequestBody OrderRequest orderRequest) {
+        // You could save orderRequest to database here before sending message
+        producer.sendOrderCreatedMessage(orderRequest);
+        return "Order placed for customer: " + orderRequest.getCustomerId();
+    }
+}

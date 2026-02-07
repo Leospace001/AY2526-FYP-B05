@@ -1,0 +1,26 @@
+// src/main/java/com/example/demo/service/OrderMessageProducer.java
+package com.example.demo.service;
+
+import com.example.demo.config.RabbitConfig;
+import com.example.demo.dto.OrderRequest;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.stereotype.Service;
+
+@Service
+public class OrderMessageProducer {
+
+    private final RabbitTemplate rabbitTemplate;
+
+    public OrderMessageProducer(RabbitTemplate rabbitTemplate) {
+        this.rabbitTemplate = rabbitTemplate;
+    }
+
+    public void sendOrderCreatedMessage(OrderRequest order) {
+        rabbitTemplate.convertAndSend(
+            RabbitConfig.ORDER_EXCHANGE,
+            RabbitConfig.ORDER_ROUTING_KEY,
+            order
+        );
+        System.out.println("[PRODUCER] Sent order message for customer: " + order.getCustomerId());
+    }
+}
