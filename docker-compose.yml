@@ -45,6 +45,16 @@ services:
     restart: unless-stopped
     depends_on:
       - app
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    container_name: ui
+    ports:
+      - 5173:80
+    restart: unless-stopped
+    depends_on:
+      - app
   db:
     image: 'postgres:15.3-alpine'
     container_name: postgresdb
