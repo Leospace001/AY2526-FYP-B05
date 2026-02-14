@@ -59,7 +59,7 @@ function App() {
           <ThemeToggle />
           {isLoggedIn && (
             <button
-              onClick={handleLogout}
+              onClick={()=>handleLogout()}
               className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
             >
               Logout
