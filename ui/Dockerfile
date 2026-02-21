@@ -1,16 +1,20 @@
-FROM node:18-alpine3.17 as build
+# Use the official Node.js version from https://hub.docker.com/
+FROM node:20.9.0-alpine
 
+# Set the working directory inside the container to /app
 WORKDIR /app
+
+# Copy only the package.json file to the working directory
 COPY . /app
-ENV NODE_TLS_REJECT_UNAUTHORIZED=0
-RUN npm set strict-ssl=false  
+
+# Install npm dependencies based on the package.json
 RUN npm install
-RUN npm run build
 
-FROM ubuntu
-RUN apt-get update
+# Copy the rest of the application code to the working directory
+COPY . .
 
-RUN apt-get install nginx -y
-COPY --from=build /app/dist /var/www/html/
-EXPOSE 80
-CMD ["nginx","-g","daemon off;"]
+# Expose port 5002 to allow external access
+EXPOSE 5173
+
+# Specify the command to run the application when the container starts
+CMD [ "npm", "run", "dev"]
