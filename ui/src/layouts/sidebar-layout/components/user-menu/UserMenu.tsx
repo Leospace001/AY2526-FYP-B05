@@ -20,10 +20,16 @@ export const UserMenu = ({ user }: { user: User }) => {
 
   // const handleClose = () => setAnchorEl(null);
   const handleClose = async () => {
+    setAnchorEl(null);
+  }
+
+  const handleLogout = async () => {
     localStorage.removeItem('token');
-    //alert('🔒 Logged out successfully');
     navigate(routes.login, { replace: true });
   }
+
+
+
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -49,7 +55,7 @@ export const UserMenu = ({ user }: { user: User }) => {
         </UserMenuInfo>
         <UserMenuMenuItem onClick={handleClose}>Profile</UserMenuMenuItem>
         <UserMenuMenuItem onClick={handleClose}>My account</UserMenuMenuItem>
-        <UserMenuMenuItemWithSeparator onClick={handleClose}>Logout</UserMenuMenuItemWithSeparator>
+        <UserMenuMenuItemWithSeparator onClick={handleLogout}>Logout</UserMenuMenuItemWithSeparator>
       </UserMenuMenu>
     </UserMenuContainer>
   );
