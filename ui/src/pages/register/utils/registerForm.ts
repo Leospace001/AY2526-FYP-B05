@@ -6,7 +6,7 @@ export enum RegisterFieldsNames {
   userName = 'username',
   email = 'email',
   password = 'password',
-  confirmPassword = 'confirmpassword'
+  confirmPassword = 'confirmPassword'
 }
 
 export const registerFormSchema = yup.object({
