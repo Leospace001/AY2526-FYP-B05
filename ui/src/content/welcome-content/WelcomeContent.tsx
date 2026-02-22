@@ -6,7 +6,7 @@ export const WelcomeContent = () => {
     <Stack spacing={2} sx={{ minWidth: '60%' }} alignItems={'center'}>
       <Logo invertImage />
       <Typography variant={'h3'} component={'h1'}>
-        Welcome to DevFoxUI
+        Welcome to Plant AI Analysis
       </Typography>
       <Typography variant={'body1'}>Powerful Material UI Dashboard Theme</Typography>
       <Stack>

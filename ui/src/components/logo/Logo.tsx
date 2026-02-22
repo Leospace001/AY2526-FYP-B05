@@ -51,7 +51,7 @@ export const Logo = ({ invertImage }: Params) => {
       <LogoImgContainer invertImage={invertImage}>
         <LogoImg component={'img'} src={logo} alt={''} />
       </LogoImgContainer>
-      <LogoText component={'h1'}>DevFoxUI</LogoText>
+      <LogoText component={'h1'}>Plant AI Analysis</LogoText>
     </Box>
   );
 };
