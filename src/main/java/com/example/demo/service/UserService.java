@@ -21,8 +21,8 @@ public class UserService {
         String lastName = user.getLastname();
         String email = user.getEmail();
         String rawPassword = user.getPassword();
-        boolean isAdmin = (boolean)user.isAdmin();
-        boolean isActive = (boolean) user.isActive();
+        boolean isAdmin = user.isAdmin();
+        boolean isActive = user.isActive();
         
         if (userRepository.findByUsername(username).isPresent()) {
             throw new RuntimeException("Username already exists");
