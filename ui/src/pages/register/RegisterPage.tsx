@@ -4,9 +4,36 @@ import { useNavigate } from 'react-router-dom';
 import { routes } from '../../contants/routes';
 import { WelcomeContent } from '../../content/welcome-content/WelcomeContent';
 import { HalfLayout } from '../../layouts/half-layout/HalfLayout';
+import { useCallback, useRef } from 'react';
+import { UserForm } from '../user/components/user-form/UserForm';
+import { RegisterFieldsNames, RegisterForm, registerFormSchema } from './utils/registerForm';
+import { Controller, useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const formRef = useRef<HTMLFormElement>(null);
+  const {
+    register,
+    handleSubmit,
+    formState: {errors},
+    control,
+  } = useForm<RegisterForm>({
+    resolver: yupResolver(registerFormSchema),
+  })
+
+  // const handleCreateAccount = async ()=>{
+  //   alert("HI");
+  // }
+
+  const handleCreateAccount = useCallback((data: RegisterForm) => {
+      console.log(data);
+    }, []);
+
+  const handlePublish = useCallback(() => {
+    formRef.current && formRef.current.requestSubmit();
+    console.log(formRef.current)
+  }, []);
 
   return (
     <HalfLayout>
@@ -16,6 +43,7 @@ export default function RegisterPage() {
           Create account
         </Typography>
         <Typography variant={'body1'}>Fill the form below to register new account</Typography>
+        <form ref={formRef} onSubmit={handleSubmit(handleCreateAccount)}>
         <Stack direction={'row'} spacing={2} sx={{ width: '100%' }}>
           <FormControl fullWidth>
             <TextField label={'First name'} fullWidth placeholder={'First name'} />
@@ -37,7 +65,7 @@ export default function RegisterPage() {
           <TextField label={'Confirm password'} fullWidth placeholder={'Password'} type={'password'} />
         </FormControl>
 
-        <Button variant={'contained'} fullWidth onClick={() => navigate(routes.dashboard)}>
+        <Button variant={'contained'} fullWidth onClick={() => handlePublish()}>
           Create account
         </Button>
         <Divider sx={{ width: '100%' }} />
@@ -80,6 +108,7 @@ export default function RegisterPage() {
             </Link>
           </Typography>
         </Stack>
+        </form>
       </Stack>
     </HalfLayout>
   );
