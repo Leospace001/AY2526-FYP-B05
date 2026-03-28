@@ -32,6 +32,7 @@ services:
       - rabbitmq
     volumes:
       - ./uploadFolder:/data/uploads
+      - ./logs:/app/logs
   
   frontend:
     build:

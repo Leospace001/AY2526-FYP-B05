@@ -1,0 +1,38 @@
+2026-03-28 10:01:59 [main] INFO  com.example.demo.DemoApplication - Starting DemoApplication v0.0.1-SNAPSHOT using Java 17.0.18 with PID 1 (/app/app.jar started by root in /app)
+2026-03-28 10:01:59 [main] INFO  com.example.demo.DemoApplication - No active profile set, falling back to 1 default profile: "default"
+2026-03-28 10:02:00 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-03-28 10:02:01 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 118 ms. Found 3 JPA repository interfaces.
+2026-03-28 10:02:02 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2026-03-28 10:02:02 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2026-03-28 10:02:02 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-03-28 10:02:02 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.10]
+2026-03-28 10:02:02 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-03-28 10:02:02 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2355 ms
+2026-03-28 10:02:02 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-03-28 10:02:02 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.2.5.Final
+2026-03-28 10:02:02 [main] INFO  org.hibernate.cfg.Environment - HHH000406: Using bytecode reflection optimizer
+2026-03-28 10:02:02 [main] INFO  o.h.b.i.BytecodeProviderInitiator - HHH000021: Bytecode provider name : bytebuddy
+2026-03-28 10:02:02 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-03-28 10:02:02 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-03-28 10:02:02 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@65cc8228
+2026-03-28 10:02:02 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-03-28 10:02:03 [main] INFO  o.h.b.i.BytecodeProviderInitiator - HHH000021: Bytecode provider name : bytebuddy
+2026-03-28 10:02:03 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+2026-03-28 10:02:03 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-03-28 10:02:03 [main] WARN  o.s.c.LocalVariableTableParameterNameDiscoverer - Using deprecated '-debug' fallback for parameter name resolution. Compile the affected code with '-parameters' instead or avoid its introspection: com.example.demo.repository.UserRepository
+2026-03-28 10:02:04 [main] WARN  o.s.c.LocalVariableTableParameterNameDiscoverer - Using deprecated '-debug' fallback for parameter name resolution. Compile the affected code with '-parameters' instead or avoid its introspection: com.example.demo.repository.EmployeeRepository
+2026-03-28 10:02:04 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-03-28 10:02:04 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-03-28 10:02:05 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@2424cb9d, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@7f51f588, org.springframework.security.web.context.SecurityContextHolderFilter@beabd6b, org.springframework.security.web.header.HeaderWriterFilter@28e7bb31, org.springframework.web.filter.CorsFilter@6fb22ae3, org.springframework.security.web.authentication.logout.LogoutFilter@64dc86c6, com.example.demo.security.SecurityConfig$JsonUsernamePasswordAuthenticationFilter@d2291de, com.example.demo.security.JwtRequestFilter@404eca05, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@621624b1, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@2bfc2f8b, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@6bd92538, org.springframework.security.web.session.SessionManagementFilter@1f758e4f, org.springframework.security.web.access.ExceptionTranslationFilter@112c2930, org.springframework.security.web.access.intercept.AuthorizationFilter@aca3c85]
+2026-03-28 10:02:05 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2026-03-28 10:02:05 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2026-03-28 10:02:05 [main] INFO  com.example.demo.DemoApplication - Started DemoApplication in 6.312 seconds (process running for 7.466)
+2026-03-28 10:02:05 [main] INFO  UserActivity - User logged in: 1231
+2026-03-28 10:03:24 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-03-28 10:03:24 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-03-28 10:03:24 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 6 ms
+2026-03-28 10:03:24 [http-nio-8080-exec-9] WARN  o.s.c.LocalVariableTableParameterNameDiscoverer - Using deprecated '-debug' fallback for parameter name resolution. Compile the affected code with '-parameters' instead or avoid its introspection: com.example.demo.controller.EmployeeController
+2026-03-28 10:03:24 [http-nio-8080-exec-9] WARN  o.s.c.LocalVariableTableParameterNameDiscoverer - Using deprecated '-debug' fallback for parameter name resolution. Compile the affected code with '-parameters' instead or avoid its introspection: com.example.demo.controller.AuthController
+2026-03-28 10:03:24 [http-nio-8080-exec-9] WARN  o.s.c.LocalVariableTableParameterNameDiscoverer - Using deprecated '-debug' fallback for parameter name resolution. Compile the affected code with '-parameters' instead or avoid its introspection: com.example.demo.controller.UserRegisterController
+2026-03-28 10:03:24 [http-nio-8080-exec-9] WARN  o.s.c.LocalVariableTableParameterNameDiscoverer - Using deprecated '-debug' fallback for parameter name resolution. Compile the affected code with '-parameters' instead or avoid its introspection: com.example.demo.controller.LoginController
+2026-03-28 10:03:24 [http-nio-8080-exec-9] INFO  o.s.api.AbstractOpenApiResource - Init duration for springdoc-openapi is: 238 ms

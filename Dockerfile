@@ -1,5 +1,5 @@
 # Stage 1: Build the project with Maven
-FROM maven:3.9.3-eclipse-temurin-17 as build
+FROM maven:3.9.11-eclipse-temurin-17 as build
 WORKDIR /app
 COPY pom.xml .
 # COPY settings.xml /root/.m2/settings.xml

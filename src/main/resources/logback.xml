@@ -1,0 +1,26 @@
+<configuration>
+
+    <appender name="USER_ACTIVITY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/user-activity.log</file>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/user-activity-%d{yyyy-MM-dd}.log</fileNamePattern>
+            
+            <maxHistory>30</maxHistory>
+            
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="UserActivity" level="INFO" additivity="false">
+        <appender-ref ref="USER_ACTIVITY_FILE" />
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="USER_ACTIVITY_FILE" /> </root>
+
+</configuration>
