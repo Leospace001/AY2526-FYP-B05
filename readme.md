@@ -7,3 +7,18 @@ git clone https://github.com/Leospace001/AY2526-FYP-B05.git
 ```
 docker compose up -d
 ```
+
+### Adminer (Access to Postgresql Database)
+```
+http://localhost:7070/
+server:     db
+username:   postgres
+password:   postgres
+```
+
+### Website frontend (Adminer account)
+```
+http://localhost:5173/
+username:   leospace
+password:   P@ssw0rd
+```
