@@ -4,3 +4,8 @@ pgdata/**
 ui/node_modules
 ui/node_modules/**
 logs/**
+logs/user-activity.log
+frontend/.DS_Store
+frontend/src/.DS_Store
+logs/user-activity.log
+.DS_Store

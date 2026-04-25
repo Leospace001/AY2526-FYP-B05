@@ -65,7 +65,7 @@ services:
       - POSTGRES_PASSWORD=postgres
     volumes:
       - ./pgdata:/var/lib/postgresql/data
-      - ./createAdminAccount.sql:/docker-entrypoint-initdb.d/init.sql
+      # - ./createAdminAccount.sql:/docker-entrypoint-initdb.d/init.sql
   
   adminer:
     image: adminer
