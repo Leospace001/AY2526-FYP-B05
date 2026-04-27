@@ -46,8 +46,8 @@ public class AuthController {
         return new JwtResponse(token);
     }
 
-    // Optional /register endpoint for future DB-based implementation
-    @PostMapping("/register")
+    // Optional /api/register endpoint for future DB-based implementation
+    @PostMapping("/api/register")
     public ResponseEntity<String> registerUser(@RequestBody JwtRequest user) {
         // For now, just accept and say "Registered" — in real use, save user to DB
         return ResponseEntity.ok("User registered successfully (mocked)");

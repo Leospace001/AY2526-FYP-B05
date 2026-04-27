@@ -24,7 +24,7 @@ services:
       SPRING_RABBITMQ_USERNAME: demod
       SPRING_RABBITMQ_PASSWORD: demo
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/postgres
-      SPRING_DATASOURCE_USERNAM: postgres
+      SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     restart: unless-stopped
