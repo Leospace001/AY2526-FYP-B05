@@ -3,11 +3,10 @@ import {
   UserMenuIconButton,
   UserMenuInfo,
   UserMenuMenu,
-  UserMenuMenuItem,
   UserMenuMenuItemWithSeparator,
 } from './styled';
 import React, { useState } from 'react';
-import { Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 import { User } from '../../../../types/user/userTypes';
 import { UserAvatar } from '../../../../components/user-avatar/UserAvatar';
 import { useNavigate } from 'react-router-dom';
@@ -18,17 +17,14 @@ export const UserMenu = ({ user }: { user: User }) => {
   const open = Boolean(anchorEl);
   const navigate = useNavigate();
 
-  // const handleClose = () => setAnchorEl(null);
   const handleClose = async () => {
     setAnchorEl(null);
-  }
+  };
 
   const handleLogout = async () => {
     localStorage.removeItem('token');
     navigate(routes.login, { replace: true });
-  }
-
-
+  };
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -49,12 +45,26 @@ export const UserMenu = ({ user }: { user: User }) => {
         }}
       >
         <UserMenuInfo>
-          <Typography fontSize={14} color={'text.secondary'}>
-            {user.email}
-          </Typography>
+          <Stack spacing={0.5}>
+            <Typography fontSize={14} fontWeight={700}>
+              {user.firstName} {user.lastName}
+            </Typography>
+            <Typography fontSize={13} color={'text.secondary'}>
+              {user.email}
+            </Typography>
+            <Typography fontSize={12} color={'text.secondary'}>
+              @{user.username}
+            </Typography>
+          </Stack>
         </UserMenuInfo>
-        <UserMenuMenuItem onClick={handleClose}>Profile</UserMenuMenuItem>
-        <UserMenuMenuItem onClick={handleClose}>My account</UserMenuMenuItem>
+        <UserMenuMenuItemWithSeparator
+          onClick={() => {
+            handleClose();
+            navigate(routes.userAccount);
+          }}
+        >
+          My account
+        </UserMenuMenuItemWithSeparator>
         <UserMenuMenuItemWithSeparator onClick={handleLogout}>Logout</UserMenuMenuItemWithSeparator>
       </UserMenuMenu>
     </UserMenuContainer>

@@ -1,17 +1,21 @@
-import { Button, Divider, FormControl, Link, Stack, TextField, Typography } from '@mui/material';
-import { Facebook, Google } from '@mui/icons-material';
+import { Alert, Button, FormControl, Link, Stack, TextField, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { routes } from '../../contants/routes';
 import { WelcomeContent } from '../../content/welcome-content/WelcomeContent';
 import { HalfLayout } from '../../layouts/half-layout/HalfLayout';
-import { useCallback } from 'react'; // Removed useRef
+import { useCallback, useState } from 'react';
 import { RegisterForm, registerFormSchema } from './utils/registerForm';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
 export default function RegisterPage() {
   const navigate = useNavigate();
-  
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -21,34 +25,49 @@ export default function RegisterPage() {
   });
 
   const handleCreateAccount = useCallback(async (data: RegisterForm) => {
-    // This will now only fire if Yup validation passes!
-    console.log("Form data ready to send:", data); 
-    
+    setErrorMessage('');
+    setSuccessMessage('');
+    setIsSubmitting(true);
+
     try {
-      const response = await fetch('http://localhost:8080/api/users', {
+      const response = await fetch(`${API_BASE_URL}/api/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          firstname: data.firstname, 
+          firstname: data.firstname,
           lastname: data.lastname,
           username: data.username,
           email: data.email,
           password: data.password,
-          active: true, 
-          admin: false 
+          active: true,
+          admin: false,
         }),
       });
 
-      if (response.ok) {
-        navigate(routes.login);
-      } else {
-        const errorData = await response.json();
-        console.error('Registration failed:', errorData);
+      const responseBody = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message = responseBody?.message || responseBody?.error || 'Registration failed. Please try again.';
+        setErrorMessage(message);
+        return;
       }
+
+      setSuccessMessage(responseBody?.message || 'Registration successful. You can now sign in.');
+      setTimeout(() => {
+        navigate(routes.login, {
+          state: {
+            username: data.username,
+            message: 'Registration successful. You can now sign in.',
+          },
+        });
+      }, 1200);
     } catch (error) {
       console.error('Network error during registration:', error);
+      setErrorMessage('Cannot reach server. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
     }
   }, [navigate]);
 
@@ -60,76 +79,75 @@ export default function RegisterPage() {
           Create account
         </Typography>
         <Typography variant={'body1'}>Fill the form below to register new account</Typography>
-        
-        {/* Added an error callback to handleSubmit so you can see if Yup is blocking the submit */}
-        <form 
-          onSubmit={handleSubmit(
-            handleCreateAccount, 
-            (errs) => console.log("Yup Validation Errors:", errs)
-          )} 
+
+        {successMessage ? <Alert severity='success' sx={{ width: '100%' }}>{successMessage}</Alert> : null}
+        {errorMessage ? <Alert severity='error' sx={{ width: '100%' }}>{errorMessage}</Alert> : null}
+
+        <form
+          onSubmit={handleSubmit(handleCreateAccount, (errs) => console.log('Yup Validation Errors:', errs))}
           style={{ width: '100%' }}
         >
           <Stack direction={'row'} spacing={2} sx={{ width: '100%', mb: 2 }}>
             <FormControl fullWidth>
-              <TextField 
-                label={'First name'} 
-                fullWidth 
-                placeholder={'First name'} 
+              <TextField
+                label={'First name'}
+                fullWidth
+                placeholder={'First name'}
                 {...register('firstname')}
                 error={!!errors.firstname}
                 helperText={errors.firstname?.message as string}
               />
             </FormControl>
             <FormControl fullWidth>
-              <TextField 
-                label={'Last name'} 
-                fullWidth 
-                placeholder={'Last name'} 
+              <TextField
+                label={'Last name'}
+                fullWidth
+                placeholder={'Last name'}
                 {...register('lastname')}
                 error={!!errors.lastname}
                 helperText={errors.lastname?.message as string}
               />
             </FormControl>
           </Stack>
-          
+
           <Stack spacing={2} sx={{ width: '100%', mb: 2 }}>
             <FormControl fullWidth>
-              <TextField 
-                label={'Username'} 
-                fullWidth 
-                placeholder={'Username'} 
+              <TextField
+                label={'Username'}
+                fullWidth
+                placeholder={'Username'}
                 {...register('username')}
                 error={!!errors.username}
                 helperText={errors.username?.message as string}
               />
             </FormControl>
             <FormControl fullWidth>
-              <TextField 
-                label={'Email'} 
-                fullWidth 
-                placeholder={'Email'} 
+              <TextField
+                label={'Email'}
+                fullWidth
+                placeholder={'Email'}
                 {...register('email')}
                 error={!!errors.email}
                 helperText={errors.email?.message as string}
               />
             </FormControl>
             <FormControl fullWidth>
-              <TextField 
-                label={'Password'} 
-                fullWidth 
-                placeholder={'Password'} 
-                type={'password'} 
+              <TextField
+                label={'Password'}
+                fullWidth
+                placeholder={'Password'}
+                type={'password'}
                 {...register('password')}
                 error={!!errors.password}
                 helperText={errors.password?.message as string}
               />
             </FormControl>
             <FormControl fullWidth>
-              <TextField 
-                label={'Confirm password'} 
-                fullWidth 
-                placeholder={'Confirm password'} 
-                type={'password'} 
+              <TextField
+                label={'Confirm password'}
+                fullWidth
+                placeholder={'Confirm password'}
+                type={'password'}
                 {...register('confirmPassword')}
                 error={!!errors.confirmPassword}
                 helperText={errors.confirmPassword?.message as string}
@@ -137,23 +155,10 @@ export default function RegisterPage() {
             </FormControl>
           </Stack>
 
-          {/* Cleaned up the Button: No more onClick or handlePublish */}
-          <Button type={'submit'} variant={'contained'} fullWidth sx={{ mb: 2 }}>
-            Create account
+          <Button type={'submit'} variant={'contained'} fullWidth sx={{ mb: 2 }} disabled={isSubmitting}>
+            {isSubmitting ? 'Creating account...' : 'Create account'}
           </Button>
-          
-          <Divider sx={{ width: '100%', mb: 2 }} />
-          <Typography variant={'body2'} sx={{ mb: 1, textAlign: 'center' }}>Or register with</Typography>
-          
-          <Stack direction={'row'} spacing={1} sx={{ mb: 2, justifyContent: 'center' }}>
-            <Button variant={'outlined'} startIcon={<Google />}>
-              Google
-            </Button>
-            <Button variant={'outlined'} startIcon={<Facebook />}>
-              Facebook
-            </Button>
-          </Stack>
-          
+
           <Stack spacing={1}>
             <Typography
               variant={'body2'}
@@ -167,20 +172,6 @@ export default function RegisterPage() {
                 fontWeight={'fontWeightMedium'}
               >
                 Sign in
-              </Link>
-            </Typography>
-            <Typography
-              variant={'body2'}
-              sx={{ display: 'flex', gap: '4px', alignItems: 'center', justifyContent: 'center' }}
-            >
-              Forgot password?{' '}
-              <Link
-                onClick={() => navigate(routes.resetPassword)}
-                component={'button'}
-                underline={'hover'}
-                fontWeight={'fontWeightMedium'}
-              >
-                Reset password
               </Link>
             </Typography>
           </Stack>

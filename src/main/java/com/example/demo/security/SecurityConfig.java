@@ -83,6 +83,9 @@ public class SecurityConfig {
                     Map<String, String> authRequest = objectMapper.readValue(request.getInputStream(), Map.class);
                     String username = authRequest.get("username");
                     String password = authRequest.get("password");
+                    if (username != null) {
+                        username = username.trim();
+                    }
                     UsernamePasswordAuthenticationToken token =
                             new UsernamePasswordAuthenticationToken(username, password);
                     setDetails(request, token);
@@ -127,8 +130,10 @@ public class SecurityConfig {
                             "/login",
                             "/api/login",
                             "/api/register",
-                            "/api/users"
+                            "/api/users",
+                            "/api/recommend/flower"
                         ).permitAll()
+                        .requestMatchers("/api/collection/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

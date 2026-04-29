@@ -4,6 +4,7 @@ const blogPrefix = '/blog';
 const componentPrefix = `${themePrefix}/component`;
 const orderPrefix = '/order';
 const jobsPrefix = '/jobs';
+const aiPrefix = '/ai';
 
 export const routes = {
   dashboard: '/',
@@ -30,6 +31,8 @@ export const routes = {
   jobsDetails: `${jobsPrefix}/details`,
   jobsCreate: `${jobsPrefix}/create`,
   jobsEdit: `${jobsPrefix}/edit`,
+  flowerRec: `${aiPrefix}/flower-rec`,
+  collections: '/collections',
   login: '/login',
   register: '/register',
   resetPassword: '/reset-password',

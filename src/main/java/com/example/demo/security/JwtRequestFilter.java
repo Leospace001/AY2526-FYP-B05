@@ -37,6 +37,11 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         System.out.println("Requested path: " + path);
 
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // Skip JWT check for public auth endpoints
         if ("/login".equals(path) || "/api/login".equals(path) || "/api/register".equals(path)) {
             filterChain.doFilter(request, response);
@@ -49,7 +54,13 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
-            username = jwtUtil.extractUsername(jwt);
+            try {
+                username = jwtUtil.extractUsername(jwt);
+            } catch (Exception e) {
+                // Ignore invalid or expired JWTs on public endpoints so they can still be accessed.
+                filterChain.doFilter(request, response);
+                return;
+            }
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {

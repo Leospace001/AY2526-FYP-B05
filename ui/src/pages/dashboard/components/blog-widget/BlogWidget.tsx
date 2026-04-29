@@ -1,23 +1,18 @@
 import { BlogWidgetContainer, BlogWidgetContent } from './styled';
 import { Button, Typography } from '@mui/material';
-import { useBlogPosts } from '../../../../hooks/api/use-blog-posts';
 
 export const BlogWidget = () => {
-  const { data, isLoading } = useBlogPosts();
-
-  if (isLoading || !data) return null;
-
   return (
     <BlogWidgetContainer>
       <BlogWidgetContent>
         <Typography variant={'body2'} textTransform={'uppercase'}>
-          Latest blog post
+          AI botanical news
         </Typography>
         <Typography variant={'h4'} fontWeight={'fontWeightBold'}>
-          {data[0].title}
+          The Role of AI in Sustainable Agriculture
         </Typography>
         <Typography variant={'body1'} mb={1}>
-          {data[0].content}
+          Discover how machine intelligence helps predict plant stress, improve irrigation planning, and support greener growing practices.
         </Typography>
         <Button color={'primary'} variant={'outlined'} size={'small'}>
           Read more

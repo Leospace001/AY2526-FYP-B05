@@ -13,10 +13,10 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, columnDefinition = "varchar(255) default 'TAI MAN'")
+    @Column(nullable = false, columnDefinition = "varchar(255) default 'TAI MAN'")
     private String firstname;
 
-    @Column(nullable = false, unique = true, columnDefinition = "varchar(255) default 'CHAN'")
+    @Column(nullable = false, columnDefinition = "varchar(255) default 'CHAN'")
     private String lastname;
 
     @Column(nullable = false, unique = true)

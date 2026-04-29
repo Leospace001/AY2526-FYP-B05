@@ -1,41 +1,26 @@
 import * as yup from 'yup';
 
 export enum AccountGeneralFieldsNames {
-  firstName = 'firstName',
-  lastName = 'lastName',
   username = 'username',
-  email = 'email',
-  phone = 'phone',
-  image = 'image',
-  birthDate = 'birthDate',
-  age = 'age',
-}
-
-export enum AccountSocialFieldsNames {
-  facebook = 'facebook',
-  twitter = 'twitter',
-  instagram = 'instagram',
-  linkedin = 'linkedin',
+  password = 'password',
+  confirmPassword = 'confirmPassword',
 }
 
 export const accountGeneralFormSchema = yup.object({
-  [AccountGeneralFieldsNames.firstName]: yup.string().required(),
-  [AccountGeneralFieldsNames.lastName]: yup.string().required(),
-  [AccountGeneralFieldsNames.username]: yup.string().required(),
-  [AccountGeneralFieldsNames.email]: yup.string().email().required(),
-  [AccountGeneralFieldsNames.phone]: yup.string().required(),
-  [AccountGeneralFieldsNames.birthDate]: yup.string().required(),
-  [AccountGeneralFieldsNames.age]: yup.number(),
-  [AccountGeneralFieldsNames.image]: yup.string(),
+  [AccountGeneralFieldsNames.username]: yup.string().required('Username is required'),
+  [AccountGeneralFieldsNames.password]: yup
+    .string()
+    .transform((value) => (value?.trim() ? value : ''))
+    .min(6, 'Password must be at least 6 characters')
+    .notRequired(),
+  [AccountGeneralFieldsNames.confirmPassword]: yup
+    .string()
+    .transform((value) => (value?.trim() ? value : ''))
+    .when(AccountGeneralFieldsNames.password, {
+      is: (password: string) => !!password,
+      then: (schema) => schema.required('Please confirm your new password').oneOf([yup.ref(AccountGeneralFieldsNames.password)], 'Passwords do not match'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
 });
 
 export type AccountGeneralForm = yup.InferType<typeof accountGeneralFormSchema>;
-
-export const accountSocialLinksFormSchema = yup.object({
-  [AccountSocialFieldsNames.facebook]: yup.string().url(),
-  [AccountSocialFieldsNames.twitter]: yup.string().url(),
-  [AccountSocialFieldsNames.instagram]: yup.string().url(),
-  [AccountSocialFieldsNames.linkedin]: yup.string().url(),
-});
-
-export type AccountSocialLinksForm = yup.InferType<typeof accountSocialLinksFormSchema>;

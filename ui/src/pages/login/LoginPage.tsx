@@ -1,147 +1,168 @@
-import { Alert, Button, Divider, FormControl, Link, Stack, TextField, Typography } from '@mui/material'; // Imported Alert
-import { Facebook, Google } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { Alert, Box, Button, Card, CardContent, FormControl, Stack, TextField, Typography } from '@mui/material';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { routes } from '../../contants/routes';
 import { WelcomeContent } from '../../content/welcome-content/WelcomeContent';
 import { HalfLayout } from '../../layouts/half-layout/HalfLayout';
-import axios, { AxiosError } from "axios"; // Imported AxiosError for better typing
-import { useState } from 'react';
+import axios from 'axios';
+import { useEffect, useMemo, useState } from 'react';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  
-  const [username, setUsername] = useState(''); 
+  const location = useLocation();
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [errorMessage, setErrorMessage] = useState(''); // 1. New state for the error message
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const presetUsername = location.state?.username;
+    if (typeof presetUsername === 'string' && presetUsername.trim()) {
+      setUsername(presetUsername.trim());
+      setErrorMessage('');
+    }
+  }, [location.state]);
+
+  const canSubmit = useMemo(() => username.trim().length > 0 && password.trim().length > 0, [username, password]);
 
   const handleLogin = async () => {
-    // Clear any previous errors when attempting a new login
     setErrorMessage('');
+
+    if (!username.trim() || !password.trim()) {
+      setErrorMessage('Please enter both username and password.');
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
       const response = await axios.post(
-        "http://localhost:8080/login",
-        { 
-          "username": username,
-          "password": password 
+        `${API_BASE_URL}/login`,
+        {
+          username: username.trim(),
+          password,
         },
         {
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
-        }
+        },
       );
 
       const token = response.data.token;
 
       if (token) {
-        localStorage.setItem("token", token);
-        
-        setTimeout(() => {
-          navigate("/");
-        }, 1000);
+        localStorage.setItem('token', token);
+        navigate('/', { replace: true });
+        return;
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      
-      // 2. Check if the error is an Axios error and if the status is 403
+
+      setErrorMessage('Login succeeded but token was missing from the response.');
+    } catch (error: any) {
+      console.error('Login error:', error);
+
       if (axios.isAxiosError(error)) {
-        if (error.response?.status === 403) {
-          setErrorMessage('Invalid username or password.');
+        const status = error.response?.status;
+        const backendMessage =
+          error.response?.data?.error || (typeof error.response?.data === 'string' ? error.response.data : undefined);
+
+        if (status === 401 || status === 403) {
+          setErrorMessage(backendMessage || 'Invalid username or password.');
+        } else if (status === 404) {
+          setErrorMessage('Login endpoint not found. Please check that the backend is running.');
+        } else if (status && status >= 500) {
+          setErrorMessage(backendMessage || 'Server error. Please try again later.');
+        } else if (error.code === 'ERR_NETWORK') {
+          setErrorMessage('Cannot reach server. Please make sure the backend is running.');
         } else {
-          setErrorMessage('An unexpected error occurred. Please try again later.');
+          setErrorMessage(backendMessage || 'An unexpected error occurred. Please try again later.');
         }
       } else {
         setErrorMessage('Network error. Please check your connection.');
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <HalfLayout>
       <WelcomeContent />
-      <Stack spacing={2} sx={{ minWidth: '60%' }} alignItems={'center'}>
-        <Typography variant={'h3'} component={'h1'}>
-          Hello Testing
-        </Typography>
-        <Typography variant={'body1'}>Enter your credentials below</Typography>
-        
-        {/* 3. Conditionally render the Alert if there is an error message */}
-        {errorMessage && (
-          <Alert severity="error" sx={{ width: '100%' }}>
-            {errorMessage}
-          </Alert>
-        )}
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+        <Card
+          sx={{
+            width: '100%',
+            maxWidth: 480,
+            borderRadius: 4,
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.08)',
+          }}
+        >
+          <CardContent sx={{ p: { xs: 3, sm: 5 } }}>
+            <Stack spacing={3} alignItems='stretch'>
+              <Box textAlign='center'>
+                <Typography variant='h4' component='h1' sx={{ fontWeight: 800, mb: 1 }}>
+                  Sign In
+                </Typography>
+                <Typography variant='body2' color='text.secondary'>
+                  Welcome back to Plant AI Analysis
+                </Typography>
+              </Box>
 
-        <FormControl fullWidth>
-          <TextField 
-            fullWidth 
-            placeholder={'Email or Username'} 
-            value={username} 
-            onChange={(e) => {
-              setUsername(e.target.value);
-              setErrorMessage(''); // Clear error when user starts typing again
-            }} 
-          />
-        </FormControl>
-        
-        <FormControl fullWidth>
-          <TextField 
-            fullWidth 
-            placeholder={'Password'} 
-            type={'password'} 
-            value={password} 
-            onChange={(e) => {
-              setPassword(e.target.value);
-              setErrorMessage(''); // Clear error when user starts typing again
-            }} 
-          />
-        </FormControl>
+              {errorMessage ? (
+                <Alert severity='error' sx={{ width: '100%' }}>
+                  {errorMessage}
+                </Alert>
+              ) : null}
 
-        <Button variant={'contained'} fullWidth onClick={() => handleLogin()}>
-          Login
-        </Button>
-        <Divider sx={{ width: '100%' }} />
-        <Typography variant={'body2'}>Or login with</Typography>
-        <Stack direction={'row'} spacing={1}>
-          <Button variant={'outlined'} startIcon={<Google />}>
-            Google
-          </Button>
-          <Button variant={'outlined'} startIcon={<Facebook />}>
-            Facebook
-          </Button>
-        </Stack>
-        <Stack spacing={1}>
-          <Typography
-            variant={'body2'}
-            sx={{ display: 'flex', gap: '4px', alignItems: 'center', justifyContent: 'center' }}
-          >
-            Don't have an account?{' '}
-            <Link
-              onClick={() => navigate(routes.register)}
-              underline={'hover'}
-              component={'button'}
-              fontWeight={'fontWeightMedium'}
-            >
-              Sign up
-            </Link>
-          </Typography>
-          <Typography
-            variant={'body2'}
-            sx={{ display: 'flex', gap: '4px', alignItems: 'center', justifyContent: 'center' }}
-          >
-            Forgot password?{' '}
-            <Link
-              onClick={() => navigate(routes.resetPassword)}
-              component={'button'}
-              underline={'hover'}
-              fontWeight={'fontWeightMedium'}
-            >
-              Reset password
-            </Link>
-          </Typography>
-        </Stack>
-      </Stack>
+              <FormControl fullWidth>
+                <TextField
+                  fullWidth
+                  label={'Username'}
+                  placeholder={'Enter your username'}
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setErrorMessage('');
+                  }}
+                />
+              </FormControl>
+
+              <FormControl fullWidth>
+                <TextField
+                  fullWidth
+                  placeholder={'Enter your password'}
+                  type={'password'}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setErrorMessage('');
+                  }}
+                />
+              </FormControl>
+
+              <Button
+                variant={'contained'}
+                fullWidth
+                onClick={handleLogin}
+                disabled={isSubmitting || !canSubmit}
+                sx={{ py: 1.3, borderRadius: 999, fontWeight: 700 }}
+              >
+                {isSubmitting ? 'Signing In...' : 'Sign In'}
+              </Button>
+
+              <Stack direction='row' justifyContent='center' spacing={0.5} alignItems='center'>
+                <Typography variant='body2' color='text.secondary'>
+                  Don&apos;t have an account?
+                </Typography>
+                <Button variant='text' onClick={() => navigate(routes.register)} sx={{ minWidth: 'auto', p: 0 }}>
+                  Sign Up
+                </Button>
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Box>
     </HalfLayout>
   );
 }

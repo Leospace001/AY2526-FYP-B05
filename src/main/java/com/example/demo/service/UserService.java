@@ -1,36 +1,42 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.UserAccountUpdateRequest;
 import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Transactional
     public User registerUser(User user) {
-        String username = user.getUsername();
-        String firstName = user.getFirstname();
-        String lastName = user.getLastname();
-        String email = user.getEmail();
-        String rawPassword = user.getPassword();
-        boolean isAdmin = user.isAdmin();
-        boolean isActive = user.isActive();
-        
-        if (userRepository.findByUsername(username).isPresent()) {
-            throw new RuntimeException("Username already exists");
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            throw new IllegalStateException("Username is already taken.");
+        }
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public User updateAccount(User currentUser, UserAccountUpdateRequest request) {
+        if (!currentUser.getUsername().equals(request.getUsername()) && userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new IllegalStateException("Username is already taken.");
         }
 
-        String encodedPassword = passwordEncoder.encode(rawPassword);
-        User newUser = new User(firstName, lastName, username, email, encodedPassword, isAdmin, isActive);
-        userRepository.save(newUser);
-        return newUser;
+        currentUser.setUsername(request.getUsername());
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            currentUser.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+        return userRepository.save(currentUser);
     }
 }

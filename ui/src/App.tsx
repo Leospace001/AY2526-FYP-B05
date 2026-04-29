@@ -48,6 +48,8 @@ const LoginPage = React.lazy(() => import('./pages/login/LoginPage'));
 const RegisterPage = React.lazy(() => import('./pages/register/RegisterPage'));
 const ResetPassword = React.lazy(() => import('./pages/reset-password/ResetPassword'));
 const VerifyCode = React.lazy(() => import('./pages/verify-code/VerifyCode'));
+const FlowerRecommendationPage = React.lazy(() => import('./pages/flower-rec/FlowerRecommendationPage'));
+const MyCollectionPage = React.lazy(() => import('./pages/collection/MyCollectionPage'));
 
 const router = createBrowserRouter([
   {
@@ -149,6 +151,14 @@ const router = createBrowserRouter([
       {
         path: routes.jobsEdit,
         element: <JobsEdit />,
+      },
+      {
+        path: routes.flowerRec,
+        element: <FlowerRecommendationPage />,
+      },
+      {
+        path: routes.collections,
+        element: <MyCollectionPage />,
       },
     ],
   },
