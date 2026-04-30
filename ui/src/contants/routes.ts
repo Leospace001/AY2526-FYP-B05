@@ -37,4 +37,5 @@ export const routes = {
   register: '/register',
   resetPassword: '/reset-password',
   verifyCode: '/verify-code',
+  plantlighten: 'http://localhost:8000',
 };

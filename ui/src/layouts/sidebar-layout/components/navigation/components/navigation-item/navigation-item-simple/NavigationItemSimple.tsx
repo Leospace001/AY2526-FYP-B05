@@ -19,8 +19,13 @@ export const NavigationItemSimple = ({ item, nested = false, animateOn }: Props)
   const navigate = useNavigate();
   const isActive = location === item.path;
   const handleClick = useCallback(() => {
+    if ('external' in item && item.external) {
+      window.open(item.path, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
     navigate(item.path);
-  }, [item.path, navigate]);
+  }, [item, navigate]);
 
   const iconProps: NavigationItemIconProps = {
     fontSize: nested ? 'small' : 'medium',

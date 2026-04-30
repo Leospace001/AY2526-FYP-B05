@@ -51,11 +51,29 @@ export default function Dashboard() {
               </Typography>
             </Box>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <Button variant='contained' size='large' startIcon={<RocketLaunchOutlinedIcon />} onClick={() => navigate(routes.flowerRec)}>
+              <Button
+                variant='contained'
+                size='large'
+                startIcon={<RocketLaunchOutlinedIcon />}
+                onClick={() => navigate(routes.flowerRec)}
+              >
                 View Plant Insights
               </Button>
-              <Button variant='outlined' size='large' startIcon={<CollectionsBookmarkOutlinedIcon />} onClick={() => navigate(routes.collections)}>
+              <Button
+                variant='outlined'
+                size='large'
+                startIcon={<CollectionsBookmarkOutlinedIcon />}
+                onClick={() => navigate(routes.collections)}
+              >
                 Open My Collection
+              </Button>
+              <Button
+                variant='outlined'
+                size='large'
+                startIcon={<AutoAwesomeOutlinedIcon />}
+                onClick={() => window.open('http://localhost:8000', '_blank', 'noopener,noreferrer')}
+              >
+                Open Plantlighten
               </Button>
             </Stack>
           </Stack>

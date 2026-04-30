@@ -2,7 +2,7 @@ import List from '@mui/material/List';
 import { NavigationItem } from './components/navigation-item/NavigationItem';
 import { NavigationItemType } from './components/navigation-item/types';
 import { routes } from '../../../../contants/routes';
-import { DashboardOutlined, LocalFloristOutlined, BookmarkBorderOutlined } from '@mui/icons-material';
+import { DashboardOutlined, LocalFloristOutlined, BookmarkBorderOutlined, SpaOutlined } from '@mui/icons-material';
 import { useMemo } from 'react';
 
 export function Navigation() {
@@ -25,6 +25,16 @@ export function Navigation() {
         path: routes.collections,
         label: 'My Collection',
         icon: (props: any) => <BookmarkBorderOutlined {...props} />,
+      },
+      {
+        header: 'Plantlighten',
+      },
+      {
+        path: 'http://localhost:8000',
+        label: 'Open Plantlighten',
+        icon: (props: any) => <SpaOutlined {...props} />,
+        external: true,
+        description: 'Django plant identification portal',
       },
     ],
     [],

@@ -2,14 +2,51 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
-    # volumes:
-    #   - ./rabbitmq_data:/var/lib/rabbitmq
     ports:
-      - "5672:5672"      # AMQP
-      - "15672:15672"    # Management UI
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: demod
       RABBITMQ_DEFAULT_PASS: demo
+    networks:
+      - app-network
+
+  db:
+    image: 'postgres:15.3-alpine'
+    container_name: postgresdb
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  django-api:
+    build:
+      context: ./AI_Plant_Lifestyle
+      dockerfile: Dockerfile
+    container_name: django-api
+    ports:
+      - "8000:8000"
+    environment:
+      DEBUG: ${DEBUG:-True}
+      SECRET_KEY: ${DJANGO_SECRET_KEY:-django-insecure-please-change-me}
+      ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-*}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://ui:5173,http://frontend}
+    volumes:
+      - ./AI_Plant_Lifestyle/media:/app/media
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - app-network
 
   app:
     build:
@@ -28,13 +65,18 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DJANGO_API_BASE_URL: http://django-api:8000
     restart: unless-stopped
     depends_on:
       - rabbitmq
+      - db
+      - django-api
     volumes:
       - ./uploadFolder:/data/uploads
       - ./logs:/app/logs
-  
+    networks:
+      - app-network
+
   frontend:
     build:
       context: ./frontend
@@ -45,6 +87,9 @@ services:
     restart: unless-stopped
     depends_on:
       - app
+    networks:
+      - app-network
+
   ui:
     build:
       context: ./ui
@@ -58,20 +103,20 @@ services:
       - /app/node_modules
     depends_on:
       - app
-  db:
-    image: 'postgres:15.3-alpine'
-    container_name: postgresdb
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      # - ./createAdminAccount.sql:/docker-entrypoint-initdb.d/init.sql
-  
+    networks:
+      - app-network
+
   adminer:
     image: adminer
     restart: always
     ports:
       - 7070:8080
+    networks:
+      - app-network
+
 volumes:
   pgdata:
+
+networks:
+  app-network:
+    driver: bridge
