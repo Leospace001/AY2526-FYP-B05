@@ -6,12 +6,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
-import com.example.demo.repository.UserRepository;
 import com.example.demo.service.UserService;
-import com.example.demo.model.JwtRequest;
 import com.example.demo.model.User;
-import java.util.Collection;
 
 
 @RestController
@@ -20,9 +16,6 @@ public class UserRegisterController {
 
     @Autowired
     private UserService userService;
-    
-    @Autowired
-    private UserRepository userRepository;
 
     @PostMapping
     public ResponseEntity<User> registerUser(@RequestBody User user) {

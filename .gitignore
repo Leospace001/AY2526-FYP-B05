@@ -11,4 +11,3 @@ logs/user-activity.log
 .DS_Store
 target
 target/**
-logs/user-activity.log

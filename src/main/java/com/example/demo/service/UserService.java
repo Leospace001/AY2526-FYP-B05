@@ -17,20 +17,15 @@ public class UserService {
     
     public User registerUser(User user) {
         String username = user.getUsername();
-        String firstName = user.getFirstname();
-        String lastName = user.getLastname();
-        String email = user.getEmail();
         String rawPassword = user.getPassword();
-        boolean isAdmin = user.isAdmin();
-        boolean isActive = user.isActive();
         
         if (userRepository.findByUsername(username).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
 
         String encodedPassword = passwordEncoder.encode(rawPassword);
-        User newUser = new User(firstName, lastName, username, email, encodedPassword, isAdmin, isActive);
-        userRepository.save(newUser);
-        return newUser;
+        user.setPassword(encodedPassword);
+        userRepository.save(user);
+        return user;
     }
 }

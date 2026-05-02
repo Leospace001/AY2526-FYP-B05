@@ -7,6 +7,8 @@ import lombok.*;
 @Table(name = "users")
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class User {
 
     @Id
@@ -33,24 +35,5 @@ public class User {
 
     @Column(nullable = false, columnDefinition = "boolean default true")
     private boolean isActive;
-
-    public User () {};
-
-    public User (
-        String firstname,
-        String lastname,
-        String username,
-        String email,
-        String password,
-        boolean admin,
-        boolean active
-        ) {
-        this.firstname = firstname;
-        this.lastname = lastname;
-        this.username = username;
-        this.email = email;
-        this.password = password;
-        this.isAdmin = admin;
-        this.isActive = active;
-    }
+    
 }
