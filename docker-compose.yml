@@ -30,6 +30,7 @@ services:
     restart: unless-stopped
     depends_on:
       - rabbitmq
+      - db
     volumes:
       - ./uploadFolder:/data/uploads
       - ./logs:/app/logs

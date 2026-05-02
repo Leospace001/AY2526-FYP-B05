@@ -22,7 +22,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.*;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.*;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -32,6 +33,7 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final JwtUtil jwtUtil;
+    private static final Logger userActivityLogger = LoggerFactory.getLogger("UserActivity");
 
     @Autowired
     private JwtRequestFilter jwtRequestFilter;
@@ -101,7 +103,7 @@ public class SecurityConfig {
             String username = ((org.springframework.security.core.userdetails.User)
                     authResult.getPrincipal()).getUsername();
             String token = jwtUtil.generateToken(username);
-
+            userActivityLogger.info("{} logged in successfully: ", username);
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
 
