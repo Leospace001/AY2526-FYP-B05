@@ -59,9 +59,10 @@ export default function UserAccountPage() {
             'Authorization': `Bearer ${token}`,
           }
         });
-        console.log(response);
+       
         
         const data = (await response.json());
+         console.log(data);
         setUser(data);
         setDefaultValues({
           firstname: data["firstname"],
