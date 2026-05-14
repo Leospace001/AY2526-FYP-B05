@@ -77,7 +77,7 @@ export default function LoginPage() {
         <FormControl fullWidth>
           <TextField 
             fullWidth 
-            placeholder={'Email or Username'} 
+            placeholder={'Enter Username'} 
             value={username} 
             onChange={(e) => {
               setUsername(e.target.value);

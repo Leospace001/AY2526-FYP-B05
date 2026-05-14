@@ -36,6 +36,7 @@ export default function RegisterPage() {
           username: data.username,
           email: data.email,
           password: data.password,
+          phone: data.phone,
           active: true, 
           admin: false 
         }),
@@ -103,6 +104,18 @@ export default function RegisterPage() {
                 helperText={errors.username?.message as string}
               />
             </FormControl>
+
+            <FormControl fullWidth>
+              <TextField 
+                label={'Phone'} 
+                fullWidth 
+                placeholder={'Phone'} 
+                {...register('Phone')}
+                error={!!errors.phone}
+                helperText={errors.phone?.message as string}
+              />
+              </FormControl>
+
             <FormControl fullWidth>
               <TextField 
                 label={'Email'} 
