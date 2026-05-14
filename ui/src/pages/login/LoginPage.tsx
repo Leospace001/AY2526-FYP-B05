@@ -36,6 +36,7 @@ export default function LoginPage() {
 
       if (token) {
         localStorage.setItem("token", token);
+        localStorage.setItem("username", username);
         
         setTimeout(() => {
           navigate("/");

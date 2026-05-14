@@ -35,16 +35,16 @@ services:
       - ./uploadFolder:/data/uploads
       - ./logs:/app/logs
   
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: frontend
-    ports:
-      - "80:80"
-    restart: unless-stopped
-    depends_on:
-      - app
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: frontend
+  #   ports:
+  #     - "80:80"
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - app
   ui:
     build:
       context: ./ui
@@ -65,7 +65,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     volumes:
-      - ./pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
       # - ./createAdminAccount.sql:/docker-entrypoint-initdb.d/init.sql
   
   adminer:

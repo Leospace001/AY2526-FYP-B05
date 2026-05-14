@@ -7,6 +7,7 @@ import { AccountSettingsForm } from '../components/account-settings-form/Account
 import { UserForm } from '../components/user-form/UserForm';
 import { useCurrentUser } from '../../../hooks/api/use-current-user/useCurrentUser';
 import { Loader } from '../../../components/loader/Loader';
+import { useState, useEffect } from 'react';
 
 function a11yProps(index: number) {
   return {
@@ -38,34 +39,54 @@ function TabPanel(props: TabPanelProps) {
 }
 
 export default function UserAccountPage() {
-  const [value, setValue] = React.useState(0);
-  const { data: user, isLoading } = useCurrentUser();
+  const [value, setValue] = useState(0);
+  const [user, setUser] = useState({});
+  const [defaultValues, setDefaultValues] = useState({});
+  const [loading, setLoading] = useState(true);
 
   const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const username = localStorage.getItem('username');
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:8080/api/users/${username}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          }
+        });
+        const data = (await response.json());
+        setUser(data);
+        setDefaultValues({
+          firstName: data["firstname"],
+          lastName: data["lastname"],
+          email: data["email"],
+          phone: data["phone"],
+          username: data["username"],
+          image: data["image"],
+          age: data["age"],
+          birthDate: data["birthDate"],
+        });
+
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [value]);
 
   const tabProps: TabProps = {
     sx: { minHeight: 42, textTransform: 'capitalize' },
     iconPosition: 'start',
   };
 
-  console.log(user);
-
-  const defaultValues = user
-    ? {
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        phone: user.phone,
-        username: user.username,
-        image: user.image,
-        age: user.age,
-        birthDate: user.birthDate,
-      }
-    : undefined;
-
-  if (isLoading || !user) return <Loader />;
+  if (loading) return <Loader />;
 
   return (
     <Container maxWidth='lg'>

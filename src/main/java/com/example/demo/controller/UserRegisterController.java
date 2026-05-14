@@ -1,10 +1,12 @@
 package com.example.demo.controller;
 
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.ResponseEntity;
 import com.example.demo.service.UserService;
 import com.example.demo.model.User;
@@ -21,6 +23,12 @@ public class UserRegisterController {
     public ResponseEntity<User> registerUser(@RequestBody User user) {
         User save =  userService.registerUser(user);
         return ResponseEntity.ok(save);
+    }
+
+    @GetMapping("/{username}")
+    public ResponseEntity<User> getUserById(@PathVariable String username) {
+        User user = userService.getUserByUsername(username);
+        return ResponseEntity.ok(user);
     }
 
 }

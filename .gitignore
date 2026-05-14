@@ -11,3 +11,5 @@ logs/user-activity.log
 .DS_Store
 target
 target/**
+rootcert.crt
+settings.xml

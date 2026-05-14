@@ -106,6 +106,10 @@ export const UserForm = ({ defaultValues, submitButtonText = 'Save changes' }: P
                 <Stack direction={'row'} spacing={4}>
                   <FormControl fullWidth>
                     <TextField
+                      inputProps={{
+                        readOnly: true,
+                        disabled: true,
+                      }}
                       error={!!errors[AccountGeneralFieldsNames.username]}
                       {...register(AccountGeneralFieldsNames.username)}
                       label={'Username'}

@@ -2,6 +2,7 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.Date;
 
 @Entity
 @Table(name = "users")
@@ -29,6 +30,12 @@ public class User {
 
     @Column(nullable = false)
     private String password;
+
+    @Column(nullable = true)
+    private int age;
+
+    @Column(nullable = true)
+    private Date birthday;
 
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean isAdmin;
