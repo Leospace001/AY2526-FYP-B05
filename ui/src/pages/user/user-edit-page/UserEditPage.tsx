@@ -16,7 +16,7 @@ export default function UserEditPage() {
         username: user.username,
         image: user.image,
         age: user.age,
-        birthDate: user.birthDate,
+        birthDay: user.birthDay,
       }
     : undefined;
 

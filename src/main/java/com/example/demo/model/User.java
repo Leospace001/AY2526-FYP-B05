@@ -37,6 +37,9 @@ public class User {
     @Column(nullable = true)
     private Date birthday;
 
+    @Column(nullable = true)
+    private int phone;
+
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean isAdmin;
 

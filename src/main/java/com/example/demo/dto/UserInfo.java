@@ -21,10 +21,8 @@ public class UserInfo {
 
     private int age;
 
+    private int phone;
+
     private Date birthday;
-
-    private boolean isAdmin;
-
-    private boolean isActive;
     
 }

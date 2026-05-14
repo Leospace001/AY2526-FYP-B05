@@ -37,7 +37,10 @@ export const UserForm = ({ defaultValues, submitButtonText = 'Save changes' }: P
   const userFormValues = getValues();
 
   const handleSave = useCallback((data: AccountGeneralForm) => {
-    console.log(data);
+    const username = localStorage.getItem('username');
+    console.log(username);
+    
+    console.log(getValues());
   }, []);
 
   return (
@@ -135,14 +138,14 @@ export const UserForm = ({ defaultValues, submitButtonText = 'Save changes' }: P
                   <FormControl fullWidth>
                     <TextField
                       type={'date'}
-                      error={!!errors[AccountGeneralFieldsNames.birthDate]}
-                      {...register(AccountGeneralFieldsNames.birthDate)}
+                      error={!!errors[AccountGeneralFieldsNames.birthDay]}
+                      {...register(AccountGeneralFieldsNames.birthDay)}
                       InputLabelProps={{ shrink: true }}
-                      label={'Birth date'}
+                      label={'Birth day'}
                       size={'medium'}
                     />
-                    {errors[AccountGeneralFieldsNames.birthDate] ? (
-                      <FormHelperText error>{errors[AccountGeneralFieldsNames.birthDate].message}</FormHelperText>
+                    {errors[AccountGeneralFieldsNames.birthDay] ? (
+                      <FormHelperText error>{errors[AccountGeneralFieldsNames.birthDay].message}</FormHelperText>
                     ) : null}
                   </FormControl>
                   <FormControl fullWidth>
@@ -154,6 +157,17 @@ export const UserForm = ({ defaultValues, submitButtonText = 'Save changes' }: P
                     />
                     {errors[AccountGeneralFieldsNames.age] ? (
                       <FormHelperText error>{errors[AccountGeneralFieldsNames.age].message}</FormHelperText>
+                    ) : null}
+                  </FormControl>
+                  <FormControl fullWidth>
+                    <TextField
+                      error={!!errors[AccountGeneralFieldsNames.phone]}
+                      {...register(AccountGeneralFieldsNames.phone)}
+                      label={'Phone'}
+                      size={'medium'}
+                    />
+                    {errors[AccountGeneralFieldsNames.phone] ? (
+                      <FormHelperText error>{errors[AccountGeneralFieldsNames.phone].message}</FormHelperText>
                     ) : null}
                   </FormControl>
                 </Stack>

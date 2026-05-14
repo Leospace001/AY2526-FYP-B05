@@ -59,17 +59,19 @@ export default function UserAccountPage() {
             'Authorization': `Bearer ${token}`,
           }
         });
+        console.log(response);
+        
         const data = (await response.json());
         setUser(data);
         setDefaultValues({
-          firstName: data["firstname"],
-          lastName: data["lastname"],
+          firstname: data["firstname"],
+          lastname: data["lastname"],
           email: data["email"],
           phone: data["phone"],
           username: data["username"],
           image: data["image"],
           age: data["age"],
-          birthDate: data["birthDate"],
+          birthday: data["birthday"],
         });
 
       } catch (error) {

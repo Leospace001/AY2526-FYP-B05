@@ -18,7 +18,7 @@ export interface User {
   email: string;
   phone: string;
   username: string;
-  birthDate: string;
+  birthDay: string;
   profileBackground: string;
   company: UserCompany;
   about: string;

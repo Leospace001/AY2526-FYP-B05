@@ -1,13 +1,13 @@
 import * as yup from 'yup';
 
 export enum AccountGeneralFieldsNames {
-  firstName = 'firstName',
-  lastName = 'lastName',
+  firstName = 'firstname',
+  lastName = 'lastname',
   username = 'username',
   email = 'email',
   phone = 'phone',
   image = 'image',
-  birthDate = 'birthDate',
+  birthDay = 'birthday',
   age = 'age',
 }
 
@@ -23,8 +23,8 @@ export const accountGeneralFormSchema = yup.object({
   [AccountGeneralFieldsNames.lastName]: yup.string().required(),
   [AccountGeneralFieldsNames.username]: yup.string().required(),
   [AccountGeneralFieldsNames.email]: yup.string().email().required(),
-  [AccountGeneralFieldsNames.phone]: yup.string().required(),
-  [AccountGeneralFieldsNames.birthDate]: yup.string().required(),
+  [AccountGeneralFieldsNames.phone]: yup.string(),
+  [AccountGeneralFieldsNames.birthDay]: yup.string(),
   [AccountGeneralFieldsNames.age]: yup.number(),
   [AccountGeneralFieldsNames.image]: yup.string(),
 });

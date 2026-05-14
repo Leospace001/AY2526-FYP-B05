@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.ResponseEntity;
 import com.example.demo.service.UserService;
 import com.example.demo.model.User;
+import com.example.demo.dto.UserInfo;
+import com.example.demo.mapper.UserMapper;
 
 
 @RestController
@@ -19,6 +21,9 @@ public class UserRegisterController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private UserMapper userMapper;
+
     @PostMapping
     public ResponseEntity<User> registerUser(@RequestBody User user) {
         User save =  userService.registerUser(user);
@@ -26,9 +31,9 @@ public class UserRegisterController {
     }
 
     @GetMapping("/{username}")
-    public ResponseEntity<User> getUserById(@PathVariable String username) {
+    public ResponseEntity<UserInfo> getUserById(@PathVariable String username) {
         User user = userService.getUserByUsername(username);
-        return ResponseEntity.ok(user);
+        UserInfo userInfo = userMapper.userToUserInfo(user);
+        return ResponseEntity.ok(userInfo);
     }
-
 }
