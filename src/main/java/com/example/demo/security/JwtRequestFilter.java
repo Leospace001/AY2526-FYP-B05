@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import com.example.demo.service.CustomUserDetailsService;
+import com.example.demo.service.LogEventService;
+import com.example.demo.model.LogEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.time.LocalDateTime;
 
 import java.io.IOException;
 
@@ -31,6 +34,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         this.jwtUtil = jwtUtil;
     }
 
+    @Autowired
+    LogEventService logEventService;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -38,6 +44,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = request.getServletPath();
+        LocalDateTime currentTime = LocalDateTime.now();
         long startTime = System.currentTimeMillis();
         System.out.println("Requested path: " + path);
 
@@ -67,6 +74,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
                 long duration = System.currentTimeMillis() - startTime;
+                LogEvent logEvent = new LogEvent(username, path, method, currentTime, duration);
+                logEventService.createLogEvent(logEvent);
                 userActivityLogger.info("User {} authenticated successfully and accessed {} with method {} in {} ms", username, path, method, duration);
             }
         }
