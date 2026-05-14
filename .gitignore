@@ -13,3 +13,4 @@ target
 target/**
 rootcert.crt
 settings.xml
+logs/user-activity.log

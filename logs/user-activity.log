@@ -2571,3 +2571,13 @@ io.jsonwebtoken.ExpiredJwtException: JWT expired at 2026-05-13T23:59:23Z. Curren
 2026-05-14 02:05:00 [http-nio-8080-exec-7] INFO  UserActivity - User leospace001 authenticated successfully and accessed /api/users/leospace001
 2026-05-14 02:06:28 [http-nio-8080-exec-5] INFO  UserActivity - User leospace001 authenticated successfully and accessed /api/users/leospace001
 2026-05-14 02:06:28 [http-nio-8080-exec-1] INFO  UserActivity - User leospace001 authenticated successfully and accessed /api/users/leospace001
+2026-05-14 02:07:27 [http-nio-8080-exec-6] INFO  UserActivity - User leospace001 authenticated successfully and accessed /api/users/leospace001
+2026-05-14 02:07:27 [http-nio-8080-exec-7] INFO  UserActivity - User leospace001 authenticated successfully and accessed /api/users/leospace001
+2026-05-14 02:08:15 [http-nio-8080-exec-2] INFO  UserActivity - User leospace001 authenticated successfully and accessed /api/users/leospace001
+2026-05-14 02:08:15 [http-nio-8080-exec-3] INFO  UserActivity - User leospace001 authenticated successfully and accessed /api/users/leospace001
+2026-05-14 02:08:45 [http-nio-8080-exec-4] INFO  UserActivity - User leospace001 authenticated successfully and accessed /api/users/leospace001
+2026-05-14 02:08:45 [http-nio-8080-exec-8] INFO  UserActivity - User leospace001 authenticated successfully and accessed /api/users/leospace001
+2026-05-14 02:09:15 [http-nio-8080-exec-10] INFO  UserActivity - User leospace001 authenticated successfully and accessed /api/users/leospace001
+2026-05-14 02:09:15 [http-nio-8080-exec-9] INFO  UserActivity - User leospace001 authenticated successfully and accessed /api/users/leospace001
+2026-05-14 02:09:19 [http-nio-8080-exec-2] INFO  UserActivity - User leospace001 authenticated successfully and accessed /api/users/leospace001
+2026-05-14 02:09:19 [http-nio-8080-exec-3] INFO  UserActivity - User leospace001 authenticated successfully and accessed /api/users/leospace001
