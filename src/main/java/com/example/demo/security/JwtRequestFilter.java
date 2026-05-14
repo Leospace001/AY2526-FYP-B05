@@ -49,6 +49,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
         String username = null;
         String jwt = null;
+        String method = request.getMethod();
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
@@ -64,7 +65,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
-                userActivityLogger.info("User {} authenticated successfully and accessed {}", username, path);
+                userActivityLogger.info("User {} authenticated successfully and accessed {} with method {}", username, path, method);
             }
         }
 

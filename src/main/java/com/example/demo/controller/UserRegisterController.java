@@ -36,4 +36,11 @@ public class UserRegisterController {
         UserInfo userInfo = userMapper.userToUserInfo(user);
         return ResponseEntity.ok(userInfo);
     }
+
+    @PostMapping("/{username}")
+    public ResponseEntity<UserInfo> updateUser(@PathVariable String username,@RequestBody UserInfo userInfo) {
+        User user = userService.updateUser(username, userInfo);
+        UserInfo updatedUserInfo = userMapper.userToUserInfo(user);
+        return ResponseEntity.ok(updatedUserInfo);
+    }
 }

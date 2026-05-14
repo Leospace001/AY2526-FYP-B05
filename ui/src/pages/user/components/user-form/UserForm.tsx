@@ -12,6 +12,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { DateField } from '@mui/x-date-pickers/DateField';
 import { AccountGeneralFieldsNames, AccountGeneralForm, accountGeneralFormSchema } from '../../utils/userForms';
 import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
@@ -36,12 +37,20 @@ export const UserForm = ({ defaultValues, submitButtonText = 'Save changes' }: P
 
   const userFormValues = getValues();
 
-  const handleSave = useCallback((data: AccountGeneralForm) => {
+  const handleSave = async() => {
     const username = localStorage.getItem('username');
-    console.log(username);
-    
-    console.log(getValues());
-  }, []);
+    const token = localStorage.getItem('token');
+    const response = await fetch(`http://localhost:8080/api/users/${username}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(getValues()),
+        });
+
+    console.log(await response.json());
+  };
 
   return (
     <form onSubmit={handleSubmit(handleSave)}>
