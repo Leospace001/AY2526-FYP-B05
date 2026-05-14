@@ -38,6 +38,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = request.getServletPath();
+        long startTime = System.currentTimeMillis();
         System.out.println("Requested path: " + path);
 
         // ✅ Skip JWT check for login & register endpoints
@@ -65,7 +66,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
-                userActivityLogger.info("User {} authenticated successfully and accessed {} with method {}", username, path, method);
+                long duration = System.currentTimeMillis() - startTime;
+                userActivityLogger.info("User {} authenticated successfully and accessed {} with method {} in {} ms", username, path, method, duration);
             }
         }
 

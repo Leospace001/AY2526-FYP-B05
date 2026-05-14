@@ -3,6 +3,9 @@ package com.example.demo.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.Date;
+import java.time.LocalDateTime;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "users")
@@ -35,7 +38,7 @@ public class User {
     private int age;
 
     @Column(nullable = true)
-    private Date birthday;
+    private LocalDateTime  birthday;
 
     @Column(nullable = true)
     private int phone;
@@ -45,5 +48,11 @@ public class User {
 
     @Column(nullable = false, columnDefinition = "boolean default true")
     private boolean isActive;
-    
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
 }
