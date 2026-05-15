@@ -18,7 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
-
+import java.time.Instant;
 import java.io.IOException;
 
 @Component
@@ -74,7 +74,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
                 long duration = System.currentTimeMillis() - startTime;
-                LogEvent logEvent = new LogEvent(username, path, method, currentTime, duration);
+                Instant instant = Instant.ofEpochMilli(duration);
+                LogEvent logEvent = new LogEvent(username, path, method, currentTime, instant);
                 logEventService.createLogEvent(logEvent);
                 userActivityLogger.info("User {} authenticated successfully and accessed {} with method {} in {} ms", username, path, method, duration);
             }

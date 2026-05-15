@@ -3,6 +3,7 @@ package com.example.demo.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.Date;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
@@ -28,7 +29,7 @@ public class LogEvent {
     private LocalDateTime loggedInAt;
 
     @Column(nullable = true, unique = false)
-    private long duration;
+    private Instant duration;
 
     @Builder
     public LogEvent(
@@ -36,7 +37,7 @@ public class LogEvent {
         String path,
         String httpMethod,
         LocalDateTime loggedInAt,
-        long duration
+        Instant duration
     ) {
         this.username = username;
         this.path = path;
