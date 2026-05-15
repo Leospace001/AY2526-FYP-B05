@@ -12,6 +12,7 @@ import com.example.demo.service.UserService;
 import com.example.demo.model.User;
 import com.example.demo.dto.UserInfo;
 import com.example.demo.mapper.UserMapper;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 
 @RestController
@@ -31,6 +32,7 @@ public class UserRegisterController {
     }
 
     @GetMapping("/{username}")
+    @PreAuthorize("#username == authentication.principal.username")
     public ResponseEntity<UserInfo> getUserById(@PathVariable String username) {
         User user = userService.getUserByUsername(username);
         UserInfo userInfo = userMapper.userToUserInfo(user);
@@ -38,6 +40,7 @@ public class UserRegisterController {
     }
 
     @PostMapping("/{username}")
+    @PreAuthorize("#username == authentication.principal.username")
     public ResponseEntity<UserInfo> updateUser(@PathVariable String username,@RequestBody UserInfo userInfo) {
         User user = userService.updateUser(username, userInfo);
         UserInfo updatedUserInfo = userMapper.userToUserInfo(user);

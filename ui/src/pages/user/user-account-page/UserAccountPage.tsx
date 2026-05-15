@@ -82,7 +82,7 @@ export default function UserAccountPage() {
       }
     };
     fetchData();
-  }, [value]);
+  }, []);
 
   const tabProps: TabProps = {
     sx: { minHeight: 42, textTransform: 'capitalize' },
