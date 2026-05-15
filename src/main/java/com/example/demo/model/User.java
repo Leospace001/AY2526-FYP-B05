@@ -2,7 +2,7 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.Date;
+import java.util.*;
 import java.time.LocalDateTime;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.CreationTimestamp;
@@ -25,7 +25,7 @@ public class User {
     @Column(nullable = false, unique = true, columnDefinition = "varchar(255) default 'CHAN'")
     private String lastname;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, updatable = false)
     private String username;
 
     @Column(nullable = false, columnDefinition = "varchar(255) default 'abc@mail.com'")
@@ -54,5 +54,21 @@ public class User {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "user_roles", // Name of the join table
+        joinColumns = @JoinColumn(name = "user_id"), // Foreign key for User
+        inverseJoinColumns = @JoinColumn(name = "role_id") // Foreign key for Role
+    )
+    private Set<Role> roles = new HashSet<>();
+
+    public void addRole(Role role) {
+        this.roles.add(role);
+    }
+
+    public void removeRole(Role role) {
+        this.roles.remove(role);
+    }
 
 }
