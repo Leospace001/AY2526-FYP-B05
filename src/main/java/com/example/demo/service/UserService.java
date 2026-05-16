@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.model.User;
 import com.example.demo.model.Role;
 import com.example.demo.dto.UserInfo;
+import com.example.demo.dto.UserRegister;
 import com.example.demo.mapper.UserMapper;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.RoleRepository;
@@ -25,21 +26,22 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
     
-    public User registerUser(User user) {
-        String username = user.getUsername();
-        String rawPassword = user.getPassword();
-        
+    public User registerUser(UserRegister userRegister) {
+        User newUser = new User();
+        userMapper.userRegisterDto(userRegister, newUser);
+        String username = newUser.getUsername();
+        String rawPassword = newUser.getPassword();
         if (userRepository.findByUsername(username).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
 
         String encodedPassword = passwordEncoder.encode(rawPassword);
-        user.setPassword(encodedPassword);
+        newUser.setPassword(encodedPassword);
         Role defaultRole = roleRepository.findByName("USER")
             .orElseThrow(() -> new RuntimeException("Default role not found."));
         // user.addRole(defaultRole);
-        userRepository.save(user);
-        return user;
+        userRepository.save(newUser);
+        return newUser;
     }
 
     public User getUserByUsername(String username) {

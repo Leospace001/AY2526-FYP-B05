@@ -8,6 +8,7 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValueCheckStrategy;
 import com.example.demo.model.User;
 import com.example.demo.dto.UserInfo;
+import com.example.demo.dto.UserRegister;
 
 @Mapper(
     componentModel = "spring",
@@ -27,4 +28,14 @@ public interface UserMapper {
     @Mapping(target = "age", source = "userInfo.age")
     @Mapping(target = "phone", source = "userInfo.phone")
     User updateEntityFromDto(UserInfo userInfo, @MappingTarget User user);
+
+    @Mapping(target = "firstname", source = "userRegister.firstname")
+    @Mapping(target = "lastname", source = "userRegister.lastname")
+    @Mapping(target = "email", source = "userRegister.email")
+    @Mapping(target = "username", source = "userRegister.username")
+    @Mapping(target = "birthday", source = "userRegister.birthday")
+    @Mapping(target = "password", source = "userRegister.password")
+    @Mapping(target = "age", source = "userRegister.age")
+    @Mapping(target = "phone", source = "userRegister.phone")
+    User userRegisterDto(UserRegister userRegister, @MappingTarget User user);
 }

@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import com.example.demo.service.UserService;
 import com.example.demo.model.User;
 import com.example.demo.dto.UserInfo;
+import com.example.demo.dto.UserRegister;
 import com.example.demo.mapper.UserMapper;
 import org.springframework.security.access.prepost.PreAuthorize;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -28,8 +29,8 @@ public class UserRegisterController {
     private UserMapper userMapper;
 
     @PostMapping
-    public ResponseEntity<User> registerUser(@RequestBody User user) {
-        User save =  userService.registerUser(user);
+    public ResponseEntity<User> registerUser(@RequestBody UserRegister userRegister) {
+        User save =  userService.registerUser(userRegister);
         return ResponseEntity.ok(save);
     }
 
