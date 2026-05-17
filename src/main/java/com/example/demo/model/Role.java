@@ -23,7 +23,7 @@ public class Role {
     @Column(nullable = false, unique = true, columnDefinition = "varchar(255) default 'ROLE_USER'")
     private ERole name;
 
-    @Column(nullable = false, unique = true, columnDefinition = "varchar(255) default 'ROLE_USER'")
+    @Column(nullable = false, unique = false, columnDefinition = "varchar(255) default 'ROLE_USER'")
     private String description;
 
     @CreationTimestamp

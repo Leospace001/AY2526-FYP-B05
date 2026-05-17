@@ -1,29 +1,30 @@
 -- insert a predefined admin account
 -- username: admin
 -- password: P@ssw0rd
+
+SELECT setval('role_id_seq', (SELECT MAX(id) FROM role));
+
 INSERT INTO
-    "role" (
-        "id",
-        "created_at",
-        "description",
-        "name",
-        "updated_at"
+    role(
+        created_at,
+        description,
+        name,
+        updated_at
     )
 VALUES
     (
-        1,
         '2026-05-17 06:46:31.781564',
         'ROLE_ADMIN',
         'ROLE_ADMIN',
         NULL
     ),
     (
-        2,
         '2026-05-17 06:46:31.781564',
         'ROLE_USER',
         'ROLE_USER',
         NULL
-    ) ON CONFLICT (id) DO NOTHING;
+    ) 
+ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO
     users (
@@ -31,6 +32,8 @@ INSERT INTO
         firstname,
         is_active,
         is_admin,
+        age,
+        phone,
         lastname,
         password,
         username
@@ -41,6 +44,8 @@ VALUES
         'leospce001',
         True,
         True,
+        25,
+        22222222,
         'leoadmin',
         '$2a$10$vmv94mzW3R9Ehr/5cGIddeIOZIUBKZzec44IpGeuydWtx6ahYHLMe',
         'admin'
@@ -48,7 +53,6 @@ VALUES
 
 INSERT INTO
     "user_role_assignments" (
-        "id",
         "active",
         "assigned_date",
         "removed_date",
@@ -57,10 +61,9 @@ INSERT INTO
     )
 VALUES
     (
-        1,
         '1',
         '2026-05-17 09:37:35.24627',
         '2026-05-17 09:37:35.246281',
         1,
         1
-    )
+    )ON CONFLICT (id) DO NOTHING
