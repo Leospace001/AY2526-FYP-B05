@@ -29,9 +29,10 @@ public class UserRegisterController {
     private UserMapper userMapper;
 
     @PostMapping
-    public ResponseEntity<User> registerUser(@RequestBody UserRegister userRegister) {
+    public ResponseEntity<UserInfo> registerUser(@RequestBody UserRegister userRegister) {
         User save =  userService.registerUser(userRegister);
-        return ResponseEntity.ok(save);
+        UserInfo updatedUserInfo = userMapper.userToUserInfo(save);
+        return ResponseEntity.ok(updatedUserInfo);
     }
 
     @GetMapping("/{username}")

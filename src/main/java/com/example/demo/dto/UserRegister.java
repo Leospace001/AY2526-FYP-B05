@@ -1,6 +1,5 @@
 package com.example.demo.dto;
 
-import jakarta.persistence.*;
 import lombok.*;
 import java.util.Date;
 

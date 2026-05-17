@@ -43,6 +43,8 @@ public class UserService {
         UserRoleAssignment defaultAssignment = new UserRoleAssignment(newUser, defaultRole);
         newUser.getRoleAssignments().add(defaultAssignment);
         userRepository.save(newUser);
+
+
         return newUser;
     }
 

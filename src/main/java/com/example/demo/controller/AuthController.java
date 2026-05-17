@@ -6,33 +6,23 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.annotation.CurrentSecurityContext;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.model.JwtRequest;
 import com.example.demo.model.JwtResponse;
 import com.example.demo.security.JwtUtil;
-import com.example.demo.service.CustomUserDetailsService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @RestController
 @CrossOrigin(origins = "*" ) // frontend origin
 public class AuthController {
 
-    private static final Logger userActivityLogger = LoggerFactory.getLogger("UserActivity");
 
     @Autowired
     private AuthenticationManager authenticationManager;
 
     @Autowired
     private JwtUtil jwtUtil;
-
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
 
     @GetMapping("/me")
     public String hello() {
@@ -51,7 +41,6 @@ public class AuthController {
         }
 
         // Load user details after successful authentication
-        UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getUsername());
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
