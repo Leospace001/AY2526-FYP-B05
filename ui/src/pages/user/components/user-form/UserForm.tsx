@@ -24,6 +24,7 @@ interface Props {
   submitButtonText?: string;
 }
 
+
 export const UserForm = ({ defaultValues, submitButtonText = 'Save changes' }: Props) => {
   const {
     register,
@@ -40,7 +41,8 @@ export const UserForm = ({ defaultValues, submitButtonText = 'Save changes' }: P
   const handleSave = async() => {
     const username = localStorage.getItem('username');
     const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:8080/api/users/${username}`, {
+    try {
+      const response = await fetch(`http://localhost:8080/api/users/${username}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -48,6 +50,17 @@ export const UserForm = ({ defaultValues, submitButtonText = 'Save changes' }: P
           },
           body: JSON.stringify(getValues()),
         });
+        if (response.ok || response.status === 200) {
+          alert('User updated successfully!');
+          
+        } else {
+          alert('Failed to update user. Please try again.');
+        }
+
+    } catch (error) {
+      console.error('Error updating user:', error);
+    }
+    
 
     console.log(await response.json());
   };

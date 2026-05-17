@@ -1,7 +1,6 @@
 package com.example.demo.service;
 
-import com.example.demo.model.User;
-import com.example.demo.model.Role;
+import com.example.demo.model.*;
 import com.example.demo.dto.UserInfo;
 import com.example.demo.dto.UserRegister;
 import com.example.demo.mapper.UserMapper;
@@ -37,9 +36,12 @@ public class UserService {
 
         String encodedPassword = passwordEncoder.encode(rawPassword);
         newUser.setPassword(encodedPassword);
-        Role defaultRole = roleRepository.findByName("USER")
+        Role defaultRole = roleRepository.findByName(ERole.ROLE_USER)
             .orElseThrow(() -> new RuntimeException("Default role not found."));
         // user.addRole(defaultRole);
+
+        UserRoleAssignment defaultAssignment = new UserRoleAssignment(newUser, defaultRole);
+        newUser.getRoleAssignments().add(defaultAssignment);
         userRepository.save(newUser);
         return newUser;
     }

@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -40,8 +41,9 @@ public class AuthController {
 
     @PostMapping("/login")
     public JwtResponse createToken(@RequestBody JwtRequest authRequest) throws Exception {
+        Authentication authentication;
         try {
-            authenticationManager.authenticate(
+            authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
             );
         } catch (AuthenticationException e) {
@@ -51,8 +53,10 @@ public class AuthController {
         // Load user details after successful authentication
         UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getUsername());
 
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
         // Generate token using the user's username
-        String token = jwtUtil.generateToken(userDetails.getUsername());
+        String token = jwtUtil.generateToken(authentication);
 
         // Return token in response
         return new JwtResponse(token);

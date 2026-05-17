@@ -55,20 +55,7 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "user_roles", // Name of the join table
-        joinColumns = @JoinColumn(name = "user_id"), // Foreign key for User
-        inverseJoinColumns = @JoinColumn(name = "role_id") // Foreign key for Role
-    )
-    private Set<Role> roles = new HashSet<>();
-
-    public void addRole(Role role) {
-        this.roles.add(role);
-    }
-
-    public void removeRole(Role role) {
-        this.roles.remove(role);
-    }
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+    private Set<UserRoleAssignment> roleAssignments = new HashSet<>();
 
 }

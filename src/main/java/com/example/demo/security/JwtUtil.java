@@ -2,10 +2,14 @@ package com.example.demo.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-
+import java.util.List;
+import java.util.stream.Collectors;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Value;
+import com.example.demo.security.CustomUserDetails;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -24,9 +28,15 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(String username) {
+    public String generateToken(Authentication authentication) {
+        UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
+        List<String> roles = userPrincipal.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
+
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(userPrincipal.getUsername())
+                .claim("roles", roles)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)

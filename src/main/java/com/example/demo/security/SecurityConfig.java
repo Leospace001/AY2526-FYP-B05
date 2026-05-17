@@ -26,6 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @EnableGlobalMethodSecurity(securedEnabled = true,prePostEnabled = true)
 @Configuration
@@ -100,9 +102,9 @@ public class SecurityConfig {
         protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
                                                 FilterChain chain, Authentication authResult)
                 throws IOException {
-            String username = ((org.springframework.security.core.userdetails.User)
-                    authResult.getPrincipal()).getUsername();
-            String token = jwtUtil.generateToken(username);
+            UserDetails userPrincipal = (UserDetails) authResult.getPrincipal();
+            String username = userPrincipal.getUsername();
+            String token = jwtUtil.generateToken(authResult);
             userActivityLogger.info("{} logged in successfully: ", username);
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");

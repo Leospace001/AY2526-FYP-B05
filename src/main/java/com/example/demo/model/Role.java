@@ -19,10 +19,11 @@ public class Role {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, columnDefinition = "varchar(255) default 'USER'")
-    private String name;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, unique = true, columnDefinition = "varchar(255) default 'ROLE_USER'")
+    private ERole name;
 
-    @Column(nullable = false, unique = true, columnDefinition = "varchar(255) default 'USER'")
+    @Column(nullable = false, unique = true, columnDefinition = "varchar(255) default 'ROLE_USER'")
     private String description;
 
     @CreationTimestamp
@@ -31,7 +32,7 @@ public class Role {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    @ManyToMany(mappedBy = "roles") // Matches the field name in the User entity
-    private Set<User> users = new HashSet<>();
+    @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+    private Set<UserRoleAssignment> roleAssignments = new HashSet<>();
 
 }
