@@ -26,6 +26,9 @@ public class Role {
     @Column(nullable = false, unique = false, columnDefinition = "varchar(255) default 'ROLE_USER'")
     private String description;
 
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean isActive;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

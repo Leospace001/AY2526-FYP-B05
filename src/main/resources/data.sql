@@ -5,29 +5,8 @@
 SELECT setval('role_id_seq', (SELECT MAX(id) FROM role));
 
 INSERT INTO
-    role(
-        created_at,
-        description,
-        name,
-        updated_at
-    )
-VALUES
-    (
-        '2026-05-17 06:46:31.781564',
-        'ROLE_ADMIN',
-        'ROLE_ADMIN',
-        NULL
-    ),
-    (
-        '2026-05-17 06:46:31.781564',
-        'ROLE_USER',
-        'ROLE_USER',
-        NULL
-    ) 
-ON CONFLICT (name) DO NOTHING;
-
-INSERT INTO
     users (
+        id,
         email,
         firstname,
         is_active,
@@ -40,6 +19,7 @@ INSERT INTO
     )
 VALUES
     (
+        1,
         'admin@mail.com',
         'leospce001',
         True,
@@ -50,6 +30,34 @@ VALUES
         '$2a$10$vmv94mzW3R9Ehr/5cGIddeIOZIUBKZzec44IpGeuydWtx6ahYHLMe',
         'admin'
     ) ON CONFLICT (username) DO NOTHING;
+
+INSERT INTO
+    role(
+        created_at,
+        description,
+        name,
+        is_active,
+        updated_at,
+        created_by
+    )
+VALUES
+    (
+        '2026-05-17 06:46:31.781564',
+        'ROLE_ADMIN',
+        'ROLE_ADMIN',
+        True,
+        NULL,
+        1
+    ),
+    (
+        '2026-05-17 06:46:31.781564',
+        'ROLE_USER',
+        'ROLE_USER',
+        True,
+        NULL,
+        1
+    )
+ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO
     "user_role_assignments" (
