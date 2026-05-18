@@ -6,7 +6,6 @@ SELECT setval('role_id_seq', (SELECT MAX(id) FROM role));
 
 INSERT INTO
     users (
-        id,
         email,
         firstname,
         is_active,
@@ -19,7 +18,6 @@ INSERT INTO
     )
 VALUES
     (
-        1,
         'admin@mail.com',
         'leospce001',
         True,
@@ -63,7 +61,6 @@ INSERT INTO
     "user_role_assignments" (
         "active",
         "assigned_date",
-        "removed_date",
         "role_id",
         "user_id"
     )
@@ -71,14 +68,12 @@ VALUES
     (
         '1',
         '2026-05-17 09:37:35.24627',
-        '2026-05-17 09:37:35.246281',
         1,
         1
     ),
     (
         '1',
         '2026-05-17 09:37:35.24627',
-        '2026-05-17 09:37:35.246281',
         2,
         1
     )

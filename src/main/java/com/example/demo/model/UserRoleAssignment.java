@@ -30,10 +30,6 @@ public class UserRoleAssignment {
     @CreationTimestamp
     private LocalDateTime assignedDate;
 
-    @Column
-    @UpdateTimestamp
-    private LocalDateTime removedDate;
-
     // Helper flag to quickly filter active roles without checking null dates
     @Column(nullable = false)
     private boolean active = true;

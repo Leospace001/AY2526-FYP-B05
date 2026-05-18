@@ -43,7 +43,6 @@ public class RoleAssignmentService {
             .findFirst()
             .ifPresent(assignment -> {
                 assignment.setActive(false);
-                assignment.setRemovedDate(LocalDateTime.now());
             });
 
         userRepository.save(user);
