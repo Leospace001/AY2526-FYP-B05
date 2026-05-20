@@ -21,6 +21,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
 import java.util.*;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import com.example.demo.config.RabbitConfig;
 
 @Service
 public class EmailService {
@@ -43,6 +45,7 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String senderEmailAddress;
 
+    @RabbitListener(queues = RabbitConfig.ORDER_QUEUE)
     public void scheduleEmail(EmailRequestDto request, User sender) {
 
         // 2. Logic for delivery timing
@@ -61,6 +64,7 @@ public class EmailService {
 
 
     @Async
+    @RabbitListener(queues = RabbitConfig.ORDER_QUEUE)
     public void sendEmailImmediately(EmailRequestDto request, User sender) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
