@@ -39,6 +39,7 @@ public class EmailRecord {
 
     private LocalDateTime scheduledSendTime;
 
+    @Column(nullable = true, columnDefinition = "boolean default false")
     private boolean sent;
 
     // Getters and Setters

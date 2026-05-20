@@ -38,4 +38,8 @@ public class Role {
     @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     private Set<UserRoleAssignment> roleAssignments = new HashSet<>();
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "created_by") // Foreign key in the Student table
+    private User createdBy;
+
 }

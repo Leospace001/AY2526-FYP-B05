@@ -57,10 +57,4 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     private Set<UserRoleAssignment> roleAssignments = new HashSet<>();
-
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "created_by") // Foreign key in the Student table
-    private List<Role> createdBy = new ArrayList<>();
-
-
 }

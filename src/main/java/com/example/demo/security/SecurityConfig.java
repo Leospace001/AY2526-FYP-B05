@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import com.example.demo.security.JwtUtil;
 
 @EnableGlobalMethodSecurity(securedEnabled = true,prePostEnabled = true)
 @Configuration
