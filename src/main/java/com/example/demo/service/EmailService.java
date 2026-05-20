@@ -15,6 +15,12 @@ import com.example.demo.mapper.EmailRecordMapper;
 import com.example.demo.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.File;
+import org.springframework.beans.factory.annotation.Value;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.util.*;
 
 @Service
 public class EmailService {
@@ -30,6 +36,9 @@ public class EmailService {
 
     @Autowired
     private EmailRecordRepository emailRecordRepository;
+
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
     public void scheduleEmail(EmailRequestDto request, User sender) {
 
@@ -53,6 +62,9 @@ public class EmailService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true); // true for multipart
+            EmailRecord record = emailRecordMapper.emailRequestDtoToEmailRecord(request);
+            record.setCreatedBy(sender);
+            
 
             // Multiple recipients (must be a String Array)
             helper.setTo(request.getRecipients().toArray(new String[0]));
@@ -61,17 +73,21 @@ public class EmailService {
 
             // Multiple Attachments
             if (request.getAttachments() != null) {
+                List<String> attachmentPaths = new ArrayList<>();
                 for (MultipartFile file : request.getAttachments()) {
                     if (!file.isEmpty()) {
+                        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+                        Path targetPath = Paths.get(uploadDir).resolve(fileName);
+                        Files.createDirectories(targetPath.getParent());
+                        file.transferTo(targetPath.toFile());
+                        attachmentPaths.add(targetPath.toString());
                         helper.addAttachment(file.getOriginalFilename(), new ByteArrayResource(file.getBytes()));
                     }
                 }
+                record.setAttachmentPaths(attachmentPaths);
             }
 
-            mailSender.send(message);
-            EmailRecord record = emailRecordMapper.emailRequestDtoToEmailRecord(request);
-            record.setCreatedBy(sender);
-            record.setSent(true);
+            // mailSender.send(message);
             emailRecordRepository.save(record);
         } catch (Exception e) {
             userActivityLogger.error("Failed to send email", e);

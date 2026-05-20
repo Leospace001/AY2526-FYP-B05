@@ -16,6 +16,7 @@ import com.example.demo.model.User;
 )
 public interface EmailRecordMapper {
     @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "attachmentPaths", ignore = true)
     EmailRecord emailRequestDtoToEmailRecord(EmailRequestDto emailRequestDto);
 
     EmailRequestDto emailRecordToEmailRequestDto(EmailRecord emailRecord);

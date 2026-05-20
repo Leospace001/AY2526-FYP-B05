@@ -16,6 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.example.demo.service.UserService;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 
 @RestController
 @RequestMapping("/api/emails")
@@ -30,9 +33,11 @@ public class EmailController {
     private UserService userService;
 
 
-    @PostMapping("/send")
+    @PostMapping(value="/send" , consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Email service", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<String> sendEmail(
+            // @RequestPart("metadata") EmailRequestDto request,
+            // @RequestPart("file") MultipartFile file,
             @ModelAttribute EmailRequestDto request,
             @AuthenticationPrincipal UserDetails customUser) {
 

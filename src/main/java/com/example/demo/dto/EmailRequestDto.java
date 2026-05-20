@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-@Getter @Setter
 public class EmailRequestDto {
     private List<String> recipients;
     private String subject;
