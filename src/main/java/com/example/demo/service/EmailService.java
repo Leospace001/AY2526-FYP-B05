@@ -40,6 +40,9 @@ public class EmailService {
     @Value("${file.upload-dir}")
     private String uploadDir;
 
+    @Value("${spring.mail.username}")
+    private String senderEmailAddress;
+
     public void scheduleEmail(EmailRequestDto request, User sender) {
 
         // 2. Logic for delivery timing
@@ -68,6 +71,7 @@ public class EmailService {
 
             // Multiple recipients (must be a String Array)
             helper.setTo(request.getRecipients().toArray(new String[0]));
+            helper.setFrom(senderEmailAddress);
             helper.setSubject(request.getSubject());
             helper.setText(request.getBody(), true); // true for HTML
 
@@ -87,7 +91,7 @@ public class EmailService {
                 record.setAttachmentPaths(attachmentPaths);
             }
 
-            // mailSender.send(message);
+            mailSender.send(message);
             emailRecordRepository.save(record);
         } catch (Exception e) {
             userActivityLogger.error("Failed to send email", e);

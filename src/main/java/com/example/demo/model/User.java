@@ -43,8 +43,8 @@ public class User {
     @Column(nullable = true)
     private int phone;
 
-    @Column(nullable = false, columnDefinition = "boolean default false")
-    private boolean isAdmin;
+    // @Column(nullable = false, columnDefinition = "boolean default false")
+    // private boolean isAdmin;
 
     @Column(nullable = false, columnDefinition = "boolean default true")
     private boolean isActive;
