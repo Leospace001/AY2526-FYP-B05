@@ -1,7 +1,11 @@
 package com.example.demo.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public class JwtRequest {
+    @Schema(description = "The username of the user", defaultValue = "testing")
     private String username;
+    @Schema(description = "The password of the user", defaultValue = "P@ssw0rd")
     private String password;
 
     public JwtRequest() {}

@@ -9,7 +9,6 @@ INSERT INTO
         email,
         firstname,
         is_active,
-        is_admin,
         age,
         phone,
         lastname,
@@ -21,12 +20,21 @@ VALUES
         'admin@mail.com',
         'leospce001',
         True,
-        True,
         25,
         22222222,
         'leoadmin',
         '$2a$10$vmv94mzW3R9Ehr/5cGIddeIOZIUBKZzec44IpGeuydWtx6ahYHLMe',
         'admin'
+    ),
+    (
+        'testing@mail.com',
+        'testing',
+        True,
+        20,
+        88888888,
+        'leoadmin',
+        '$2a$10$vmv94mzW3R9Ehr/5cGIddeIOZIUBKZzec44IpGeuydWtx6ahYHLMe',
+        'testing'
     ) ON CONFLICT (username) DO NOTHING;
 
 INSERT INTO
@@ -54,8 +62,7 @@ VALUES
         True,
         NULL,
         1
-    )
-ON CONFLICT (name) DO NOTHING;
+    ) ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO
     "user_role_assignments" (
@@ -76,5 +83,10 @@ VALUES
         '2026-05-17 09:37:35.24627',
         2,
         1
-    )
-    ON CONFLICT (id) DO NOTHING;
+    ),
+    (
+        '1',
+        '2026-05-17 09:37:35.24627',
+        2,
+        2
+    ) ON CONFLICT (id) DO NOTHING;
