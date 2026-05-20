@@ -111,6 +111,17 @@
             <version>1.6.3</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.xuanyangyang</groupId>
+            <artifactId>spring-boot-starter-scheduling</artifactId>
+            <version>0.0.1.2</version>
+            <scope>compile</scope>
+        </dependency>
+
     </dependencies>
 
     <build>

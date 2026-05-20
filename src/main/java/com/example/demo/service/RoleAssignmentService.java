@@ -5,17 +5,16 @@ import com.example.demo.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 public class RoleAssignmentService {
 
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-    public RoleAssignmentService(UserRepository userRepository, RoleRepository roleRepository) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-    }
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Transactional
     public void grantAdminRole(Long userId) {
