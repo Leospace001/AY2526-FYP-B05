@@ -95,7 +95,7 @@ public class EmailService {
                 record.setAttachmentPaths(attachmentPaths);
             }
 
-            mailSender.send(message);
+            // mailSender.send(message);
             emailRecordRepository.save(record);
         } catch (Exception e) {
             userActivityLogger.error("Failed to send email", e);

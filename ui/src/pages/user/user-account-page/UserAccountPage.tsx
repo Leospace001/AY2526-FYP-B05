@@ -8,6 +8,7 @@ import { UserForm } from '../components/user-form/UserForm';
 import { useCurrentUser } from '../../../hooks/api/use-current-user/useCurrentUser';
 import { Loader } from '../../../components/loader/Loader';
 import { useState, useEffect } from 'react';
+import { jwtDecode } from "jwt-decode";
 
 function a11yProps(index: number) {
   return {
@@ -50,8 +51,12 @@ export default function UserAccountPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const username = localStorage.getItem('username');
+        
         const token = localStorage.getItem('token');
+        const decoded = jwtDecode(token);
+        // console.log(decoded);
+        
+        const username = decoded.sub;
         const response = await fetch(`http://localhost:8080/api/users/${username}`, {
           method: 'GET',
           headers: {

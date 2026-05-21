@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.MediaType;
 import io.swagger.v3.oas.annotations.Parameter;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/emails")
@@ -40,10 +41,11 @@ public class EmailController {
             // @RequestPart("metadata") EmailRequestDto request,
             // @RequestPart("file") MultipartFile file,
             @Parameter(required = false) @ModelAttribute EmailRequestDto request,
-            @AuthenticationPrincipal UserDetails customUser) {
-
-        userActivityLogger.info("{} is scheduling an email", customUser.getUsername());
-        User user = userService.getUserByUsername(customUser.getUsername());
+           Authentication authentication) {
+        // userActivityLogger.info("{} is scheduling an email", customUser.getUsername());
+        // User user = userService.getUserByUsername(customUser.getUsername());
+        CustomUserDetails userPrincipal = (CustomUserDetails) authentication.getPrincipal();
+        User user = userPrincipal.getUser();
         emailService.scheduleEmail(request, user);
         
 

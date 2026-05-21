@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.util.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
-import com.example.demo.security.JwtUtil;
+import com.example.demo.security.*;
 
 @EnableGlobalMethodSecurity(securedEnabled = true,prePostEnabled = true)
 @Configuration
@@ -104,7 +104,7 @@ public class SecurityConfig {
         protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
                                                 FilterChain chain, Authentication authResult)
                 throws IOException {
-            UserDetails userPrincipal = (UserDetails) authResult.getPrincipal();
+            CustomUserDetails userPrincipal = (CustomUserDetails) authResult.getPrincipal();
             String username = userPrincipal.getUsername();
             String token = jwtUtil.generateToken(authResult);
             userActivityLogger.info("{} logged in successfully: ", username);

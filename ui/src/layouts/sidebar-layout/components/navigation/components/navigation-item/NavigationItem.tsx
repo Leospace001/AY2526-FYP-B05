@@ -10,6 +10,7 @@ interface Props {
 export const NavigationItem = ({ item }: Props) => {
   const isSimple = 'path' in item;
   const isHeader = 'header' in item;
+  const isAdmin = 'admin' in item;
 
   if (isHeader) {
     return <NavigationItemHeader header={item.header} />;

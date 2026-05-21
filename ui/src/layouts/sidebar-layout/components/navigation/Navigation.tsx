@@ -1,6 +1,6 @@
 import List from '@mui/material/List';
 import { NavigationItem } from './components/navigation-item/NavigationItem';
-import { NavigationItemType } from './components/navigation-item/types';
+import { NavigationItemSimpleType, NavigationItemType } from './components/navigation-item/types';
 import { routes } from '../../../../contants/routes';
 import {
   Abc,
@@ -19,6 +19,7 @@ import {
 } from '@mui/icons-material';
 import { useMemo } from 'react';
 import { useNotifications } from '../../../../hooks/api/use-notifications/useNotifications';
+import { jwtDecode } from "jwt-decode";
 
 export function Navigation() {
   const { data: notifications } = useNotifications();
@@ -264,6 +265,18 @@ export function Navigation() {
   );
 
   const navigationItemsList = navigationItems.map((item) => {
+    const token = localStorage.getItem('token');
+    const decoded = jwtDecode(token);
+    const adminItem = {
+        path: routes.dashboard,
+        label: 'Dashboard',
+        icon: (props: any) => <DashboardOutlined {...props} />,
+      };
+    const roles = decoded.roles;
+    // if (roles.includes("ROLE_ADMIN")) {
+    //   item.push(adminItem)
+    // }
+
     return <NavigationItem key={Object.values(item).toString()} item={item} />;
   });
 
