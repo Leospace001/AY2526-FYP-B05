@@ -20,6 +20,6 @@ public class EmailRequestDto {
     @Schema(description = "Email attachment(s)", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private List<MultipartFile> attachments = new ArrayList<>();
 
-    @Schema(description = "Send date, leave it blank if wish to send immediately", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @Schema(description = "Send date, leave it blank if wish to send immediately", requiredMode = Schema.RequiredMode.NOT_REQUIRED, defaultValue = "2026-12-27T10:15:30")
     private LocalDateTime sendTime; // For delayed delivery
 }
