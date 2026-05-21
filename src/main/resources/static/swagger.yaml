@@ -1,0 +1,50 @@
+openapi: 3.0.0
+info:
+  title: Email Service API
+  version: 1.0.0
+
+components:
+  securitySchemes:
+    bearerAuth:          # arbitrary name for the security scheme
+      type: http
+      scheme: bearer     # specifies the Bearer scheme
+      bearerFormat: JWT
+security:
+  - bearerAuth: []
+
+paths:
+  /api/emails/send:
+    post:
+      summary: Send an email
+      responses:
+        "200":
+          description: Success
+        "403":
+          description: Failed
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                recipients:
+                  type: array
+                  description: List of email addresses
+                  items:
+                    type: string
+                    example: "user@example.com"
+                subject:
+                  type: string
+                body:
+                  type: string
+                attachment:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Optional file attachment
+              required:
+                - recipients
+                - subject
+                - body

@@ -131,7 +131,8 @@ public class SecurityConfig {
                             "/v3/api-docs/**",
                             "/swagger-ui/**", 
                             "/login",
-                            "/api/users"
+                            "/api/users",
+                            "/swagger.yaml"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

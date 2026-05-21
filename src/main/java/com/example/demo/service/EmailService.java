@@ -68,7 +68,7 @@ public class EmailService {
     public void sendEmailImmediately(EmailRequestDto request, User sender) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true); // true for multipart
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8"); // true for multipart
             EmailRecord record = emailRecordMapper.emailRequestDtoToEmailRecord(request);
             record.setCreatedBy(sender);
             
