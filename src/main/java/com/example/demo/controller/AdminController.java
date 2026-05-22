@@ -1,15 +1,30 @@
 package com.example.demo.controller;
 
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.Operation;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.example.demo.service.*;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
+
+    @Autowired
+    private RabbitMQProducer rabbitMQProducer;
+
+    @GetMapping("/rabbitmq")
+    @Operation(summary = "User profile", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<String> sendMessage(@RequestParam("message") String message) {
+        rabbitMQProducer.sendMessage(message);
+        return ResponseEntity.ok("Message sent");
+
+    }
+
+
 
     // Only accessible by users who have ROLE_ADMIN
     @GetMapping("/dashboard")

@@ -6,7 +6,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.dto.EmailRequestDto;
-import com.example.demo.service.EmailService;
+import com.example.demo.service.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import com.example.demo.model.User;
@@ -32,6 +32,9 @@ public class EmailController {
     private EmailService emailService;
 
     @Autowired
+    private EmailProducer emailProducer;
+
+    @Autowired
     private UserService userService;
 
 
@@ -46,7 +49,7 @@ public class EmailController {
         // User user = userService.getUserByUsername(customUser.getUsername());
         CustomUserDetails userPrincipal = (CustomUserDetails) authentication.getPrincipal();
         User user = userPrincipal.getUser();
-        emailService.scheduleEmail(request, user);
+        emailProducer.sendEmailToQueue(request, user);
         
 
         return ResponseEntity.ok("Email scheduled successfully");

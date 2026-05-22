@@ -45,32 +45,29 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String senderEmailAddress;
 
-    @RabbitListener(queues = RabbitConfig.ORDER_QUEUE)
-    public void scheduleEmail(EmailRequestDto request, User sender) {
+    @Value("${rabbitmq.queue.name}")
+    private String queue;
+
+    @RabbitListener(queues = "${rabbitmq.queue.name}")
+    public void scheduleEmail(EmailRequestDto record) {
 
         // 2. Logic for delivery timing
-        if (request.getSendTime() != null && request.getSendTime().isAfter(java.time.LocalDateTime.now())) {
-        // if (true) {
-            EmailRecord record = emailRecordMapper.emailRequestDtoToEmailRecord(request);
-            record.setCreatedBy(sender);
-            record.setRecipients(request.getRecipients());
-            record.setScheduledSendTime(request.getSendTime());
-            record.setSent(false);
-            emailRecordRepository.save(record);
+        if (record.getSendTime() != null && record.getSendTime().isAfter(java.time.LocalDateTime.now())) {
+            
         } else {
-            sendEmailImmediately(request, sender);
+            sendEmailImmediately(record);
         }
     }
 
 
     @Async
-    @RabbitListener(queues = RabbitConfig.ORDER_QUEUE)
-    public void sendEmailImmediately(EmailRequestDto request, User sender) {
+    @RabbitListener(queues = "${rabbitmq.queue.name}")
+    public void sendEmailImmediately(EmailRequestDto request) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8"); // true for multipart
-            EmailRecord record = emailRecordMapper.emailRequestDtoToEmailRecord(request);
-            record.setCreatedBy(sender);
+            // EmailRecord record = emailRecordMapper.emailRequestDtoToEmailRecord(request);
+            // record.setCreatedBy(sender);
             
 
             // Multiple recipients (must be a String Array)
@@ -79,24 +76,22 @@ public class EmailService {
             helper.setSubject(request.getSubject());
             helper.setText(request.getBody(), true); // true for HTML
 
-            // Multiple Attachments
+            //Multiple Attachments
             if (request.getAttachments() != null) {
-                List<String> attachmentPaths = new ArrayList<>();
                 for (MultipartFile file : request.getAttachments()) {
                     if (!file.isEmpty()) {
-                        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-                        Path targetPath = Paths.get(uploadDir).resolve(fileName);
-                        Files.createDirectories(targetPath.getParent());
-                        file.transferTo(targetPath.toFile());
-                        attachmentPaths.add(targetPath.toString());
+                        // String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+                        // Path targetPath = Paths.get(uploadDir).resolve(fileName);
+                        // Files.createDirectories(targetPath.getParent());
+                        // file.transferTo(targetPath.toFile());
                         helper.addAttachment(file.getOriginalFilename(), new ByteArrayResource(file.getBytes()));
                     }
                 }
-                record.setAttachmentPaths(attachmentPaths);
+                // request.setAttachmentPaths(attachmentPaths);
             }
 
             mailSender.send(message);
-            emailRecordRepository.save(record);
+            // emailRecordRepository.save(request);
         } catch (Exception e) {
             userActivityLogger.error("Failed to send email", e);
             // Handle email exception (log to DB, retry, etc.)
