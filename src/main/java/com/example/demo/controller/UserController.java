@@ -1,12 +1,7 @@
 package com.example.demo.controller;
 
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.ResponseEntity;
 import com.example.demo.service.UserService;
 import com.example.demo.model.User;
@@ -17,10 +12,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.Operation;
 
-
 @RestController
 @RequestMapping("/api/users")
-public class UserRegisterController {
+public class UserController {
 
     @Autowired
     private UserService userService;
@@ -29,6 +23,7 @@ public class UserRegisterController {
     private UserMapper userMapper;
 
     @PostMapping
+    @Operation(summary = "Register a new user")
     public ResponseEntity<UserInfo> registerUser(@RequestBody UserRegister userRegister) {
         User save =  userService.registerUser(userRegister);
         UserInfo updatedUserInfo = userMapper.userToUserInfo(save);
@@ -36,17 +31,17 @@ public class UserRegisterController {
     }
 
     @GetMapping("/{username}")
-    @PreAuthorize("#username == authentication.principal.username")
-    @Operation(summary = "Get user by username", security = @SecurityRequirement(name = "bearerAuth"))
+    @PreAuthorize("#username == authentication.principal.username or hasRole('ADMIN')")
+    @Operation(summary = "Get one user by username, available to admin and user itself", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<UserInfo> getUserById(@PathVariable String username) {
         User user = userService.getUserByUsername(username);
         UserInfo userInfo = userMapper.userToUserInfo(user);
         return ResponseEntity.ok(userInfo);
     }
 
-    @PostMapping("/{username}")
-    @PreAuthorize("#username == authentication.principal.username")
-    @Operation(summary = "Update user", security = @SecurityRequirement(name = "bearerAuth"))
+    @PutMapping("/{username}")
+    @PreAuthorize("#username == authentication.principal.username or hasRole('ADMIN')")
+    @Operation(summary = "Update user, available to admin and user itself", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<UserInfo> updateUser(@PathVariable String username,@RequestBody UserInfo userInfo) {
         User user = userService.updateUser(username, userInfo);
         UserInfo updatedUserInfo = userMapper.userToUserInfo(user);

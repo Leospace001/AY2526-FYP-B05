@@ -8,7 +8,10 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-
+import io.swagger.v3.oas.annotations.*;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.parameters.*;
+import io.swagger.v3.oas.annotations.media.*;
 import com.example.demo.model.JwtRequest;
 import com.example.demo.model.JwtResponse;
 import com.example.demo.security.JwtUtil;
@@ -24,13 +27,31 @@ public class AuthController {
     @Autowired
     private JwtUtil jwtUtil;
 
-    @GetMapping("/me")
-    public String hello() {
-        return "Hello, User!";
-    }
-
     @PostMapping("/login")
-    public JwtResponse createToken(@RequestBody JwtRequest authRequest) throws Exception {
+    @Operation(summary = "Login a existing user and return a jwt token if success")
+    public JwtResponse createToken(
+        @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Details of user account",
+            content = @Content(
+            mediaType = "application/json",
+            examples = {
+                @ExampleObject(name = "Normal User", value ="{\"username\": \"testing\", \"password\": \"P@ssw0rd\"}", summary = "Default for users"),
+                @ExampleObject(name = "Admin User", value ="{\"username\": \"admin\", \"password\": \"P@ssw0rd\"}", summary = "Full access for admins")
+            }
+        )
+    ) @org.springframework.web.bind.annotation.RequestBody JwtRequest authRequest
+        // @Parameter (
+        //     name = "role",
+        //     description = "Role of user",
+        //     in = ParameterIn.QUERY,
+        //     schema = @Schema(
+        //         type = "string",
+        //         allowableValues = {
+        //             "user",
+        //             "admin"
+        //         }), example = "user")
+        //         @RequestParam(defaultValue = "user") String role
+    ) throws Exception {
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(
@@ -49,12 +70,5 @@ public class AuthController {
 
         // Return token in response
         return new JwtResponse(token);
-    }
-
-    // Optional /register endpoint for future DB-based implementation
-    @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@RequestBody JwtRequest user) {
-        // For now, just accept and say "Registered" — in real use, save user to DB
-        return ResponseEntity.ok("User registered successfully (mocked)");
     }
 }

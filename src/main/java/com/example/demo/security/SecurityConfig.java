@@ -111,7 +111,7 @@ public class SecurityConfig {
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
 
-            String json = String.format("{ \"token\": \"%s\", \"user\": \"%s\" }", token, username);
+            String json = String.format("{ \"token\": \"%s\"}", token, username);
             response.getWriter().write(json);
             // log.info("Generated JWT token for user: {}", username);
         }

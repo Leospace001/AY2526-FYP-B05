@@ -10,6 +10,7 @@ import com.example.demo.model.UserRoleAssignment;
 
 public class CustomUserDetails implements UserDetails {
     
+    private final Long id;
     private final String username;
     private final String password;
     private final Collection<? extends GrantedAuthority> authorities;
@@ -17,6 +18,7 @@ public class CustomUserDetails implements UserDetails {
     private final User user;
 
     public CustomUserDetails(User user) {
+        this.id = user.getId();
         this.username = user.getUsername();
         this.password = user.getPassword();
         this.email = user.getEmail();
@@ -64,6 +66,10 @@ public class CustomUserDetails implements UserDetails {
 
     public String getEmail() {
         return email;
+    }
+
+    public Long getId() {
+        return id;
     }
 
     @Override

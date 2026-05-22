@@ -6,6 +6,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.example.demo.dto.*;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class RoleAssignmentService {
@@ -15,6 +18,9 @@ public class RoleAssignmentService {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private UserRoleAssignmentRepository userRoleRepository;
 
     @Transactional
     public void grantAdminRole(Long userId) {
@@ -46,4 +52,40 @@ public class RoleAssignmentService {
 
         userRepository.save(user);
     }
+
+    public List<RoleMemberDto> getMembersByRoleId(Long roleId) {
+        // Query database and map to DTO
+        return userRoleRepository.findByRoleId(roleId).stream()
+            .collect(Collectors.groupingBy(
+                assignment -> assignment.getUser().getId(),
+                    Collectors.collectingAndThen(
+                    Collectors.maxBy(Comparator.comparing(UserRoleAssignment::getAssignedDate)),
+                    optional -> optional.map(assignment -> new RoleMemberDto(
+                        assignment.getUser().getId(),
+                        assignment.getUser().getUsername(),
+                        assignment.getUser().getEmail(),
+                        assignment.getAssignedDate(),
+                        assignment.isActive()
+                    ))
+                )
+            ))
+                .values().stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .distinct()
+                .collect(Collectors.toList());
+            }
+
+    public List<RoleMemberDto> getActiveMembersByRoleId(Long roleId) {
+        List<RoleMemberDto> roleMember = getMembersByRoleId(roleId);
+        return roleMember.stream()
+            .filter(RoleMemberDto::isActive)
+            .distinct()
+            .collect(Collectors.toList());
+
+    }
+        
 }
+
+    
+
