@@ -2,10 +2,10 @@
 FROM maven:3.9.11-eclipse-temurin-17 as build
 WORKDIR /app
 COPY pom.xml .
-COPY settings.xml /root/.m2/settings.xml
-COPY rootcert.crt /tmp/yourcorp-ca.crt
+# COPY settings.xml /root/.m2/settings.xml
+# COPY rootcert.crt /tmp/yourcorp-ca.crt
 
-RUN keytool -importcert -noprompt -trustcacerts -alias yourcorp-ca -file /tmp/yourcorp-ca.crt -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit
+# RUN keytool -importcert -noprompt -trustcacerts -alias yourcorp-ca -file /tmp/yourcorp-ca.crt -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit
 
 COPY pom.xml .
 COPY src ./src

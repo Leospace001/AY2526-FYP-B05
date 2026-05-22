@@ -53,8 +53,9 @@ public class EmailService {
 
         // 2. Logic for delivery timing
         if (record.getSendTime() != null && record.getSendTime().isAfter(java.time.LocalDateTime.now())) {
-            
+            userActivityLogger.info("Email is a delayed");
         } else {
+            userActivityLogger.info("Email is divided into easily branch");
             sendEmailImmediately(record);
         }
     }
@@ -63,6 +64,7 @@ public class EmailService {
     @Async
     @RabbitListener(queues = "${rabbitmq.queue.name}")
     public void sendEmailImmediately(EmailRequestDto request) {
+        userActivityLogger.info("Email is being handled by queue");
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8"); // true for multipart
@@ -89,7 +91,7 @@ public class EmailService {
                 }
                 // request.setAttachmentPaths(attachmentPaths);
             }
-
+            userActivityLogger.info("Email is being handled by queue");
             mailSender.send(message);
             // emailRecordRepository.save(request);
         } catch (Exception e) {
