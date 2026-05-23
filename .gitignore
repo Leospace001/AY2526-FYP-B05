@@ -15,3 +15,4 @@ rootcert.crt
 settings.xml
 logs/user-activity.log
 Dockerfile
+.vscode/launch.json

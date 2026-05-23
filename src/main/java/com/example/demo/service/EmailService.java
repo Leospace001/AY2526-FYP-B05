@@ -1,102 +1,95 @@
 package com.example.demo.service;
 
-import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.example.demo.dto.EmailRequestDto;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.transaction.annotation.Transactional;
+import com.example.demo.dto.EmailMessageDto;
 import com.example.demo.repository.EmailRecordRepository;
 import com.example.demo.model.EmailRecord;
-import com.example.demo.mapper.EmailRecordMapper;
-import com.example.demo.model.User;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.File;
-import org.springframework.beans.factory.annotation.Value;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.Path;
-import java.util.*;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import com.example.demo.config.RabbitConfig;
+import java.util.Optional;
 
 @Service
 public class EmailService {
+
+    private static final Logger userActivityLogger = LoggerFactory.getLogger("UserActivity");
 
     @Autowired
     private JavaMailSender mailSender;
 
     @Autowired
-    private EmailRecordMapper emailRecordMapper;
-
-    @Autowired
-    private static final Logger userActivityLogger = LoggerFactory.getLogger("UserActivity");
-
-    @Autowired
     private EmailRecordRepository emailRecordRepository;
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
 
     @Value("${spring.mail.username}")
     private String senderEmailAddress;
 
-    @Value("${rabbitmq.queue.name}")
-    private String queue;
-
+    // Single listener taking the lightweight DTO
+    @Transactional
     @RabbitListener(queues = "${rabbitmq.queue.name}")
-    public void scheduleEmail(EmailRequestDto record) {
+    public void processQueuedEmail(EmailMessageDto messageDto) {
+        userActivityLogger.info("Picked up email job for Record ID: {}", messageDto.getEmailRecordId());
+
+        // 1. Fetch the full record from the DB
+        Optional<EmailRecord> optionalRecord = emailRecordRepository.findById(messageDto.getEmailRecordId());
+        if (optionalRecord.isEmpty()) {
+            userActivityLogger.error("EmailRecord not found for ID: {}", messageDto.getEmailRecordId());
+            return; 
+        }
+
+        EmailRecord record = optionalRecord.get();
 
         // 2. Logic for delivery timing
-        if (record.getSendTime() != null && record.getSendTime().isAfter(java.time.LocalDateTime.now())) {
-            userActivityLogger.info("Email is a delayed");
+        if (record.getScheduledSendTime() != null && record.getScheduledSendTime().isAfter(java.time.LocalDateTime.now())) {
+            userActivityLogger.info("Email is scheduled for future delivery. (Note: Standard RabbitMQ requires a delayed-message plugin for this).");
+            // You will need a way to handle delays here, otherwise it sends immediately.
+            sendEmailImmediately(record);
         } else {
-            userActivityLogger.info("Email is divided into easily branch");
             sendEmailImmediately(record);
         }
     }
 
-
-    @Async
-    @RabbitListener(queues = "${rabbitmq.queue.name}")
-    public void sendEmailImmediately(EmailRequestDto request) {
-        userActivityLogger.info("Email is being handled by queue");
+    private void sendEmailImmediately(EmailRecord record) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8"); // true for multipart
-            // EmailRecord record = emailRecordMapper.emailRequestDtoToEmailRecord(request);
-            // record.setCreatedBy(sender);
-            
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            // Multiple recipients (must be a String Array)
-            helper.setTo(request.getRecipients().toArray(new String[0]));
+            helper.setTo(record.getRecipients().toArray(new String[0]));
             helper.setFrom(senderEmailAddress);
-            helper.setSubject(request.getSubject());
-            helper.setText(request.getBody(), true); // true for HTML
+            helper.setSubject(record.getSubject()); // Assuming EmailRecord has getSubject()
+            helper.setText(record.getBody(), true); // Assuming EmailRecord has getBody()
 
-            //Multiple Attachments
-            if (request.getAttachments() != null) {
-                for (MultipartFile file : request.getAttachments()) {
-                    if (!file.isEmpty()) {
-                        // String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-                        // Path targetPath = Paths.get(uploadDir).resolve(fileName);
-                        // Files.createDirectories(targetPath.getParent());
-                        // file.transferTo(targetPath.toFile());
-                        helper.addAttachment(file.getOriginalFilename(), new ByteArrayResource(file.getBytes()));
+            // 3. Attach files using FileSystemResource and the saved paths
+            if (record.getAttachmentPaths() != null) {
+                for (String path : record.getAttachmentPaths()) {
+                    File file = new File(path);
+                    if (file.exists()) {
+                        FileSystemResource resource = new FileSystemResource(file);
+                        helper.addAttachment(file.getName(), resource);
+                    } else {
+                        userActivityLogger.warn("Attachment file not found on disk: {}", path);
                     }
                 }
-                // request.setAttachmentPaths(attachmentPaths);
             }
-            userActivityLogger.info("Email is being handled by queue");
+
             mailSender.send(message);
-            // emailRecordRepository.save(request);
+            
+            // 4. Mark as sent in DB
+            record.setSent(true);
+            emailRecordRepository.save(record);
+            userActivityLogger.info("Email sent successfully for Record ID: {}", record.getId());
+
         } catch (Exception e) {
-            userActivityLogger.error("Failed to send email", e);
-            // Handle email exception (log to DB, retry, etc.)
+            userActivityLogger.error("Failed to send email for Record ID: {}", record.getId(), e);
         }
     }
 }
