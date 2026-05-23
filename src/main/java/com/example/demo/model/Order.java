@@ -2,6 +2,7 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.*;
 
 @Entity
 @Table(name = "orders")
@@ -22,4 +23,7 @@ public class Order extends BaseModel{
 	@ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "approved_by", nullable = false)
     private User approvedBy;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+    private Set<Transaction> transactions = new HashSet<>();
 }

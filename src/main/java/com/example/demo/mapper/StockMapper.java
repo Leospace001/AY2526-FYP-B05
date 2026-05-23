@@ -6,6 +6,7 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValueCheckStrategy;
 
+import com.example.demo.dto.StockRequestDto;
 import com.example.demo.dto.StockResponseDto;
 import com.example.demo.model.EmailRecord;
 import com.example.demo.model.Stock;
@@ -17,8 +18,13 @@ import com.example.demo.model.Stock;
 )
 public interface StockMapper {
     
+    @Mapping(target = "imagePath", ignore = true)
     Stock stockDtoToStock(StockResponseDto stockDto);
 
-    StockResponseDto StocktoStockDto(Stock stock);
+    @Mapping(target = "imagePath", ignore = true)
+    StockResponseDto StocktoResponseDto(Stock stock);
+
+    @Mapping(target = "imagePath", ignore = true)
+    Stock stockRequestDtoToStock(StockRequestDto stockDto);
 
 }

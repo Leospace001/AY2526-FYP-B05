@@ -1,7 +1,11 @@
 package com.example.demo.model;
 
 import lombok.*;
+import java.util.HashSet;
 import jakarta.persistence.*;
+import java.util.*;
+
+
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -25,5 +29,8 @@ public class Stock extends BaseModel {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "approved_by", nullable = false)
     private User approvedBy;
+
+    @OneToMany(mappedBy = "stock", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+    private Set<Transaction> transactions = new HashSet<>();
 
 }

@@ -3,17 +3,19 @@ package com.example.demo.controller;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.Operation;
-
+import io.swagger.v3.oas.annotations.*;
+import org.springframework.security.core.Authentication;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.demo.service.*;
-import org.springframework.http.ResponseEntity;
-
+import org.springframework.http.*;
+import com.example.demo.model.*;
+import com.example.demo.dto.StockRequestDto;
 import com.example.demo.dto.StockResponseDto;
 import com.example.demo.mapper.StockMapper;
 import com.example.demo.model.Stock;
+import com.example.demo.security.CustomUserDetails;
 
 
 @RestController
@@ -31,11 +33,24 @@ public class StockController {
     public ResponseEntity<List<StockResponseDto>> getAllStocks() {
         List<StockResponseDto> dto = new ArrayList<>();
         for (Stock item : stockService.findAll()) {
-            StockResponseDto elem = stockmapper.StocktoStockDto(item);
+            StockResponseDto elem = stockmapper.StocktoResponseDto(item);
             dto.add(elem);
         }
         return ResponseEntity.ok(dto);
     }
 
-    
+    @PostMapping(value="/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "add stock", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<StockResponseDto> addStock(
+        @Parameter(required = false) @ModelAttribute StockRequestDto dto,
+        Authentication authentication
+    ) {
+        List<Stock> existingStock = stockService.findByName(dto.getName());
+        CustomUserDetails userPrincipal = (CustomUserDetails) authentication.getPrincipal();
+        User user = userPrincipal.getUser();
+        if (existingStock.size() == 0){
+            StockResponseDto respDto = stockService.addStock(dto, user);
+            return ResponseEntity.ok(respDto);
+        }else return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+    }
 }
