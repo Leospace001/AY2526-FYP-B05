@@ -1,16 +1,10 @@
 package com.example.demo.service;
 
 import com.example.demo.model.User;
-import com.example.demo.model.UserRoleAssignment;
 import com.example.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.*;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
-import java.util.stream.Collectors;
-import java.util.Comparator;
-import java.util.Optional;
-import java.util.List;
 import com.example.demo.security.CustomUserDetails;
 
 @Service

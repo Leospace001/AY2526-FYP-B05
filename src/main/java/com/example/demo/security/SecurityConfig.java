@@ -27,9 +27,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
-import com.example.demo.security.*;
 
+@SuppressWarnings("deprecation")
 @EnableGlobalMethodSecurity(securedEnabled = true,prePostEnabled = true)
 @Configuration
 public class SecurityConfig {

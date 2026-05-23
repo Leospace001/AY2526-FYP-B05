@@ -1,10 +1,7 @@
 package com.example.demo.dto;
 
 import lombok.*;
-import org.springframework.web.multipart.MultipartFile;
-import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
-import java.util.*;
 
 @Data
 @Getter @Setter

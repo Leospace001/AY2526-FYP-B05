@@ -3,7 +3,6 @@ package com.example.demo.model;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
-import com.example.demo.model.User;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;

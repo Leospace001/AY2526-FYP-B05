@@ -1,10 +1,6 @@
 package com.example.demo.dto;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-
 import org.springframework.web.multipart.MultipartFile;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -22,6 +18,9 @@ public class StockRequestDto {
     
     @Schema(description = "cost", requiredMode = Schema.RequiredMode.REQUIRED)
     private double cost;
+
+    @Schema(description = "quantity", requiredMode = Schema.RequiredMode.REQUIRED)
+    private int quantity;
     
     @Schema(description = "Image file", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private MultipartFile imageFile;

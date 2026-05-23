@@ -14,9 +14,7 @@ import com.example.demo.model.*;
 import com.example.demo.dto.StockRequestDto;
 import com.example.demo.dto.StockResponseDto;
 import com.example.demo.mapper.StockMapper;
-import com.example.demo.model.Stock;
 import com.example.demo.security.CustomUserDetails;
-
 
 @RestController
 @RequestMapping("/api/stock")
@@ -39,18 +37,25 @@ public class StockController {
         return ResponseEntity.ok(dto);
     }
 
-    @PostMapping(value="/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "add stock", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<StockResponseDto> addStock(
-        @Parameter(required = false) @ModelAttribute StockRequestDto dto,
-        Authentication authentication
-    ) {
+            @Parameter(required = false) @ModelAttribute StockRequestDto dto,
+            Authentication authentication) {
         List<Stock> existingStock = stockService.findByName(dto.getName());
+        if (!existingStock.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
         CustomUserDetails userPrincipal = (CustomUserDetails) authentication.getPrincipal();
         User user = userPrincipal.getUser();
-        if (existingStock.size() == 0){
+
+        try {
             StockResponseDto respDto = stockService.addStock(dto, user);
-            return ResponseEntity.ok(respDto);
-        }else return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return ResponseEntity.status(HttpStatus.CREATED).body(respDto); // Returns 201 Created status
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // Returns 500 instead of 200
+        }
     }
 }

@@ -1,13 +1,13 @@
 package com.example.demo.service;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 import com.example.demo.model.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
 import com.example.demo.repository.StockRepository;
@@ -27,6 +27,8 @@ public class StockService {
     @Autowired
     private StockMapper stockMapper;
 
+    private static final Logger userActivityLogger = LoggerFactory.getLogger("UserActivity");
+
     @Value("${file.upload-dir}")
     private String uploadDir;
 
@@ -45,23 +47,26 @@ public class StockService {
     }
 
     public StockResponseDto addStock(StockRequestDto dto, User user) {
-        MultipartFile file = dto.getImageFile();
-        Stock stock = stockMapper.stockRequestDtoToStock(dto);
-        try {
-            if (!file.isEmpty()) {
-                String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-                Path targetPath = Paths.get(uploadDir).resolve(fileName);
-                Files.createDirectories(targetPath.getParent());
-                file.transferTo(targetPath.toFile());
-                stock.setImagePath(targetPath.toString());
-            }
-            stock.setCreatedBy(user);
-            stock.setApprovedBy(user);
-            stockRepository.save(stock);
-            return stockMapper.StocktoResponseDto(stock);
-        } catch (Exception e) {
-            throw new RuntimeException("Could not queue email", e);
+    MultipartFile file = dto.getImageFile();
+    Stock stock = stockMapper.stockRequestDtoToStock(dto);
+    
+    try {
+        // Safe Check: Ensure file object itself is not null before checking if it is empty
+        if (file != null && !file.isEmpty()) {
+            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+            Path targetPath = Paths.get(uploadDir).resolve(fileName);
+            Files.createDirectories(targetPath.getParent());
+            file.transferTo(targetPath.toFile());
+            stock.setImagePath(targetPath.toString());
         }
-
+        
+        stock.setCreatedBy(user);
+        Stock savedStock = stockRepository.save(stock);
+        return stockMapper.StocktoResponseDto(savedStock);
+        
+    } catch (Exception e) {
+        userActivityLogger.error("Error creating stock record: ", e);
+        throw new RuntimeException("Database insertion aborted due to file handling error", e);
     }
+}
 }

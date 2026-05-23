@@ -23,6 +23,9 @@ public class Transaction {
     @JoinColumn(name = "stock_id", nullable = false)
     private Stock stock;
 
+    @Column(nullable = false)
+    private int quantity;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "approved_by") // Foreign key in the Student table
     private User approvedBy;

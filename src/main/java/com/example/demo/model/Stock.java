@@ -20,6 +20,9 @@ public class Stock extends BaseModel {
     private double cost;
 
     @Column(nullable = true, unique = false)
+    private int quantity;
+
+    @Column(nullable = true, unique = false)
     private String imagePath;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -27,7 +30,7 @@ public class Stock extends BaseModel {
     private User createdBy;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "approved_by", nullable = false)
+    @JoinColumn(name = "approved_by", nullable = true)
     private User approvedBy;
 
     @OneToMany(mappedBy = "stock", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
