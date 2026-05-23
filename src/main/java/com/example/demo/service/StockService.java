@@ -56,6 +56,7 @@ public class StockService {
                 stock.setImagePath(targetPath.toString());
             }
             stock.setCreatedBy(user);
+            stock.setApprovedBy(user);
             stockRepository.save(stock);
             return stockMapper.StocktoResponseDto(stock);
         } catch (Exception e) {
