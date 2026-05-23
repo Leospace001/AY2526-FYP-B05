@@ -3,11 +3,10 @@ package com.example.demo.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.NullValuePropertyMappingStrategy;
-import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValueCheckStrategy;
 import com.example.demo.model.EmailRecord;
 import com.example.demo.dto.EmailRequestDto;
-import com.example.demo.model.User;
+
 
 @Mapper(
     componentModel = "spring",

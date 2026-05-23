@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.demo.dto.EmailMessageDto;
 import com.example.demo.repository.EmailRecordRepository;
 import com.example.demo.model.EmailRecord;
+import org.springframework.mail.MailException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,6 +89,8 @@ public class EmailService {
             emailRecordRepository.save(record);
             userActivityLogger.info("Email sent successfully for Record ID: {}", record.getId());
 
+        } catch (MailException e) {
+            userActivityLogger.error("Mail reachable", record.getId(), e);
         } catch (Exception e) {
             userActivityLogger.error("Failed to send email for Record ID: {}", record.getId(), e);
         }
