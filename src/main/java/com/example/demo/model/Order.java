@@ -21,9 +21,9 @@ public class Order extends BaseModel{
     private User updatedBy;
 
 	@ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "approved_by", nullable = false)
+    @JoinColumn(name = "approved_by", nullable = true)
     private User approvedBy;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-    private Set<Transaction> transactions = new HashSet<>();
+    private Set<OrderItem> transactions = new HashSet<>();
 }

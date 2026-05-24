@@ -1,7 +1,6 @@
 package com.example.demo.model;
 
 import lombok.*;
-import java.util.HashSet;
 import jakarta.persistence.*;
 import java.util.*;
 
@@ -23,6 +22,9 @@ public class Stock extends BaseModel {
     private int quantity;
 
     @Column(nullable = true, unique = false)
+    private int minimumLevel;
+
+    @Column(nullable = true, unique = false)
     private String imagePath;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -34,6 +36,6 @@ public class Stock extends BaseModel {
     private User approvedBy;
 
     @OneToMany(mappedBy = "stock", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-    private Set<Transaction> transactions = new HashSet<>();
+    private Set<OrderItem> transactions = new HashSet<>();
 
 }

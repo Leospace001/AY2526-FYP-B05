@@ -21,6 +21,9 @@ public class StockRequestDto {
 
     @Schema(description = "quantity", requiredMode = Schema.RequiredMode.REQUIRED)
     private int quantity;
+
+    @Schema(description = "quantity", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private int minimumLevel;
     
     @Schema(description = "Image file", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private MultipartFile imageFile;

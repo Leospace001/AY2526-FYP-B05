@@ -10,6 +10,7 @@ public class StockResponseDto {
     private String name;
     private String description;
     private double sellingPrice;
+    private int minimumLevel;
     private double cost;
     private String imagePath;
     private LocalDateTime createdAt;

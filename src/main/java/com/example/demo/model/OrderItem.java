@@ -1,16 +1,21 @@
 package com.example.demo.model;
 
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.*;
 import lombok.*;
 
 
 @Entity
-@Table(name = "transactions")
+@Table(name = "order_item")
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Transaction {
+public class OrderItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,8 +32,16 @@ public class Transaction {
     private int quantity;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "approved_by") // Foreign key in the Student table
+    @JoinColumn(name = "approved_by")
     private User approvedBy;
 
+    @Column(nullable = true, unique = false, columnDefinition = "varchar(255) default 'TAI MAN'")
+    private String remarks;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 
 }
