@@ -1,6 +1,7 @@
 package com.example.demo.mapper;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.NullValueCheckStrategy;
 import com.example.demo.dto.OrderRequest;
@@ -17,4 +18,6 @@ public interface OrderMapper {
     Order orderRequestDtoToOrder(OrderRequest orderDto);
 
     OrderResponse orderToOrderResponse(Order order);
+
+    void updateOrderFromDto(OrderRequest dto, @MappingTarget Order order);
 }
