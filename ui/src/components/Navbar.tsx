@@ -38,6 +38,13 @@ export default function Navbar() {
                 <Link to="/orders" style={linkStyle}>Orders</Link>
                 <Link to="/products" style={linkStyle}>Products</Link>
                 
+                {/* 🚀 NEW LINK: Only rendered for Admin users */}
+                {isAdmin && (
+                    <Link to="/products/create" style={{ ...linkStyle, color: '#3498db', fontWeight: 'bold' }}>
+                        + Add Product
+                    </Link>
+                )}
+                
                 {isAdmin && (
                     <Link to="/admin" style={{ ...linkStyle, color: '#e74c3c', fontWeight: 'bold' }}>
                         Admin Panel
