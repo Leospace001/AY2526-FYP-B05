@@ -41,12 +41,14 @@ public class OrderController {
     private OrderItemMapper orderItemMapper;
 
     @GetMapping("/page")
-    @Operation(summary = "Get all orders with pagination", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Get all orders with pagination and sorting", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<Page<OrderResponse>> getPaginatedOrders(
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "createdAt") String sortBy,
+        @RequestParam(defaultValue = "desc") String sortDir
     ) {
-        return ResponseEntity.ok(orderService.getPaginatedOrders(page, size));
+        return ResponseEntity.ok(orderService.getPaginatedOrders(page, size, sortBy, sortDir));
     }
 
 

@@ -68,15 +68,16 @@ public class OrderService {
         return order;
     }
 
-    public Page<OrderResponse> getPaginatedOrders (int page, int size) {
-        // Create a Pageable object (page is 0-indexed in Spring)
-        // We sort by 'createdAt' descending so the newest orders appear first
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+    public Page<OrderResponse> getPaginatedOrders(int page, int size, String sortBy, String sortDir) {
+        // 1. Determine the sort direction dynamically
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) 
+                    ? Sort.by(sortBy).ascending() 
+                    : Sort.by(sortBy).descending();
+                    
+        // 2. Pass the dynamic sort object to the Pageable request
+        Pageable pageable = PageRequest.of(page, size, sort);
         
-        // Fetch the page of entities from the repository
         Page<Order> orderPage = orderRepository.findAll(pageable);
-        
-        // Spring's Page interface has a handy .map() function to convert Entities to DTOs!
         return orderPage.map(order -> orderMapper.orderToOrderResponse(order));
     }
 
