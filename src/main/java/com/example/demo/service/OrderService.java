@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -22,6 +23,8 @@ import com.example.demo.repository.OrderItemRepository;
 import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.StockRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import com.example.demo.dto.OrderItemRequestDto;
 import com.example.demo.dto.OrderRequest;
@@ -32,6 +35,10 @@ import com.example.demo.exception.StockNotEnoughException;
 import com.example.demo.mapper.OrderItemMapper;
 import com.example.demo.mapper.OrderMapper;
 import com.example.demo.mapper.StockMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @Service
 public class OrderService {
@@ -61,9 +68,16 @@ public class OrderService {
         return order;
     }
 
-    public List<Order> findAll() {
-        List<Order> ordes = orderRepository.findAll();
-        return ordes;
+    public Page<OrderResponse> getPaginatedOrders (int page, int size) {
+        // Create a Pageable object (page is 0-indexed in Spring)
+        // We sort by 'createdAt' descending so the newest orders appear first
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        
+        // Fetch the page of entities from the repository
+        Page<Order> orderPage = orderRepository.findAll(pageable);
+        
+        // Spring's Page interface has a handy .map() function to convert Entities to DTOs!
+        return orderPage.map(order -> orderMapper.orderToOrderResponse(order));
     }
 
     public OrderResponse createOrder(User user, OrderRequest dto) {
