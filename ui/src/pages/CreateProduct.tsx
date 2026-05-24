@@ -19,7 +19,7 @@ export default function CreateProduct() {
     // Form Field State - Perfectly mapped to StockRequestDto fields
     const [formData, setFormData] = useState({
         name: '',
-        description: '', // Added matching backend DTO property
+        description: '', 
         sellingPrice: '',
         cost: '',
         quantity: '',
@@ -54,7 +54,7 @@ export default function CreateProduct() {
         // Pack text field primitives and binary structures into a clean Multipart payload
         const multipartPayload = new FormData();
         multipartPayload.append('name', formData.name);
-        multipartPayload.append('description', formData.description); // Appended description key
+        multipartPayload.append('description', formData.description); 
         multipartPayload.append('sellingPrice', formData.sellingPrice);
         multipartPayload.append('cost', formData.cost);
         multipartPayload.append('quantity', formData.quantity);
@@ -66,7 +66,7 @@ export default function CreateProduct() {
         }
 
         try {
-            await api.post('/api/stock', multipartPayload, {
+            await api.post('/api/stock/', multipartPayload, {
                 headers: {
                     'Content-Type': 'multipart/form-data' 
                 }
@@ -143,4 +143,151 @@ export default function CreateProduct() {
                         />
                     </Grid>
 
-                    {/* Pricing
+                    {/* Cost Price Input */}
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField 
+                            required 
+                            type="number"
+                            label="Cost Price ($)" 
+                            name="cost" 
+                            fullWidth 
+                            value={formData.cost} 
+                            onChange={handleInputChange} 
+                            variant="outlined" 
+                            slotProps={{ htmlInput: { min: 0, step: "0.01" } }}
+                        />
+                    </Grid>
+
+                    {/* Selling Price Input */}
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField 
+                            required 
+                            type="number"
+                            label="Selling Price ($)" 
+                            name="sellingPrice" 
+                            fullWidth 
+                            value={formData.sellingPrice} 
+                            onChange={handleInputChange} 
+                            variant="outlined" 
+                            slotProps={{ htmlInput: { min: 0, step: "0.01" } }}
+                        />
+                    </Grid>
+
+                    {/* Quantity Input */}
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField 
+                            required 
+                            type="number"
+                            label="Initial Stock Quantity" 
+                            name="quantity" 
+                            fullWidth 
+                            value={formData.quantity} 
+                            onChange={handleInputChange} 
+                            variant="outlined" 
+                            slotProps={{ htmlInput: { min: 0 } }}
+                        />
+                    </Grid>
+
+                    {/* Minimum Critical Level Threshold Input */}
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField 
+                            required 
+                            type="number"
+                            label="Minimum Alert Level" 
+                            name="minimumLevel" 
+                            fullWidth 
+                            value={formData.minimumLevel} 
+                            onChange={handleInputChange} 
+                            variant="outlined" 
+                            slotProps={{ htmlInput: { min: 0 } }}
+                        />
+                    </Grid>
+
+                    {/* Binary Image Upload Section */}
+                    <Grid size={{ xs: 12 }}>
+                        <Divider sx={{ my: 1 }} />
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, color: '#34495e' }}>
+                            Product Reference Showcase Image
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
+                            <Button
+                                variant="outlined"
+                                component="label"
+                                startIcon={<CloudUploadIcon />}
+                                sx={{ py: 1.5 }}
+                            >
+                                Select Image File
+                                <input
+                                    type="file"
+                                    hidden
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                />
+                            </Button>
+                            {imageFile && (
+                                <Typography variant="body2" color="textSecondary">
+                                    Selected File: <strong>{imageFile.name}</strong>
+                                </Typography>
+                            )}
+                        </Box>
+                    </Grid>
+
+                    {/* Image Preview Dynamic Card rendering view */}
+                    {imagePreview && (
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                            <Card sx={{ maxWidth: '100%', borderRadius: 2, border: '1px solid #e0e0e0', boxShadow: 1 }}>
+                                <CardMedia
+                                    component="img"
+                                    height="180"
+                                    image={imagePreview}
+                                    alt="Uploaded profile file preview stream"
+                                    sx={{ objectFit: 'contain', bgcolor: '#fdfdfd', p: 1 }}
+                                />
+                            </Card>
+                        </Grid>
+                    )}
+
+                    {/* Action Form Footer Submit Buttons */}
+                    <Grid size={{ xs: 12 }} sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+                        <Button 
+                            variant="outlined" 
+                            color="inherit" 
+                            onClick={() => navigate('/products')}
+                            disabled={submitting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            color="primary"
+                            disabled={submitting}
+                            startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : null}
+                            sx={{ minWidth: '140px', fontWeight: 'bold' }}
+                        >
+                            {submitting ? 'Processing...' : 'Register Stock'}
+                        </Button>
+                    </Grid>
+
+                </Grid>
+            </Paper>
+
+            {/* Asynchronous Operation SnackBar Toast Overlay */}
+            <Snackbar 
+                open={snackbar.open} 
+                autoHideDuration={5000} 
+                onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert 
+                    onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+                    severity={snackbar.severity} 
+                    variant="filled"
+                    sx={{ width: '100%', borderRadius: 2, boxShadow: 3 }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
+        </Box>
+    );
+}

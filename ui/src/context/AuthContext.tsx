@@ -22,6 +22,8 @@ interface AuthContextType {
     user: DecodedToken | null;
     login: (token: string) => void;
     logout: () => void;
+    cartCount: number;             // 🟢 Added
+    refreshCartCount: () => void;  // 🟢 Added
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);

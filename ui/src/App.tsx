@@ -6,8 +6,9 @@ import { AuthProvider, AuthContext } from './context/AuthContext';
 import Login from './pages/Login';
 import Navbar from './components/Navbar';
 import Orders from './pages/Orders';
-import Products from './pages/Product'; 
+import Products from './pages/Product';
 import CreateProduct from './pages/CreateProduct';
+import Cart from './pages/Cart';
 
 // 1. Define Props for the Protected Route
 interface ProtectedRouteProps {
@@ -18,11 +19,11 @@ interface ProtectedRouteProps {
 // 2. The Protected Route Wrapper
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin }) => {
     const auth = useContext(AuthContext);
-    
+
     if (!auth || !auth.user) {
         return <Navigate to="/login" />;
     }
-    
+
     if (requireAdmin && (!auth.user.roles || !auth.user.roles.includes('ROLE_ADMIN'))) {
         return <h2>403 Forbidden - Admins Only</h2>;
     }
@@ -34,15 +35,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin 
 function AppRoutes() {
     return (
         <div style={{ display: 'flex', minHeight: '100vh' }}>
-            
+
             {/* Left Sidebar */}
             <Navbar />
-            
+
             {/* Main Content Area */}
             <div style={{ flex: 1, padding: '40px', backgroundColor: '#f8f9fa' }}>
                 <Routes>
                     <Route path="/login" element={<Login />} />
-                    
+
                     {/* Public or General User Product Catalog */}
                     <Route path="/products" element={<Products />} />
 
@@ -50,6 +51,12 @@ function AppRoutes() {
                     <Route path="/products/create" element={
                         <ProtectedRoute requireAdmin={true}>
                             <CreateProduct />
+                        </ProtectedRoute>
+                    } />
+
+                    <Route path="/cart" element={
+                        <ProtectedRoute>
+                            <Cart />
                         </ProtectedRoute>
                     } />
 
@@ -65,7 +72,7 @@ function AppRoutes() {
                             <Orders />
                         </ProtectedRoute>
                     } />
-                    
+
                     <Route path="/admin" element={
                         <ProtectedRoute requireAdmin={true}>
                             <h2>Admin Configuration</h2>
