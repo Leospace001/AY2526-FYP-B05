@@ -20,7 +20,7 @@ public class JwtUtil {
     @Value("${app.jwt.secret}")
     private String SECRET;
 
-    private final long EXPIRATION_TIME = 60000; // 1 day
+    private final long EXPIRATION_TIME = 60000 * 60; // 1 day
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));

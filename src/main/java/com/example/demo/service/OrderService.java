@@ -1,27 +1,23 @@
 package com.example.demo.service;
 
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.example.demo.model.Cart;
 import com.example.demo.model.Order;
 import com.example.demo.model.OrderItem;
 import com.example.demo.model.Stock;
 import com.example.demo.model.User;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import java.nio.file.Paths;
-import java.nio.file.Path;
-
+import java.nio.file.*;
 import com.example.demo.repository.OrderItemRepository;
 import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.StockRepository;
+import com.example.demo.repository.CartRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,14 +25,9 @@ import org.springframework.data.domain.PageRequest;
 import com.example.demo.dto.OrderItemRequestDto;
 import com.example.demo.dto.OrderRequest;
 import com.example.demo.dto.OrderResponse;
-import com.example.demo.dto.StockRequestDto;
-import com.example.demo.dto.StockResponseDto;
 import com.example.demo.exception.StockNotEnoughException;
 import com.example.demo.mapper.OrderItemMapper;
 import com.example.demo.mapper.OrderMapper;
-import com.example.demo.mapper.StockMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
@@ -53,12 +44,10 @@ public class OrderService {
     private StockRepository stockRepository;
 
     @Autowired
-    private OrderMapper orderMapper;
+    private CartRepository cartRepository;
 
     @Autowired
-    private OrderItemMapper orderItemMapper;
-
-    private static final Logger userActivityLogger = LoggerFactory.getLogger("UserActivity");
+    private OrderMapper orderMapper;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -126,5 +115,54 @@ public class OrderService {
 
         // 7. Save and return the OrderItem
         return orderItemRepository.save(orderItem);
+    }
+
+    @Transactional
+    public OrderResponse checkoutCart(User user, OrderRequest dto) {
+        // 1. Fetch the user's active shopping cart
+        Cart cart = cartRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new RuntimeException("No active shopping cart found for this user"));
+
+        if (cart.getItems().isEmpty()) {
+            throw new RuntimeException("Cannot checkout an empty shopping cart");
+        }
+
+        // 2. Create and initialize the main Order record (Reusing your existing mapper!)
+        Order order = orderMapper.orderRequestDtoToOrder(dto);
+        order.setCreatedBy(user);
+        Order savedOrder = orderRepository.save(order);
+
+        // 3. Loop through all items in the cart (This is your EXACT old logic, just running in a loop)
+        for (com.example.demo.model.CartItem cartItem : cart.getItems()) {
+            Stock stock = cartItem.getStock();
+
+            // Validate stock levels using your existing business rule
+            if (stock.getQuantity() < cartItem.getQuantity()) {
+                throw new StockNotEnoughException("Not enough stock available for item: " 
+                        + stock.getId() + ". Current warehouse stock: " + stock.getQuantity());
+            }
+
+            // Create and populate the OrderItem record
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(savedOrder);
+            orderItem.setStock(stock);
+            orderItem.setQuantity(cartItem.getQuantity());
+            orderItem.setRemarks("Purchased via shopping cart");
+
+            // Deduct the stock quantity and save
+            stock.setQuantity(stock.getQuantity() - cartItem.getQuantity());
+            stockRepository.save(stock);
+
+            // Add item to order transaction log
+            orderItemRepository.save(orderItem);
+            savedOrder.getTransactions().add(orderItem);
+        }
+
+        // 4. Clear the cart contents after a successful checkout
+        cart.getItems().clear();
+        cartRepository.save(cart);
+
+        // 5. Return the clean response DTO
+        return orderMapper.orderToOrderResponse(savedOrder);
     }
 }
