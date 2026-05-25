@@ -20,13 +20,7 @@ export default function Login() {
         setError('');
 
         try {
-            const params = new URLSearchParams();
-            params.append('username', username);
-            params.append('password', password);
-
-            const response = await api.post('/api/login', params, {
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-            });
+            const response = await api.post('/api/login', { username, password });
             
             let token = response.data.accessToken || response.data.token || response.headers['authorization'];
             if (!token && typeof response.data === 'string') {

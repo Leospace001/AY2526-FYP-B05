@@ -3,7 +3,7 @@ import type { InternalAxiosRequestConfig } from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
 const api = axios.create({
-    baseURL: 'http://localhost:8080',
+    baseURL: '',
 });
 
 // Trigger the custom event instead of hard-redirecting

@@ -14,7 +14,7 @@ export default defineConfig({
 		proxy: {
       // 🚀 THE MAGIC: Tell Vite to forward all /api requests to Spring Boot!
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://app:8080',
         changeOrigin: true,
         secure: false,
       }
