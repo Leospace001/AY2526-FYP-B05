@@ -51,6 +51,19 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getPaginatedOrders(page, size, sortBy, sortDir));
     }
 
+    @PostMapping("/checkout")
+    @Operation(summary = "checkout the shopping cart", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<OrderResponse> checkoutCart(
+        @RequestBody OrderRequest orderRequest,
+        Authentication authentication
+    ) {
+        CustomUserDetails userPrincipal = (CustomUserDetails) authentication.getPrincipal();
+        User user = userPrincipal.getUser();
+        return ResponseEntity.ok(orderService.checkoutCart(user, orderRequest));
+    }
+
+
+
 
     @PostMapping()
     @Operation(summary = "Create an order without order item", security = @SecurityRequirement(name = "bearerAuth"))

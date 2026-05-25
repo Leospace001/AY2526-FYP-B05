@@ -5,7 +5,8 @@ import SecureImage from '../components/SecureImage';
 import { 
     Box, Typography, Paper, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, IconButton, Button, 
-    CircularProgress, Divider, Alert, Snackbar
+    CircularProgress, Divider, Alert, Snackbar,
+    Dialog, DialogTitle, DialogContent, DialogActions, TextField // 🚀 Added Dialog imports
 } from '@mui/material';
 // 🟢 Explicitly import Grid2 (or standard Grid depending on MUI subversion configuration)
 import Grid from '@mui/material/Grid'; 
@@ -34,6 +35,14 @@ export default function Cart() {
     const [submitting, setSubmitting] = useState<boolean>(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
+    // 🚀 Modal control state and dynamic form bindings
+    const [openCheckoutModal, setOpenCheckoutModal] = useState<boolean>(false);
+    const [checkoutForm, setCheckoutForm] = useState({
+        name: '',
+        description: '',
+        remarks: ''
+    });
+
     const fetchCartData = async () => {
         try {
             const response = await api.get<CartResponse>('/api/cart');
@@ -60,13 +69,31 @@ export default function Cart() {
         }
     };
 
-    const handleCheckout = async () => {
+    // Opens the details entry popup
+    const handleCheckoutOpen = () => {
+        setOpenCheckoutModal(true);
+    };
+
+    // Tracks inline input updates on the modal fields
+    const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setCheckoutForm(prev => ({ ...prev, [name]: value }));
+    };
+
+    // 🚀 Executes the final authorized payload transaction to the Spring Boot backend
+    const handleConfirmCheckout = async (e: React.FormEvent) => {
+        e.preventDefault();
         setSubmitting(true);
         try {
-            await api.post('/api/orders/checkout');
+            // Updated destination target path mapping route to match /api/order/checkout exactly
+            await api.post('/api/order/checkout', checkoutForm);
+            
             setSnackbar({ open: true, message: 'Order submitted successfully!', severity: 'success' });
+            setOpenCheckoutModal(false);
+            
             setTimeout(() => navigate('/orders'), 1500);
         } catch (error) {
+            console.error("Checkout transaction failed:", error);
             setSnackbar({ open: true, message: 'Checkout transaction failed.', severity: 'error' });
         } finally {
             setSubmitting(false);
@@ -170,15 +197,96 @@ export default function Cart() {
                                 fullWidth 
                                 size="large"
                                 disabled={submitting}
-                                onClick={handleCheckout}
+                                onClick={handleCheckoutOpen} // 🚀 Triggers the modal popup dialog layout
                                 sx={{ fontWeight: 'bold', py: 1.5, borderRadius: 2 }}
                             >
-                                {submitting ? <CircularProgress size={24} color="inherit" /> : 'Proceed to Checkout'}
+                                Proceed to Checkout
                             </Button>
                         </Paper>
                     </Grid>
                 </Grid>
             )}
+
+            {/* 🚀 CHECKOUT MULTIPART POPUP DIALOG FORM */}
+            <Dialog 
+                open={openCheckoutModal} 
+                onClose={() => !submitting && setOpenCheckoutModal(false)}
+                maxWidth="sm"
+                fullWidth
+                sx={{ '& .MuiPaper-root': { borderRadius: 3 } }}
+            >
+                <DialogTitle sx={{ fontWeight: 'bold', color: '#2c3e50', pt: 3 }}>
+                    Fulfillment Delivery Details
+                </DialogTitle>
+                
+                <Box component="form" onSubmit={handleConfirmCheckout}>
+                    <DialogContent dividers sx={{ py: 2 }}>
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                            Please furnish administrative identifying metrics to attach metadata tracking references to this batch purchase execution.
+                        </Typography>
+                        
+                        <TextField
+                            required
+                            fullWidth
+                            margin="normal"
+                            label="Order Designation Name"
+                            name="name"
+                            variant="outlined"
+                            placeholder="e.g. Fuji Apple Batch Order"
+                            value={checkoutForm.name}
+                            onChange={handleFormChange}
+                            disabled={submitting}
+                        />
+
+                        <TextField
+                            fullWidth
+                            margin="normal"
+                            label="Order Description"
+                            name="description"
+                            variant="outlined"
+                            multiline
+                            rows={2}
+                            placeholder="Provide summary structural tracking briefs..."
+                            value={checkoutForm.description}
+                            onChange={handleFormChange}
+                            disabled={submitting}
+                        />
+
+                        <TextField
+                            fullWidth
+                            margin="normal"
+                            label="Special Remarks / Notes"
+                            name="remarks"
+                            variant="outlined"
+                            multiline
+                            rows={2}
+                            placeholder="e.g. Request immediate ASAP warehouse logistics processing"
+                            value={checkoutForm.remarks}
+                            onChange={handleFormChange}
+                            disabled={submitting}
+                        />
+                    </DialogContent>
+
+                    <DialogActions sx={{ px: 3, py: 2.5, gap: 1 }}>
+                        <Button 
+                            color="inherit" 
+                            disabled={submitting} 
+                            onClick={() => setOpenCheckoutModal(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            type="submit" 
+                            variant="contained" 
+                            color="primary"
+                            disabled={submitting}
+                            sx={{ fontWeight: 'bold', px: 3 }}
+                        >
+                            {submitting ? <CircularProgress size={24} color="inherit" /> : 'Confirm Checkout'}
+                        </Button>
+                    </DialogActions>
+                </Box>
+            </Dialog>
 
             <Snackbar 
                 open={snackbar.open} 
