@@ -73,7 +73,7 @@ export default function OllamaChat() {
         abortControllerRef.current = new AbortController();
 
         try {
-            const response = await fetch('http://localhost:11434/api/generate', {
+            const response = await fetch('/ollama/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 signal: abortControllerRef.current.signal,
