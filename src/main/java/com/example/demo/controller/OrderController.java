@@ -63,8 +63,6 @@ public class OrderController {
     }
 
 
-
-
     @PostMapping()
     @Operation(summary = "Create an order without order item", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<OrderResponse> createOrder(
