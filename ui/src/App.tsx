@@ -10,6 +10,7 @@ import Products from './pages/Product';
 import CreateProduct from './pages/CreateProduct';
 import Cart from './pages/Cart';
 import SendEmail from './pages/SendEmail';
+import OllamaChat from './pages/OllamaChat';
 
 // 1. Define Props for the Protected Route
 interface ProtectedRouteProps {
@@ -71,6 +72,12 @@ function AppRoutes() {
                     <Route path="/orders" element={
                         <ProtectedRoute>
                             <Orders />
+                        </ProtectedRoute>
+                    } />
+
+                    <Route path="/chat" element={
+                        <ProtectedRoute>
+                            <OllamaChat />
                         </ProtectedRoute>
                     } />
 

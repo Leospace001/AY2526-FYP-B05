@@ -76,6 +76,8 @@ export default function Navbar() {
                         <ShoppingCartIcon size="small" style={{ color: '#ecf0f1' }} />
                     </Badge>
                 </Link>
+
+                <Link to="/chat" style={getLinkStyle(location.pathname === '/chat', '#3498db')}>AI Chat</Link>
                 
                 <Link to="/emails/send" style={getLinkStyle(location.pathname === '/emails/send', '#3498db')}>Send Email</Link>
 
