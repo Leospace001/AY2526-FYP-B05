@@ -9,6 +9,7 @@ import Orders from './pages/Orders';
 import Products from './pages/Product';
 import CreateProduct from './pages/CreateProduct';
 import Cart from './pages/Cart';
+import SendEmail from './pages/SendEmail';
 
 // 1. Define Props for the Protected Route
 interface ProtectedRouteProps {
@@ -70,6 +71,12 @@ function AppRoutes() {
                     <Route path="/orders" element={
                         <ProtectedRoute>
                             <Orders />
+                        </ProtectedRoute>
+                    } />
+
+                    <Route path="/emails/send" element={
+                        <ProtectedRoute>
+                            <SendEmail />
                         </ProtectedRoute>
                     } />
 

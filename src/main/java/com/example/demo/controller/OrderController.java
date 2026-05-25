@@ -46,9 +46,18 @@ public class OrderController {
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size,
         @RequestParam(defaultValue = "createdAt") String sortBy,
-        @RequestParam(defaultValue = "desc") String sortDir
+        @RequestParam(defaultValue = "desc") String sortDir,
+        Authentication authentication // 🚀 Inject secure Spring Security Context
     ) {
-        return ResponseEntity.ok(orderService.getPaginatedOrders(page, size, sortBy, sortDir));
+        CustomUserDetails userPrincipal = (CustomUserDetails) authentication.getPrincipal();
+        User user = userPrincipal.getUser();
+        
+        // 🚀 Evaluate if the user holds Admin role credentials
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        // Pass user profile indicators directly to the service layer
+        return ResponseEntity.ok(orderService.getPaginatedOrders(user, isAdmin, page, size, sortBy, sortDir));
     }
 
     @PostMapping("/checkout")

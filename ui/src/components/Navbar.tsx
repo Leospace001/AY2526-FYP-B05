@@ -77,6 +77,8 @@ export default function Navbar() {
                     </Badge>
                 </Link>
                 
+                <Link to="/emails/send" style={getLinkStyle(location.pathname === '/emails/send', '#3498db')}>Send Email</Link>
+
                 {isAdmin && (
                     <Link to="/products/create" style={getLinkStyle(location.pathname === '/products/create', '#3498db')}>
                         + Add Product

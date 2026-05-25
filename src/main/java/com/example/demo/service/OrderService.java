@@ -57,7 +57,7 @@ public class OrderService {
         return order;
     }
 
-    public Page<OrderResponse> getPaginatedOrders(int page, int size, String sortBy, String sortDir) {
+    public Page<OrderResponse> getPaginatedOrders(User user, boolean isAdmin, int page, int size, String sortBy, String sortDir) {
         // 1. Determine the sort direction dynamically
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) 
                     ? Sort.by(sortBy).ascending() 
@@ -66,7 +66,16 @@ public class OrderService {
         // 2. Pass the dynamic sort object to the Pageable request
         Pageable pageable = PageRequest.of(page, size, sort);
         
-        Page<Order> orderPage = orderRepository.findAll(pageable);
+        // 3. 🚀 SECURE DYNAMIC ACCESS FILTERING
+        Page<Order> orderPage;
+        if (isAdmin) {
+            // Administrators load complete warehouse histories
+            orderPage = orderRepository.findAll(pageable);
+        } else {
+            // Normal authenticated users are restricted strictly to their own rows
+            orderPage = orderRepository.findByCreatedBy(user, pageable);
+        }
+        
         return orderPage.map(order -> orderMapper.orderToOrderResponse(order));
     }
 
