@@ -3,12 +3,12 @@ package com.example.demo.service;
 import com.example.demo.model.*;
 import com.example.demo.dto.UserInfo;
 import com.example.demo.dto.UserRegister;
+import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.mapper.UserMapper;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.RoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +33,7 @@ public class UserService {
         String username = newUser.getUsername();
         String rawPassword = newUser.getPassword();
         if (userRepository.findByUsername(username).isPresent()) {
-            throw new RuntimeException("Username already exists");
+            throw new UserAlreadyExistsException("Username '" + newUser.getUsername() + "' is already taken.");
         }
 
         String encodedPassword = passwordEncoder.encode(rawPassword);

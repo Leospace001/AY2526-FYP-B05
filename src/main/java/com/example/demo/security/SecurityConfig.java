@@ -3,6 +3,9 @@ package com.example.demo.security;
 import com.example.demo.service.CustomUserDetailsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -28,7 +31,7 @@ import java.io.IOException;
 import java.util.*;
 
 @SuppressWarnings("deprecation")
-@EnableGlobalMethodSecurity(securedEnabled = true,prePostEnabled = true)
+@EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
 @Configuration
 public class SecurityConfig {
 
@@ -75,7 +78,23 @@ public class SecurityConfig {
         public JsonUsernamePasswordAuthenticationFilter(AuthenticationManager authManager, JwtUtil jwtUtil) {
             super.setAuthenticationManager(authManager);
             this.jwtUtil = jwtUtil;
-            setFilterProcessesUrl("/api/login");
+            setFilterProcessesUrl("/api/login"); 
+        }
+
+        // 🟢 FIX: We intercept requests before attemptAuthentication can run.
+        // If a request is going to /api/register, we jump out of this filter completely 
+        // and send it down the standard Spring filter line.
+        @Override
+        public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
+                throws IOException, ServletException {
+            HttpServletRequest request = (HttpServletRequest) req;
+            
+            if (!"/api/login".equals(request.getServletPath())) {
+                chain.doFilter(req, res); // Skip this filter entirely
+                return;
+            }
+            
+            super.doFilter(req, res, chain);
         }
 
         @SuppressWarnings("unchecked")
@@ -109,9 +128,17 @@ public class SecurityConfig {
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
 
-            String json = String.format("{ \"token\": \"%s\"}", token, username);
+            String json = String.format("{ \"token\": \"%s\"}", token);
             response.getWriter().write(json);
-            // log.info("Generated JWT token for user: {}", username);
+        }
+
+        @Override
+        protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,
+                                                  AuthenticationException failed) throws IOException {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Invalid username or password\"}");
         }
     }
 
@@ -128,16 +155,24 @@ public class SecurityConfig {
                             "/",
                             "/v3/api-docs/**",
                             "/swagger-ui/**", 
-                            "/api/login",
                             "/swagger.yaml"
                         ).permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/register")
-                        .permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/register", "/api/login").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jsonFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(jwtRequestFilter, JsonUsernamePasswordAuthenticationFilter.class)
+                
+                .exceptionHandling(exception -> exception
+                    .authenticationEntryPoint((request, response, authException) -> {
+                        // This block now ONLY triggers if someone tries to visit secure endpoints 
+                        // without an authorization token header.
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.setContentType("application/json");
+                        response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Access token missing or expired.\"}");
+                    })
+                )
                 .build();
     }
 
