@@ -31,12 +31,14 @@ public class StockController {
     @GetMapping("/")
     @Operation(summary = "Get all stocks with pagination and sorting", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<Page<StockResponseDto>> getAllStocks(
+            @RequestParam(required = false) String search, // 🚀 ADDED THIS OPTIONAL SEARCH PARAMETER
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size, // 12 fits nicely on 2, 3, and 4-column responsive screens
+            @RequestParam(defaultValue = "12") int size, 
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir) {
-        // 🚀 Delegates page parsing calculations safely to the service layer
-        Page<StockResponseDto> paginatedStocks = stockService.getPaginatedStocks(page, size, sortBy, sortDir);
+        
+        // 🚀 Forward the search parameter into the service execution layer
+        Page<StockResponseDto> paginatedStocks = stockService.getPaginatedStocks(search, page, size, sortBy, sortDir);
         return ResponseEntity.ok(paginatedStocks);
     }
 

@@ -7,8 +7,8 @@ import {
     Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Divider, CardMedia
 } from '@mui/material';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
-import EditIcon from '@mui/icons-material/Edit'; // 🚀 Added Edit icon
-import CloudUploadIcon from '@mui/icons-material/CloudUpload'; // 🚀 Added Upload icon
+import EditIcon from '@mui/icons-material/Edit'; 
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'; 
 
 interface Stock {
     id: number;
@@ -17,8 +17,8 @@ interface Stock {
     minimumLevel: number;
     imagePath?: string;
     name?: string;
-    description?: string; // 🚀 Added for edit modal completeness
-    cost?: number;        // 🚀 Added for edit modal completeness
+    description?: string; 
+    cost?: number;        
 }
 
 // --- SECURE IMAGE LOADER COMPONENT ---
@@ -64,8 +64,6 @@ function SecureProductImage({ imagePath, alt }: { imagePath?: string; alt: strin
 export default function Products() {
     const auth = useContext(AuthContext); 
     const observerRef = useRef<IntersectionObserver | null>(null);
-
-    // 🚀 Detect Administrator Permissions
     const isAdmin = auth?.user?.roles?.includes('ROLE_ADMIN');
 
     // Operational Core Pipeline State Management
@@ -74,10 +72,13 @@ export default function Products() {
     const [page, setPage] = useState<number>(0);
     const [hasMore, setHasMore] = useState<boolean>(true); 
     
+    // 🚀 NEW STATE: Search bar string binding
+    const [searchQuery, setSearchQuery] = useState<string>('');
+
     const [quantities, setQuantities] = useState<{ [key: number]: number }>({});
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
-    // 🚀 Edit Modal Operational States
+    // Edit Modal Operational States
     const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
     const [editingProduct, setEditingProduct] = useState<Stock | null>(null);
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
@@ -92,15 +93,18 @@ export default function Products() {
     const [editImageFile, setEditImageFile] = useState<File | null>(null);
     const [editImagePreview, setEditImagePreview] = useState<string>('');
 
-    // Core Fetch Function: Appends records instead of overwriting them
-    const fetchProductCatalog = async (currentPage: number) => {
-        if (loading) return;
+    // 🚀 Core Fetch Function: Modified to append the active search query param
+    const fetchProductCatalog = async (currentPage: number, search: string, isNewSearch: boolean = false) => {
         setLoading(true);
         try {
-            const response = await api.get(`/api/stock/?page=${currentPage}&size=12&sortBy=id&sortDir=asc`);
+            // Passes the search string parameter safely across query strings
+            const response = await api.get(`/api/stock/?search=${search}&page=${currentPage}&size=12&sortBy=id&sortDir=asc`);
             const { content, last } = response.data;
 
             setProducts(prev => {
+                // If it is a fresh search query execution, discard old array history completely
+                if (isNewSearch) return content;
+
                 const existingIds = new Set(prev.map(item => item.id));
                 const filteredNewContent = content.filter((item: Stock) => !existingIds.has(item.id));
                 return [...prev, ...filteredNewContent];
@@ -115,11 +119,30 @@ export default function Products() {
         }
     };
 
-    // Trigger load requests when page variable state updates
+    // 🚀 Handle Search Input Transitions
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const query = e.target.value;
+        setSearchQuery(query);
+        setPage(0); // Reset pagination index position instantly
+        setHasMore(true);
+        
+        // Fetch first data slice directly to make UI feel highly responsive
+        fetchProductCatalog(0, query, true); 
+    };
+
+    // Handle background infinite scroll increments
     useEffect(() => {
-        fetchProductCatalog(page);
+        if (page > 0) {
+            fetchProductCatalog(page, searchQuery, false);
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page]);
+
+    // Initialize data download on page component instantiation
+    useEffect(() => {
+        fetchProductCatalog(0, '', true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Intersection Observer Callback: Observes the bottom sentinel node element
     const bottomSentinelRef = useCallback((node: HTMLDivElement | null) => {
@@ -146,14 +169,12 @@ export default function Products() {
             await api.post('/api/cart/items', { stockId, quantity: qty });
             setSnackbar({ open: true, message: 'Item successfully appended to your cart!', severity: 'success' });
             window.dispatchEvent(new Event('cart-updated'));
-            if (auth && auth.refreshCartCount) auth.refreshCartCount();
         } catch (error) {
             console.error(error);
             setSnackbar({ open: true, message: 'Could not append selection item. Try again.', severity: 'error' });
         }
     };
 
-    // 🚀 Open Dialog and pre-populate inputs with existing item data
     const handleOpenEdit = (product: Stock) => {
         setEditingProduct(product);
         setEditFormData({
@@ -182,7 +203,6 @@ export default function Products() {
         }
     };
 
-    // 🚀 Submit multi-part data modifications to the PUT endpoint
     const handleSaveEdit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingProduct) return;
@@ -201,48 +221,55 @@ export default function Products() {
         }
 
         try {
-            // Fires PUT request directly to your /api/stock/{id} endpoint
             const response = await api.put(`/api/stock/${editingProduct.id}`, multipartPayload, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-
-            // 🚀 Inline state replacement: updates item data without breaking infinite scroll position
             setProducts(prev => prev.map(item => item.id === editingProduct.id ? { ...item, ...response.data } : item));
-            
             setSnackbar({ open: true, message: 'Product profile updated successfully!', severity: 'success' });
             setIsEditModalOpen(false);
         } catch (error) {
-            console.error("Failed to modify product record:", error);
-            setSnackbar({ open: true, message: 'Failed to update product. Verify unique naming constraints.', severity: 'error' });
+            console.error(error);
+            setSnackbar({ open: true, message: 'Failed to update product.', severity: 'error' });
         } finally {
             setIsUpdating(false);
         }
     };
 
-    // Memory Cleanup for file preview bindings
     useEffect(() => {
         return () => { if (editImagePreview) URL.revokeObjectURL(editImagePreview); };
     }, [editImagePreview]);
 
     return (
         <Box sx={{ p: 2 }}>
-            <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: '#2c3e50' }}>
-                Available Material Stock Inventory
-            </Typography>
+            {/* --- HEADER TITLE AND NEW SEARCH INPUT BAR ROW --- */}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', mb: 4, gap: 2 }}>
+                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2c3e50' }}>
+                    Available Material Stock Inventory
+                </Typography>
+                
+                {/* 🚀 THE LIVE CORE SEARCH INPUT BAR COMPONENT */}
+                <TextField 
+                    size="small"
+                    label="Search Products..."
+                    variant="outlined"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    placeholder="Type a product name..."
+                    sx={{ width: { xs: '100%', sm: '300px' }, backgroundColor: '#fff' }}
+                />
+            </Box>
 
             {products.length === 0 && !loading ? (
-                <Typography variant="body1" color="textSecondary">
-                    No registered item entries currently populated inside the central warehouse nodes.
+                <Typography variant="body1" color="textSecondary" align="center" sx={{ my: 4 }}>
+                    No products matched your search keyword criteria.
                 </Typography>
             ) : (
                 <Grid container spacing={3}>
                     {products.map((item) => (
                         <Grid item key={item.id} xs={12} sm={6} md={4} lg={3}>
-                            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 2, boxShadow: 2 }}>
+                            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRadius: 2, boxShadow: 2 }}>
                                 <SecureProductImage imagePath={item.imagePath} alt={item.name || 'Product Stock Item'} />
                                 <CardContent sx={{ flexGrow: 1 }}>
-                                    
-                                    {/* 🚀 Header wrapper supporting the inline admin Edit option */}
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', minHeight: '64px', overflow: 'hidden', flexGrow: 1, pr: 1 }}>
                                             {item.name || `Stock Item Record #${item.id}`}
@@ -283,18 +310,18 @@ export default function Products() {
                 </Grid>
             )}
 
-            {/* THE INFINITE SCROLL SENTINEL TRACKING TARGET */}
+            {/* INFINITE SCROLL SENTINEL TARGET */}
             <div ref={bottomSentinelRef} style={{ height: '40px', marginTop: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 {loading && <CircularProgress size={32} />}
                 {!hasMore && products.length > 0 && (
                     <Typography variant="body2" color="textSecondary" sx={{ fontStyle: 'italic', my: 2 }}>
-                        You have viewed all warehouse inventory profiles.
+                        You have viewed all matching inventory profiles.
                     </Typography>
                 )}
             </div>
 
-            {/* 🚀 ADMIN PRODUCT EDIT DIALOG MODAL BOX */}
-            <Dialog open={isEditModalOpen} onClose={() => !isUpdating && setIsEditModalOpen(false)} maxWidth="sm" fullWidth slotProps={{ backdrop: { sx: { backgroundColor: 'rgba(0,0,0,0.3)' } } }}>
+            {/* ADMIN PRODUCT EDIT DIALOG MODAL BOX */}
+            <Dialog open={isEditModalOpen} onClose={() => !isUpdating && setIsEditModalOpen(false)} maxWidth="sm" fullWidth>
                 <DialogTitle sx={{ fontWeight: 'bold', color: '#2c3e50' }}>Modify Product Profile #{editingProduct?.id}</DialogTitle>
                 <Box component="form" onSubmit={handleSaveEdit}>
                     <DialogContent dividers>
@@ -317,10 +344,7 @@ export default function Products() {
                             <Grid item xs={12} sm={6}>
                                 <TextField required fullWidth type="number" label="Minimum Level Alert" name="minimumLevel" slotProps={{ htmlInput: { min: '0' } }} value={editFormData.minimumLevel} onChange={handleEditFormChange} disabled={isUpdating} />
                             </Grid>
-                            
                             <Grid item xs={12}><Divider sx={{ my: 1 }} /></Grid>
-                            
-                            {/* File Upload Selector & Preview Rows */}
                             <Grid item xs={12} sm={5} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                 <Button component="label" variant="outlined" startIcon={<CloudUploadIcon />} disabled={isUpdating} sx={{ borderStyle: 'dashed', py: 1.5 }}>
                                     Replace Image
@@ -349,14 +373,8 @@ export default function Products() {
                 </Box>
             </Dialog>
 
-            <Snackbar
-                open={snackbar.open} autoHideDuration={3000}
-                onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-                <Alert severity={snackbar.severity} variant="filled" sx={{ width: '100%', borderRadius: 2 }}>
-                    {snackbar.message}
-                </Alert>
+            <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}>
+                <Alert severity={snackbar.severity} variant="filled" sx={{ width: '100%', borderRadius: 2 }}>{snackbar.message}</Alert>
             </Snackbar>
         </Box>
     );

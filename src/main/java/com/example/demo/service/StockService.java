@@ -47,18 +47,25 @@ public class StockService {
         return stocks;
     }
 
-    public Page<StockResponseDto> getPaginatedStocks(int page, int size, String sortBy, String sortDir) {
+    public Page<StockResponseDto> getPaginatedStocks(String search, int page, int size, String sortBy, String sortDir) { // 🚀 Added 'search' parameter
         // 1. Establish the database sorting rules dynamically
-        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name())
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) 
+                    ? Sort.by(sortBy).ascending() 
+                    : Sort.by(sortBy).descending();
+                    
         // 2. Build the structural page parameters slice
         Pageable pageable = PageRequest.of(page, size, sort);
-
-        // 3. Query the target chunk from the database
-        Page<Stock> stockPage = stockRepository.findAll(pageable);
-
+        
+        // 3. 🚀 DYNAMIC SEARCH FILTERING
+        Page<Stock> stockPage;
+        if (search != null && !search.trim().isEmpty()) {
+            // Fetch filtered keyword page matches
+            stockPage = stockRepository.findByNameContainingIgnoreCase(search.trim(), pageable);
+        } else {
+            // Default: Fetch standard global list
+            stockPage = stockRepository.findAll(pageable);
+        }
+        
         // 4. Transform the inner database models using your mapping rules
         return stockPage.map(stock -> stockMapper.StocktoResponseDto(stock));
     }
