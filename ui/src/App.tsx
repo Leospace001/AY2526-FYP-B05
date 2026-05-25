@@ -11,6 +11,9 @@ import CreateProduct from './pages/CreateProduct';
 import Cart from './pages/Cart';
 import SendEmail from './pages/SendEmail';
 import OllamaChat from './pages/OllamaChat';
+import MyProfile from './pages/MyProfile';
+import UserManagement from './pages/UserManagement';
+import Register from './pages/Register';
 
 // 1. Define Props for the Protected Route
 interface ProtectedRouteProps {
@@ -49,6 +52,8 @@ function AppRoutes() {
                     {/* Public or General User Product Catalog */}
                     <Route path="/products" element={<Products />} />
 
+                    <Route path="/register" element={<Register />} />
+
                     {/* 🚀 NEW PROTECTED ROUTE: Product Creation Form (Admins Only) */}
                     <Route path="/products/create" element={
                         <ProtectedRoute requireAdmin={true}>
@@ -86,6 +91,9 @@ function AppRoutes() {
                             <SendEmail />
                         </ProtectedRoute>
                     } />
+
+                    <Route path="/profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
+                    <Route path="/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
 
                     <Route path="/admin" element={
                         <ProtectedRoute requireAdmin={true}>

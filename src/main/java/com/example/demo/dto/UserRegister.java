@@ -23,7 +23,5 @@ public class UserRegister {
     private int age;
 
     private int phone;
-
-    private Date birthday;
     
 }

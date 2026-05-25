@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api/axiosConfig';
-import { Badge } from '@mui/material'; 
+import { Badge } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 
 export default function Navbar() {
@@ -41,7 +41,7 @@ export default function Navbar() {
         };
     }, [location.pathname, auth?.user]); // Watches pathname string alterations directly
 
-    if (!auth || !auth.user) return null; 
+    if (!auth || !auth.user) return null;
 
     const { user, logout } = auth;
     const handleLogout = () => {
@@ -52,7 +52,7 @@ export default function Navbar() {
     const isAdmin = user.roles && user.roles.includes('ROLE_ADMIN');
 
     return (
-        <nav style={{ 
+        <nav style={{
             width: '250px', height: '100vh', backgroundColor: '#2c3e50', color: 'white',
             display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box',
             position: 'sticky', top: 0
@@ -65,11 +65,11 @@ export default function Navbar() {
                 <Link to="/" style={getLinkStyle(location.pathname === '/')}>Dashboard</Link>
                 <Link to="/orders" style={getLinkStyle(location.pathname === '/orders')}>Orders</Link>
                 <Link to="/products" style={getLinkStyle(location.pathname.startsWith('/products'))}>Products</Link>
-                
+
                 {/* Shopping Basket Selection Interface Entry Point */}
-                <Link to="/cart" style={{ 
-                    ...getLinkStyle(location.pathname === '/cart'), 
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between' 
+                <Link to="/cart" style={{
+                    ...getLinkStyle(location.pathname === '/cart'),
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between'
                 }}>
                     <span>Shopping Cart</span>
                     <Badge badgeContent={cartCount} color="error" max={99} sx={{ '& .MuiBadge-badge': { fontWeight: 'bold' } }}>
@@ -78,15 +78,22 @@ export default function Navbar() {
                 </Link>
 
                 <Link to="/chat" style={getLinkStyle(location.pathname === '/chat', '#3498db')}>AI Chat</Link>
-                
+
                 <Link to="/emails/send" style={getLinkStyle(location.pathname === '/emails/send', '#3498db')}>Send Email</Link>
+
+                <Link to="/profile" style={getLinkStyle(location.pathname === '/profile', '#3498db')}>My Profile</Link>
+
+                {/* Only show the Users table tab if the logged-in user is an Admin */}
+                {user?.roles?.includes('ROLE_ADMIN') && (
+                    <Link to="/users" style={getLinkStyle(location.pathname === '/users', '#3498db')}>User Management</Link>
+                )}
 
                 {isAdmin && (
                     <Link to="/products/create" style={getLinkStyle(location.pathname === '/products/create', '#3498db')}>
                         + Add Product
                     </Link>
                 )}
-                
+
                 {isAdmin && (
                     <Link to="/admin" style={getLinkStyle(location.pathname === '/admin', '#e74c3c')}>
                         Admin Panel
@@ -120,6 +127,6 @@ const getLinkStyle = (isActive: boolean, customColor?: string): React.CSSPropert
 });
 
 const logoutButtonStyle: React.CSSProperties = {
-    width: '100%', padding: '10px', backgroundColor: '#c0392b', color: 'white', 
+    width: '100%', padding: '10px', backgroundColor: '#c0392b', color: 'white',
     border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold'
 };

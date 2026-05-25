@@ -22,6 +22,6 @@ public class UserInfo {
 
     private int phone;
 
-    private Date birthday;
+    private boolean isActive;
     
 }

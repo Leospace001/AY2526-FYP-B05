@@ -8,7 +8,7 @@ sleep 5
 
 # Pull the desired model
 echo "Pulling model..."
-ollama pull llama3
+ollama pull smollm2
 
 # Keep the container running
 wait $!

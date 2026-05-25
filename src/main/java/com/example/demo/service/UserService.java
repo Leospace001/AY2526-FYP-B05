@@ -7,6 +7,8 @@ import com.example.demo.mapper.UserMapper;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.RoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.*;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -48,15 +50,37 @@ public class UserService {
         return newUser;
     }
 
+    public Page<UserInfo> getPaginatedUsers(int page, int size, String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) 
+                    ? Sort.by(sortBy).ascending() 
+                    : Sort.by(sortBy).descending();
+                    
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<User> userPage = userRepository.findAll(pageable);
+        
+        return userPage.map(user -> userMapper.userToUserInfo(user));
+    }
+
     public User getUserByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    public User updateUser(String username, UserInfo userInfo) {
+    public User updateUser(String username, UserInfo userInfo, boolean isAdmin) {
         User updatedUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        // Backup the original active status before mapping overwrites it
+        Boolean originalActiveStatus = updatedUser.isActive();
+
+        // Let MapStruct copy all fields from the DTO to the Entity
         userMapper.updateEntityFromDto(userInfo, updatedUser);
+
+        // Security Guard: If the user is NOT an admin, revert the active status to what it originally was
+        if (!isAdmin && originalActiveStatus != null) {
+            updatedUser.setActive(originalActiveStatus);
+        }
+
         userRepository.save(updatedUser);
         return updatedUser;
     }

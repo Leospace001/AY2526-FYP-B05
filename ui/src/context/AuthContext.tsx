@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import api from '../api/axiosConfig'; // 🟢 Needed to fetch the cart
 import { 
     Dialog, 
     DialogTitle, 
@@ -22,8 +23,8 @@ interface AuthContextType {
     user: DecodedToken | null;
     login: (token: string) => void;
     logout: () => void;
-    cartCount: number;             // 🟢 Added
-    refreshCartCount: () => void;  // 🟢 Added
+    cartCount: number;             
+    refreshCartCount: () => void;  
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,6 +36,8 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // 1. App State
     const [isExpiredModalOpen, setIsExpiredModalOpen] = useState(false);
+    const [cartCount, setCartCount] = useState<number>(0); // 🚀 Added missing state
+
     const [user, setUser] = useState<DecodedToken | null>(() => {
         const token = localStorage.getItem('token');
         if (token) {
@@ -52,7 +55,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const logout = () => {
         localStorage.removeItem('token');
         setUser(null);
-        setIsExpiredModalOpen(false); // Close modal when they actually log out
+        setCartCount(0); // 🚀 Clear cart on logout
+        setIsExpiredModalOpen(false); 
     };
 
     const login = (token: string) => {
@@ -61,20 +65,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(decoded);
     };
 
-    // 3. Event Listener for Axios Interceptor
-    useEffect(() => {
-        const handleSessionExpired = () => {
-            setIsExpiredModalOpen(true);
-        };
+    // 🚀 3. Cart Logic: Fetch the cart count from the backend
+    const refreshCartCount = async () => {
+        if (user) {
+            try {
+                const response = await api.get('/api/cart');
+                if (response.data && response.data.items) {
+                    const totalQuantity = response.data.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
+                    setCartCount(totalQuantity);
+                }
+            } catch (err) {
+                console.error("Failed to load initial cart count", err);
+            }
+        }
+    };
 
+    // Automatically load the cart when the user logs in
+    useEffect(() => {
+        refreshCartCount();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.sub]);
+
+    // 4. Event Listener for Axios Interceptor
+    useEffect(() => {
+        const handleSessionExpired = () => setIsExpiredModalOpen(true);
         window.addEventListener('auth:session-expired', handleSessionExpired);
-        
-        return () => {
-            window.removeEventListener('auth:session-expired', handleSessionExpired);
-        };
+        return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
     }, []);
 
-    // 4. Background Timer Mechanism
+    // 5. Background Timer Mechanism
     useEffect(() => {
         if (user && user.exp) {
             const currentTime = Date.now();
@@ -94,13 +113,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, [user]);
 
     return (
-        <AuthContext.Provider value={{ user, login, logout }}>
+        <AuthContext.Provider value={{ user, login, logout, cartCount, refreshCartCount }}>
             {children}
 
             {/* MUI Session Expired Modal */}
             <Dialog
                 open={isExpiredModalOpen}
-                // Prevent closing by clicking outside or pressing Escape
                 disableEscapeKeyDown
                 onClose={(event, reason) => {
                     if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
@@ -120,9 +138,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     <Button 
                         variant="contained" 
                         color="primary" 
-                        onClick={() => {
-                            logout(); // This sets user to null, triggering the ProtectedRoute redirect
-                        }}
+                        onClick={() => logout()}
                     >
                         Log In Again
                     </Button>

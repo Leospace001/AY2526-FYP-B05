@@ -23,7 +23,6 @@ public interface UserMapper {
     @Mapping(target = "lastname", source = "userInfo.lastname")
     @Mapping(target = "email", source = "userInfo.email")
     @Mapping(target = "username", source = "userInfo.username")
-    @Mapping(target = "birthday", source = "userInfo.birthday")
     @Mapping(target = "age", source = "userInfo.age")
     @Mapping(target = "phone", source = "userInfo.phone")
     User updateEntityFromDto(UserInfo userInfo, @MappingTarget User user);
@@ -32,7 +31,6 @@ public interface UserMapper {
     @Mapping(target = "lastname", source = "userRegister.lastname")
     @Mapping(target = "email", source = "userRegister.email")
     @Mapping(target = "username", source = "userRegister.username")
-    @Mapping(target = "birthday", source = "userRegister.birthday")
     @Mapping(target = "password", source = "userRegister.password")
     @Mapping(target = "age", source = "userRegister.age")
     @Mapping(target = "phone", source = "userRegister.phone")

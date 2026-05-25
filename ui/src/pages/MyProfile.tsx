@@ -1,0 +1,105 @@
+import React, { useEffect, useState } from 'react';
+import { Box, Typography, Paper, TextField, Button, Grid, Snackbar, Alert, CircularProgress } from '@mui/material';
+import SaveIcon from '@mui/icons-material/Save';
+import api from '../api/axiosConfig';
+
+interface UserInfo {
+    firstname: string;
+    lastname: string;
+    username: string;
+    email: string;
+    age: number;
+    phone: number;
+}
+
+export default function MyProfile() {
+    const [profile, setProfile] = useState<UserInfo | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+
+    useEffect(() => {
+        // Automatically fetches ONLY this user's profile thanks to our smart backend controller
+        api.get('/api/users')
+            .then(response => {
+                if (response.data.content && response.data.content.length > 0) {
+                    setProfile(response.data.content[0]);
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                setSnackbar({ open: true, message: 'Failed to load profile data', severity: 'error' });
+            })
+            .finally(() => setLoading(false));
+    }, []);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (profile) {
+            setProfile({ ...profile, [e.target.name]: e.target.value });
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!profile) return;
+        setSaving(true);
+        try {
+            await api.put(`/api/users/${profile.username}`, profile);
+            setSnackbar({ open: true, message: 'Profile updated successfully!', severity: 'success' });
+        } catch (error) {
+            console.error(error);
+            setSnackbar({ open: true, message: 'Failed to save changes.', severity: 'error' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}><CircularProgress /></Box>;
+
+    return (
+        <Box sx={{ p: 3, maxWidth: '600px', margin: '0 auto' }}>
+            <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold', color: '#2c3e50' }}>My Profile</Typography>
+
+            <Paper component="form" onSubmit={handleSubmit} sx={{ p: 4, borderRadius: 3, boxShadow: 3 }}>
+                <Grid container spacing={3}>
+                    {/* Username is read-only */}
+                    <Grid item xs={12}>
+                        <TextField label="Username" value={profile?.username || ''} disabled fullWidth />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField label="First Name" name="firstname" value={profile?.firstname || ''} onChange={handleChange} fullWidth required />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField label="Last Name" name="lastname" value={profile?.lastname || ''} onChange={handleChange} fullWidth required />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <TextField label="Email Address" name="email" type="email" value={profile?.email || ''} onChange={handleChange} fullWidth required />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField label="Age" name="age" type="number" value={profile?.age || ''} onChange={handleChange} fullWidth />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField label="Phone Number" name="phone" type="number" value={profile?.phone || ''} onChange={handleChange} fullWidth />
+                    </Grid>
+                    
+                    <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                        <Button 
+                            type="submit" 
+                            variant="contained" 
+                            size="large" 
+                            disabled={saving} 
+                            startIcon={!saving && <SaveIcon />}
+                            sx={{ fontWeight: 'bold', px: 4 }}
+                        >
+                            {saving ? <CircularProgress size={24} color="inherit" /> : 'Save Profile'}
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Paper>
+
+            <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+                <Alert severity={snackbar.severity} variant="filled">{snackbar.message}</Alert>
+            </Snackbar>
+        </Box>
+    );
+}

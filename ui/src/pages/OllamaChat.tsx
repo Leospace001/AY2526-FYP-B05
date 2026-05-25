@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
     Box, Typography, Paper, TextField, IconButton, 
-    CircularProgress, Avatar, Divider, Alert, Snackbar
+    CircularProgress, Avatar, Divider, Alert, Snackbar, Tooltip
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import PersonIcon from '@mui/icons-material/Person';
 import StopCircleIcon from '@mui/icons-material/StopCircle';
+import DeleteSweepIcon from '@mui/icons-material/DeleteSweep'; // 🚀 Icon to clear chat
 
 interface ChatMessage {
     id: string;
@@ -14,34 +15,57 @@ interface ChatMessage {
     content: string;
 }
 
+const LOCAL_STORAGE_KEY = 'ollama_chat_history';
+
 export default function OllamaChat() {
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    // 🚀 1. LAZY INITIALIZATION: Load history from LocalStorage when the page first opens
+    const [messages, setMessages] = useState<ChatMessage[]>(() => {
+        const savedHistory = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (savedHistory) {
+            try {
+                return JSON.parse(savedHistory);
+            } catch (e) {
+                console.error("Failed to parse chat history");
+                return [];
+            }
+        }
+        return [];
+    });
+
     const [input, setInput] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'error' as 'error' | 'warning' });
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'error' as 'error' | 'warning' | 'info' });
     
-    // Auto-scroll anchor
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    // AbortController to allow users to stop the stream mid-generation
     const abortControllerRef = useRef<AbortController | null>(null);
+
+    // 🚀 2. AUTO-SAVE: Whenever the 'messages' array changes, save it to the browser's hard drive
+    useEffect(() => {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(messages));
+    }, [messages]);
 
     // Auto-scroll to the bottom whenever messages change
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    // 🚀 3. CLEAR CHAT FUNCTION
+    const handleClearChat = () => {
+        setMessages([]);
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+        setSnackbar({ open: true, message: 'Chat history wiped clean.', severity: 'info' });
+    };
+
     const handleSendMessage = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (!input.trim() || isGenerating) return;
 
         const userPrompt = input.trim();
-        setInput(''); // Clear input box immediately for better UX
+        setInput(''); 
         
-        // Append the user's message to the chat
         const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: userPrompt };
         setMessages(prev => [...prev, userMsg]);
 
-        // Create a placeholder for the bot's incoming streaming response
         const botMsgId = (Date.now() + 1).toString();
         setMessages(prev => [...prev, { id: botMsgId, role: 'bot', content: '' }]);
 
@@ -49,15 +73,14 @@ export default function OllamaChat() {
         abortControllerRef.current = new AbortController();
 
         try {
-            // 🚀 Using native fetch instead of Axios to access the raw ReadableStream
             const response = await fetch('http://localhost:11434/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 signal: abortControllerRef.current.signal,
                 body: JSON.stringify({
-                    model: 'smollm2', // Ensure you have pulled this model in your Docker container
+                    model: 'smollm2', 
                     prompt: userPrompt,
-                    stream: true // 🚀 Must be true to receive chunks over time
+                    stream: true 
                 })
             });
 
@@ -67,7 +90,6 @@ export default function OllamaChat() {
 
             if (!response.body) throw new Error("ReadableStream not supported in this browser.");
 
-            // 🚀 Attach a reader to the incoming data stream
             const reader = response.body.getReader();
             const decoder = new TextDecoder('utf-8');
             let accumulatedBotResponse = '';
@@ -76,18 +98,13 @@ export default function OllamaChat() {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                // Decode the raw binary chunk into text
                 const chunk = decoder.decode(value, { stream: true });
-                
-                // Ollama streams data as Newline Delimited JSON (NDJSON). 
-                // We split by newline and parse each JSON object individually.
                 const lines = chunk.split('\n').filter(line => line.trim() !== '');
                 
                 for (const line of lines) {
                     const parsedData = JSON.parse(line);
                     accumulatedBotResponse += parsedData.response;
 
-                    // Update the specific bot message in the UI progressively
                     setMessages(prev => prev.map(msg => 
                         msg.id === botMsgId 
                             ? { ...msg, content: accumulatedBotResponse } 
@@ -100,7 +117,7 @@ export default function OllamaChat() {
                 console.log("Stream manually aborted by user.");
             } else {
                 console.error("Chat generation failed:", error);
-                setSnackbar({ open: true, message: 'Failed to connect to Ollama. Is the Docker container running and CORS configured?', severity: 'error' });
+                setSnackbar({ open: true, message: 'Failed to connect to Ollama.', severity: 'error' });
             }
         } finally {
             setIsGenerating(false);
@@ -117,6 +134,8 @@ export default function OllamaChat() {
 
     return (
         <Box sx={{ p: 3, maxWidth: '900px', margin: '0 auto', height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
+            
+            {/* --- HEADER --- */}
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                 <SmartToyIcon sx={{ fontSize: 32, color: '#3498db', mr: 2 }} />
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2c3e50' }}>
@@ -125,6 +144,17 @@ export default function OllamaChat() {
                 <Typography variant="caption" sx={{ ml: 2, bgcolor: '#e3f2fd', color: '#1976d2', px: 1.5, py: 0.5, borderRadius: 2, fontWeight: 'bold' }}>
                     smollm2
                 </Typography>
+                
+                <Box sx={{ flexGrow: 1 }} />
+                
+                {/* 🚀 CLEAR CHAT BUTTON */}
+                {messages.length > 0 && (
+                    <Tooltip title="Clear Chat History">
+                        <IconButton onClick={handleClearChat} color="error" disabled={isGenerating}>
+                            <DeleteSweepIcon />
+                        </IconButton>
+                    </Tooltip>
+                )}
             </Box>
 
             {/* --- CHAT HISTORY WINDOW --- */}
@@ -149,7 +179,6 @@ export default function OllamaChat() {
                         </Box>
                     ))
                 )}
-                {/* Invisible element to anchor the auto-scroll */}
                 <div ref={messagesEndRef} />
             </Paper>
 
@@ -178,7 +207,7 @@ export default function OllamaChat() {
                 )}
             </Paper>
 
-            <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}>
+            <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}>
                 <Alert severity={snackbar.severity} variant="filled">{snackbar.message}</Alert>
             </Snackbar>
         </Box>
