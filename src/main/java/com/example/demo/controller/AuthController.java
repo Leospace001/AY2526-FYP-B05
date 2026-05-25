@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -9,9 +10,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.*;
 import io.swagger.v3.oas.annotations.media.*;
+
+import com.example.demo.dto.UserInfo;
+import com.example.demo.dto.UserRegister;
+import com.example.demo.mapper.UserMapper;
 import com.example.demo.model.JwtRequest;
 import com.example.demo.model.JwtResponse;
+import com.example.demo.model.User;
 import com.example.demo.security.JwtUtil;
+import com.example.demo.service.UserService;
 
 @RestController
 @CrossOrigin(origins = "*" ) // frontend origin
@@ -24,7 +31,21 @@ public class AuthController {
     @Autowired
     private JwtUtil jwtUtil;
 
-    @PostMapping("/login")
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @PostMapping("/api/register")
+    @Operation(summary = "Register a new user")
+    public ResponseEntity<UserInfo> registerUser(@RequestBody UserRegister userRegister) {
+        User save =  userService.registerUser(userRegister);
+        UserInfo updatedUserInfo = userMapper.userToUserInfo(save);
+        return ResponseEntity.ok(updatedUserInfo);
+    }
+
+    @PostMapping("/api/login")
     @Operation(summary = "Login a existing user and return a jwt token if success")
     public JwtResponse createToken(
         @io.swagger.v3.oas.annotations.parameters.RequestBody(

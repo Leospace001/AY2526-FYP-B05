@@ -30,16 +30,8 @@ public class UserController {
 
     @Autowired
     private UserMapper userMapper;
-
-    @PostMapping
-    @Operation(summary = "Register a new user")
-    public ResponseEntity<UserInfo> registerUser(@RequestBody UserRegister userRegister) {
-        User save =  userService.registerUser(userRegister);
-        UserInfo updatedUserInfo = userMapper.userToUserInfo(save);
-        return ResponseEntity.ok(updatedUserInfo);
-    }
     
-    @GetMapping()
+    @GetMapping
     @Operation(summary = "Get users (Admin gets all, Normal user gets only themselves)", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<Page<UserInfo>> getUsers(
             @RequestParam(defaultValue = "0") int page,

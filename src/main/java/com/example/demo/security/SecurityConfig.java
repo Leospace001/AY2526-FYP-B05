@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
-import org.springframework.security.core.Authentication;
 
 @SuppressWarnings("deprecation")
 @EnableGlobalMethodSecurity(securedEnabled = true,prePostEnabled = true)
@@ -76,7 +75,7 @@ public class SecurityConfig {
         public JsonUsernamePasswordAuthenticationFilter(AuthenticationManager authManager, JwtUtil jwtUtil) {
             super.setAuthenticationManager(authManager);
             this.jwtUtil = jwtUtil;
-            setFilterProcessesUrl("/login");
+            setFilterProcessesUrl("/api/login");
         }
 
         @SuppressWarnings("unchecked")
@@ -129,10 +128,11 @@ public class SecurityConfig {
                             "/",
                             "/v3/api-docs/**",
                             "/swagger-ui/**", 
-                            "/login",
-                            "/api/users",
+                            "/api/login",
                             "/swagger.yaml"
                         ).permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/register")
+                        .permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

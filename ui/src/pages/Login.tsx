@@ -24,7 +24,7 @@ export default function Login() {
             params.append('username', username);
             params.append('password', password);
 
-            const response = await api.post('/login', params, {
+            const response = await api.post('/api/login', params, {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
             });
             

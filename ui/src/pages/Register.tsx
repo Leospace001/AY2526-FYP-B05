@@ -31,7 +31,7 @@ export default function Register() {
         
         try {
             // Fires the exact POST payload your Spring Boot backend is expecting
-            await api.post('/api/users', {
+            await api.post('/api/register', {
                 ...formData,
                 age: parseInt(formData.age) || 0,
                 phone: parseInt(formData.phone) || 0
