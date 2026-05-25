@@ -8,6 +8,8 @@ import org.springframework.security.core.Authentication;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+
 import com.example.demo.service.*;
 import org.springframework.http.*;
 import com.example.demo.model.*;
@@ -27,14 +29,15 @@ public class StockController {
     private StockMapper stockmapper;
 
     @GetMapping("/")
-    @Operation(summary = "Get all stocks", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<List<StockResponseDto>> getAllStocks() {
-        List<StockResponseDto> dto = new ArrayList<>();
-        for (Stock item : stockService.findAll()) {
-            StockResponseDto elem = stockmapper.StocktoResponseDto(item);
-            dto.add(elem);
-        }
-        return ResponseEntity.ok(dto);
+    @Operation(summary = "Get all stocks with pagination and sorting", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<Page<StockResponseDto>> getAllStocks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size, // 12 fits nicely on 2, 3, and 4-column responsive screens
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir) {
+        // 🚀 Delegates page parsing calculations safely to the service layer
+        Page<StockResponseDto> paginatedStocks = stockService.getPaginatedStocks(page, size, sortBy, sortDir);
+        return ResponseEntity.ok(paginatedStocks);
     }
 
     @PostMapping(value = "/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -56,6 +59,33 @@ public class StockController {
             return ResponseEntity.status(HttpStatus.CREATED).body(respDto); // Returns 201 Created status
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // Returns 500 instead of 200
+        }
+    }
+
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "update an existing stock item", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<StockResponseDto> updateStock(
+            @PathVariable Long id,
+            @Parameter(required = false) @ModelAttribute StockRequestDto dto,
+            Authentication authentication) {
+        
+        // 1. Unique Name Validation: Ensure name doesn't conflict with a different product id
+        List<Stock> existingStock = stockService.findByName(dto.getName());
+        if (!existingStock.isEmpty() && !existingStock.get(0).getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build(); // 400 Bad Request on name collision
+        }
+
+        // 2. Extract active authenticated User Context
+        CustomUserDetails userPrincipal = (CustomUserDetails) authentication.getPrincipal();
+        User user = userPrincipal.getUser();
+
+        try {
+            // 3. Process field modifications
+            StockResponseDto updatedDto = stockService.updateStock(id, dto, user);
+            return ResponseEntity.ok(updatedDto); // Returns 200 OK with refreshed object details
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // Returns 500 on system crashes
         }
     }
 }

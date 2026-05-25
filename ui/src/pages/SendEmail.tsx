@@ -44,7 +44,7 @@ export default function SendEmail() {
     const [attachments, setAttachments] = useState<File[]>([]);
 
     // Toolbar configurations
-    const [textStyle, setTextStyle] = useState<string>('P'); // Default to capital block tag
+    const [textStyle, setTextStyle] = useState<string>('P'); 
     const [fontFamily, setFontFamily] = useState<string>('Helvetica Neue');
     const [textColor, setTextColor] = useState<string>('#2c3e50');
     const [textAlign, setTextAlign] = useState<string>('left');
@@ -54,45 +54,37 @@ export default function SendEmail() {
     // Popover states
     const [imageAnchorEl, setImageAnchorEl] = useState<HTMLButtonElement | null>(null);
     const [inlineImageFile, setInlineImageFile] = useState<File | null>(null);
-    const [savedRange, setSavedRange] = useState<Range | null>(null);
+    const [savedRange, setSavedRange] = useState<Range | null>(null); // Keeps track of cursor position
 
     // Global states
     const [submitting, setSubmitting] = useState<boolean>(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
-    // 🚀 Robust Command Runner: Ensures focus remains on selection
+    // Robust text style executor
     const executeEditorCommand = (command: string, value: string = '') => {
         if (isCodeView) return;
-        
-        if (editorRef.current) {
-            editorRef.current.focus(); // Force re-focus back to text canvas
-        }
-        
+        if (editorRef.current) editorRef.current.focus(); 
         document.execCommand(command, false, value);
     };
 
-    // 🚀 Helper to backup selection range when using dropdown components
+    // 🚀 CRITICAL: Clones the exact cursor point before popover takes focus
     const backupSelection = () => {
         const selection = window.getSelection();
         if (selection && selection.rangeCount > 0) {
-            setSavedRange(selection.getRangeAt(0));
-        }
-    };
-
-    // 🚀 Helper to restore selection coordinates right before applying modifications
-    const restoreSelection = () => {
-        if (!savedRange) return;
-        const selection = window.getSelection();
-        if (selection) {
-            selection.removeAllRanges();
-            selection.addRange(savedRange);
+            setSavedRange(selection.getRangeAt(0).cloneRange()); // Hard clone the position array
         }
     };
 
     const handleHeadingChange = (sizeTag: string) => {
         setTextStyle(sizeTag);
-        restoreSelection();
-        executeEditorCommand('formatBlock', sizeTag); // Needs uppercase tags like 'H1', 'H2', 'P'
+        if (savedRange) {
+            const selection = window.getSelection();
+            if (selection) {
+                selection.removeAllRanges();
+                selection.addRange(savedRange); // Force restore cursor position
+            }
+        }
+        executeEditorCommand('formatBlock', sizeTag);
     };
 
     const handleToggleCodeView = () => {
@@ -109,19 +101,53 @@ export default function SendEmail() {
     };
 
     const handleOpenImagePopup = (event: React.MouseEvent<HTMLButtonElement>) => {
-        backupSelection();
+        backupSelection(); // Lock in where the image belongs
         setImageAnchorEl(event.currentTarget);
     };
 
+    // 🚀 FIXED: Directly inserts the image node into the cloned DOM position
     const handleConfirmInlineImage = () => {
         if (!inlineImageFile) return;
+
         const reader = new FileReader();
         reader.onload = (event) => {
             const base64DataUrl = event.target?.result as string;
-            restoreSelection();
-            executeEditorCommand('insertImage', base64DataUrl);
+
+            // 1. Programmatically construct a clean native image element object
+            const imgElement = document.createElement('img');
+            imgElement.src = base64DataUrl;
+            imgElement.style.maxWidth = '100%';
+            imgElement.style.height = 'auto';
+            imgElement.style.borderRadius = '4px';
+            imgElement.style.margin = '8px 0';
+            imgElement.style.display = 'block';
+
+            // 2. Inject the element directly where your cursor was
+            if (savedRange) {
+                savedRange.deleteContents(); // Clears text highlights if user had words selected
+                savedRange.insertNode(imgElement); // Drop the img tag safely into the DOM range context
+
+                // Move cursor right after the newly inserted image asset
+                savedRange.collapse(false);
+                const selection = window.getSelection();
+                if (selection) {
+                    selection.removeAllRanges();
+                    selection.addRange(savedRange);
+                }
+            } else {
+                // Absolute fallback: if no cursor range exists, append image to end of editor
+                editorRef.current?.appendChild(imgElement);
+            }
+
+            // 3. Keep internal HTML state synced up smoothly
+            if (editorRef.current) {
+                setRawHtmlBody(editorRef.current.innerHTML);
+            }
+
+            // Close layout structures
             setImageAnchorEl(null);
             setInlineImageFile(null);
+            setSavedRange(null);
         };
         reader.readAsDataURL(inlineImageFile);
     };
@@ -204,17 +230,16 @@ export default function SendEmail() {
                     <Grid size={{ xs: 12 }}>
                         <Box sx={{ border: '1px solid #dcdde1', borderRadius: '4px', overflow: 'hidden', backgroundColor: '#fff' }}>
                             
-                            {/* --- VISUAL TOOLBAR DECK (onMouseDown overrides applied) --- */}
+                            {/* --- VISUAL TOOLBAR DECK --- */}
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', p: '6px', gap: '4px', backgroundColor: '#f5f6fa', borderBottom: '1px solid #dcdde1' }}>
                                 
-                                {/* Heading selection wrapper */}
                                 <Box sx={{ border: '1px solid #ccc', borderRadius: '4px', display: 'flex', alignItems: 'center', bgcolor: '#fff', px: '4px', height: '32px' }}>
                                     <AutoFixHighIcon fontSize="small" sx={{ color: '#57606f', mr: 0.5 }} />
                                     <Select 
                                         variant="standard" 
                                         disableUnderline 
                                         value={textStyle} 
-                                        onMouseDown={backupSelection} // Back up active context coordinates
+                                        onMouseDown={backupSelection} 
                                         onChange={(e) => handleHeadingChange(e.target.value)} 
                                         sx={{ fontSize: '0.85rem', width: '45px' }}
                                     >
@@ -225,14 +250,12 @@ export default function SendEmail() {
                                     </Select>
                                 </Box>
 
-                                {/* Style Action Buttons using onMouseDown overrides */}
                                 <Box sx={{ border: '1px solid #ccc', borderRadius: '4px', display: 'flex', bgcolor: '#fff', height: '32px' }}>
                                     <IconButton size="small" onMouseDown={(e) => { e.preventDefault(); executeEditorCommand('bold'); }} sx={{ borderRadius: 0 }}><FormatBoldIcon fontSize="small" /></IconButton>
                                     <IconButton size="small" onMouseDown={(e) => { e.preventDefault(); executeEditorCommand('underline'); }} sx={{ borderRadius: 0, borderLeft: '1px solid #eee', borderRight: '1px solid #eee' }}><FormatUnderlinedIcon fontSize="small" /></IconButton>
                                     <IconButton size="small" onMouseDown={(e) => { e.preventDefault(); executeEditorCommand('removeFormat'); }} sx={{ borderRadius: 0 }}><FormatColorResetIcon fontSize="small" /></IconButton>
                                 </Box>
 
-                                {/* Font family choice */}
                                 <FormControl size="small" sx={{ m: 0, minWidth: 140, height: '32px', '& .MuiOutlinedInput-root': { height: '32px', backgroundColor: '#fff' } }}>
                                     <Select 
                                         value={fontFamily} 
@@ -247,7 +270,6 @@ export default function SendEmail() {
                                     </Select>
                                 </FormControl>
 
-                                {/* Text Font Color */}
                                 <Box sx={{ border: '1px solid #ccc', borderRadius: '4px', display: 'flex', alignItems: 'center', bgcolor: '#fff', px: '4px', height: '32px' }}>
                                     <FormatColorTextIcon fontSize="small" sx={{ color: textColor }} />
                                     <Select 
@@ -265,13 +287,11 @@ export default function SendEmail() {
                                     </Select>
                                 </Box>
 
-                                {/* Ordered and Unordered lists buttons */}
                                 <Box sx={{ border: '1px solid #ccc', borderRadius: '4px', display: 'flex', bgcolor: '#fff', height: '32px' }}>
                                     <IconButton size="small" onMouseDown={(e) => { e.preventDefault(); executeEditorCommand('insertUnorderedList'); }} sx={{ borderRadius: 0, borderRight: '1px solid #eee' }}><FormatListBulletedIcon fontSize="small" /></IconButton>
                                     <IconButton size="small" onMouseDown={(e) => { e.preventDefault(); executeEditorCommand('insertOrderedList'); }} sx={{ borderRadius: 0 }}><FormatListNumberedIcon fontSize="small" /></IconButton>
                                 </Box>
 
-                                {/* Alignment drop-down choices */}
                                 <Box sx={{ border: '1px solid #ccc', borderRadius: '4px', display: 'flex', alignItems: 'center', bgcolor: '#fff', px: '4px', height: '32px' }}>
                                     <FormatAlignLeftIcon fontSize="small" sx={{ color: '#57606f' }} />
                                     <Select 
@@ -288,15 +308,16 @@ export default function SendEmail() {
                                     </Select>
                                 </Box>
 
-                                {/* Insert Group elements */}
                                 <Box sx={{ border: '1px solid #ccc', borderRadius: '4px', display: 'flex', bgcolor: '#fff', height: '32px' }}>
                                     <IconButton size="small" onMouseDown={(e) => { e.preventDefault(); executeEditorCommand('insertHorizontalRule'); }} sx={{ borderRadius: 0, borderRight: '1px solid #eee' }}><TableChartIcon fontSize="small" /></IconButton>
                                     <IconButton size="small" onMouseDown={(e) => { e.preventDefault(); const url = prompt("Enter link address:"); if(url) executeEditorCommand('createLink', url); }} sx={{ borderRadius: 0, borderRight: '1px solid #eee' }}><LinkIcon fontSize="small" /></IconButton>
+                                    
+                                    {/* 🖼️ Image Selection popover launch icon */}
                                     <IconButton size="small" onClick={handleOpenImagePopup} sx={{ borderRadius: 0, borderRight: '1px solid #eee' }} color={Boolean(imageAnchorEl) ? "primary" : "default"}><ImageIcon fontSize="small" /></IconButton>
+                                    
                                     <IconButton size="small" sx={{ borderRadius: 0 }}><VideoCameraBackIcon fontSize="small" /></IconButton>
                                 </Box>
 
-                                {/* System actions layout drawer elements */}
                                 <Box sx={{ border: '1px solid #ccc', borderRadius: '4px', display: 'flex', bgcolor: '#fff', height: '32px', ml: 'auto' }}>
                                     <IconButton size="small" sx={{ borderRadius: 0, borderRight: '1px solid #eee' }}><FullscreenIcon fontSize="small" /></IconButton>
                                     <IconButton size="small" onClick={handleToggleCodeView} color={isCodeView ? "primary" : "default"} sx={{ borderRadius: 0, borderRight: '1px solid #eee', bgcolor: isCodeView ? '#e3f2fd' : 'transparent' }}><CodeIcon fontSize="small" /></IconButton>
@@ -304,7 +325,7 @@ export default function SendEmail() {
                                 </Box>
                             </Box>
 
-                            {/* Floating image controller popover card */}
+                            {/* Floating file attach modal box container matches Screenshot 1 */}
                             <Popover
                                 open={Boolean(imageAnchorEl)}
                                 anchorEl={imageAnchorEl}
@@ -325,7 +346,7 @@ export default function SendEmail() {
                                 </Box>
                             </Popover>
 
-                            {/* --- MAIN RENDERING LAYOUT PANE VIEWPORTS --- */}
+                            {/* --- RENDERING WORKSPACE CANVASES --- */}
                             {isCodeView ? (
                                 <TextField
                                     fullWidth
@@ -364,14 +385,13 @@ export default function SendEmail() {
                                 </Box>
                             )}
 
-                            {/* Decorative resizer indicator bar footer element */}
                             <Box sx={{ height: '10px', backgroundColor: '#f5f6fa', borderTop: '1px solid #dcdde1', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                 <Box sx={{ width: '30px', height: '4px', borderTop: '1px double #aaa', borderBottom: '1px solid #aaa' }} />
                             </Box>
                         </Box>
                     </Grid>
 
-                    {/* Schedulers and standalone attachment file managers */}
+                    {/* Schedulers and standalone document attachments */}
                     <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField fullWidth type="datetime-local" label="Schedule Broadcast Delay (Optional)" name="sendTime" value={sendTime} onChange={(e) => setSendTime(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} helperText="Leave clear to process immediately" />
                     </Grid>

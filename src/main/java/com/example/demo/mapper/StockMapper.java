@@ -2,6 +2,7 @@ package com.example.demo.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.NullValueCheckStrategy;
 import com.example.demo.dto.StockRequestDto;
@@ -23,4 +24,7 @@ public interface StockMapper {
     // Keep this one ignored, because RequestDto uses a MultipartFile, not a String path!
     @Mapping(target = "imagePath", ignore = true)
     Stock stockRequestDtoToStock(StockRequestDto stockDto);
+
+    @Mapping(target = "imagePath", ignore = true)
+    void updateStockFromDto(StockRequestDto dto, @MappingTarget Stock stock);
 }
