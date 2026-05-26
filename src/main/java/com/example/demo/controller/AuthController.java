@@ -1,7 +1,7 @@
 package com.example.demo.controller;
 
 import java.util.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,6 +23,8 @@ import com.example.demo.model.User;
 import com.example.demo.security.JwtUtil;
 import com.example.demo.service.UserService;
 import com.example.demo.service.EmailProducer;
+import org.thymeleaf.spring6.SpringTemplateEngine;
+import org.thymeleaf.context.Context;
 
 @RestController
 @CrossOrigin(origins = "*") // frontend origin
@@ -42,6 +44,12 @@ public class AuthController {
 
     @Autowired
     private EmailProducer emailProducer;
+
+    @Autowired
+    private SpringTemplateEngine templateEngine;
+
+    @Value("${DOMAIN}")
+    private String domainUrl;
 
     @PostMapping("/api/register")
     @Operation(summary = "Register a new user")
@@ -105,15 +113,22 @@ public class AuthController {
 
     @PostMapping("/api/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestParam("email") String email) {
+        Context context = new Context();
         User user = userService.findUserByEmail(email);
         if (user != null) {
             String token = UUID.randomUUID().toString();
+            String tokenUrl = domainUrl + "/" + token;
+            context.setVariable("name", user.getUsername());
+            context.setVariable("token", token);
+            context.setVariable("domainUrl", domainUrl);
+            context.setVariable("tokenUrl", tokenUrl);
+            String htmlContent = templateEngine.process("email/forgotPassword", context);
             List<String> recipients = new ArrayList();
             recipients.add(email);
             EmailRequestDto request = new EmailRequestDto(
                 recipients,
                 "Reset password Email",
-                "Here is the text",
+                htmlContent,
                 null,
                 null
             );

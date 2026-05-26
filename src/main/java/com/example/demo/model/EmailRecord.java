@@ -21,6 +21,8 @@ public class EmailRecord {
     private List<String> recipients;
 
     private String subject;
+
+    @Column(length = 1000)
     private String body;
 
     @ElementCollection
