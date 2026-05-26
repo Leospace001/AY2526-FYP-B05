@@ -13,6 +13,7 @@ import org.springframework.data.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
+import java.util.*;
 
 @Service
 public class UserService {
@@ -108,6 +109,7 @@ public class UserService {
     public String validatePasswordResetToken(String token) {
         return passwordResetTokenRepository.findByToken(token)
             .filter(t -> t.getExpiryDate().isAfter(LocalDateTime.now()))
+            .filter (t -> t.isActive() == true)
             .map(t -> "valid")
             .orElse("invalid");
     }
@@ -116,4 +118,12 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(password));
         userRepository.save(user);
     }
+
+    public void invalidateToken (String token) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
+            .orElseThrow(() -> new RuntimeException("Token not found"));;
+        resetToken.setActive(false);
+        passwordResetTokenRepository.save(resetToken);
+    }
+    
 }

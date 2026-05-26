@@ -117,7 +117,7 @@ public class AuthController {
         User user = userService.findUserByEmail(email);
         if (user != null) {
             String token = UUID.randomUUID().toString();
-            String tokenUrl = domainUrl + "/" + token;
+            String tokenUrl = domainUrl + "/reset?token=" + token;
             context.setVariable("name", user.getUsername());
             context.setVariable("token", token);
             context.setVariable("domainUrl", domainUrl);
@@ -145,6 +145,7 @@ public class AuthController {
         
         User user = userService.getUserByToken(token);
         userService.changeUserPassword(user, newPassword);
+        userService.invalidateToken(token);
         return ResponseEntity.ok("Password updated successfully.");
     }
 }
