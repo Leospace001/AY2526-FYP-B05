@@ -7,10 +7,12 @@ import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.mapper.UserMapper;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.RoleRepository;
+import com.example.demo.repository.PasswordResetTokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.time.LocalDateTime;
 
 @Service
 public class UserService {
@@ -26,6 +28,9 @@ public class UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
     
     public User registerUser(UserRegister userRegister) {
         User newUser = new User();
@@ -46,7 +51,6 @@ public class UserService {
         newUser.getRoleAssignments().add(defaultAssignment);
         userRepository.save(newUser);
 
-
         return newUser;
     }
 
@@ -61,9 +65,20 @@ public class UserService {
         return userPage.map(user -> userMapper.userToUserInfo(user));
     }
 
-    public User getUserByUsername(String username) {
+    public User getUserByUsername (String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public User findUserByEmail (String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public User getUserByToken (String token) {
+         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token).orElseThrow();
+         User user = resetToken.getUser();
+         return user;
     }
 
     public User updateUser(String username, UserInfo userInfo, boolean isAdmin) {
@@ -83,5 +98,22 @@ public class UserService {
 
         userRepository.save(updatedUser);
         return updatedUser;
+    }
+
+    public void createPasswordResetTokenForUser(User user, String token) {
+        PasswordResetToken myToken = new PasswordResetToken(token, user, LocalDateTime.now().plusHours(1));
+        passwordResetTokenRepository.save(myToken);
+    }
+
+    public String validatePasswordResetToken(String token) {
+        return passwordResetTokenRepository.findByToken(token)
+            .filter(t -> t.getExpiryDate().isAfter(LocalDateTime.now()))
+            .map(t -> "valid")
+            .orElse("invalid");
+    }
+
+    public void changeUserPassword(User user, String password) {
+        user.setPassword(passwordEncoder.encode(password));
+        userRepository.save(user);
     }
 }

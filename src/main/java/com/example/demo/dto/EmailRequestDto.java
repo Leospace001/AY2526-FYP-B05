@@ -9,6 +9,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter @Setter
 public class EmailRequestDto {
     @ArraySchema(
         schema = @Schema(description = "Recipient(s)", requiredMode = Schema.RequiredMode.REQUIRED, defaultValue = "leospace001@gmail.com"),

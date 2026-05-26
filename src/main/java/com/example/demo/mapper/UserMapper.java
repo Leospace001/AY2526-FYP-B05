@@ -6,8 +6,7 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValueCheckStrategy;
 import com.example.demo.model.User;
-import com.example.demo.dto.UserInfo;
-import com.example.demo.dto.UserRegister;
+import com.example.demo.dto.*;
 
 @Mapper(
     componentModel = "spring",

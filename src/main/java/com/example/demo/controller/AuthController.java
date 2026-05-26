@@ -1,7 +1,6 @@
 package com.example.demo.controller;
 
 import java.util.*;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.*;
 import io.swagger.v3.oas.annotations.media.*;
-
+import com.example.demo.dto.EmailRequestDto;
 import com.example.demo.dto.UserInfo;
 import com.example.demo.dto.UserRegister;
 import com.example.demo.exception.UserAlreadyExistsException;
@@ -23,6 +22,7 @@ import com.example.demo.model.JwtResponse;
 import com.example.demo.model.User;
 import com.example.demo.security.JwtUtil;
 import com.example.demo.service.UserService;
+import com.example.demo.service.EmailProducer;
 
 @RestController
 @CrossOrigin(origins = "*") // frontend origin
@@ -39,6 +39,9 @@ public class AuthController {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private EmailProducer emailProducer;
 
     @PostMapping("/api/register")
     @Operation(summary = "Register a new user")
@@ -98,5 +101,35 @@ public class AuthController {
 
         // Return a 200 OK status containing your JwtResponse instance
         return ResponseEntity.ok(new JwtResponse(token));
+    }
+
+    @PostMapping("/api/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestParam("email") String email) {
+        User user = userService.findUserByEmail(email);
+        if (user != null) {
+            String token = UUID.randomUUID().toString();
+            List<String> recipients = new ArrayList();
+            recipients.add(email);
+            EmailRequestDto request = new EmailRequestDto(
+                recipients,
+                "Reset password Email",
+                "Here is the text",
+                null,
+                null
+            );
+            userService.createPasswordResetTokenForUser(user, token);
+            emailProducer.sendEmailToQueue(request, user);
+        }
+        return ResponseEntity.ok("If email exists, a reset link has been sent.");
+    }
+
+    @PostMapping("/api/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestParam("token") String token, @RequestBody String newPassword) {
+        String result = userService.validatePasswordResetToken(token);
+        if (!result.equals("valid")) return ResponseEntity.badRequest().body("Invalid token");
+        
+        User user = userService.getUserByToken(token);
+        userService.changeUserPassword(user, newPassword);
+        return ResponseEntity.ok("Password updated successfully.");
     }
 }

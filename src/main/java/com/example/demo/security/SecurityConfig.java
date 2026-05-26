@@ -157,7 +157,7 @@ public class SecurityConfig {
                             "/swagger-ui/**", 
                             "/swagger.yaml"
                         ).permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/register", "/api/login").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/register", "/api/login", "/api/reset-password", "/api/forgot-password").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
