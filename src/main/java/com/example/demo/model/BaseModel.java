@@ -33,6 +33,6 @@ public abstract class BaseModel {
     private LocalDateTime updatedAt;
 
     @Column(nullable = false, columnDefinition = "boolean default true")
-    private boolean isActive = true;
+    private boolean active = true;
 
 }

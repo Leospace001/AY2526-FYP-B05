@@ -41,7 +41,7 @@ public class User {
     private int phone;
 
     @Column(nullable = false, columnDefinition = "boolean default true")
-    private boolean isActive = true;
+    private boolean active = true;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
