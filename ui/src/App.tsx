@@ -14,6 +14,8 @@ import OllamaChat from './pages/OllamaChat';
 import MyProfile from './pages/MyProfile';
 import UserManagement from './pages/UserManagement';
 import Register from './pages/Register';
+import ResetPassword from './pages/ResetPassword';
+import ForgotPassword from './pages/ForgotPassword';
 
 // 1. Define Props for the Protected Route
 interface ProtectedRouteProps {
@@ -49,10 +51,14 @@ function AppRoutes() {
                 <Routes>
                     <Route path="/login" element={<Login />} />
 
+                    <Route path="/reset" element={<ResetPassword />} />
+
                     {/* Public or General User Product Catalog */}
                     <Route path="/products" element={<Products />} />
 
                     <Route path="/register" element={<Register />} />
+
+                     <Route path="/forgot" element={<ForgotPassword />} />
 
                     {/* 🚀 NEW PROTECTED ROUTE: Product Creation Form (Admins Only) */}
                     <Route path="/products/create" element={

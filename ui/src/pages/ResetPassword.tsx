@@ -4,15 +4,16 @@ import { Box, Typography, Paper, TextField, Button, CircularProgress, Link, Aler
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api/axiosConfig';
+import { useSearchParams } from 'react-router-dom';
 
-export default function Login() {
+export default function ResetPassword() {
     const navigate = useNavigate();
-    const { login } = useContext(AuthContext);
-
-    const [username, setUsername] = useState('');
+    const { login } = useContext(AuthContext); 
+    
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+     const [searchParams] = useSearchParams();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -20,22 +21,14 @@ export default function Login() {
         setError('');
 
         try {
-            const response = await api.post('/api/login', { username, password });
-
-            let token = response.data.accessToken || response.data.token || response.headers['authorization'];
-            if (!token && typeof response.data === 'string') {
-                token = response.data;
-            }
-            if (token && token.startsWith('Bearer ')) {
-                token = token.slice(7);
-            }
-
-            if (!token) throw new Error("No token received.");
-
-            // 🚀 THE FIX: Just pass the raw string token! AuthContext will handle the rest.
-            login(token);
-
-            navigate('/');
+            const token = searchParams.get("token");
+            const response = await fetch('/api/reset-password?token='+token, { 
+                method: "POST",
+                headers :{
+                    "Content-Type": "text/plain"
+                },
+                body: password 
+            });
         } catch (err: any) {
             console.error(err);
             setError('Invalid username or password. Please try again.');
@@ -47,16 +40,16 @@ export default function Login() {
     return (
         <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#f5f6fa', p: 2 }}>
             <Paper component="form" onSubmit={handleSubmit} sx={{ p: 4, maxWidth: '400px', width: '100%', borderRadius: 3, boxShadow: 4 }}>
-
+                
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
                     <Box sx={{ bgcolor: '#3498db', p: 1.5, borderRadius: '50%', mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <LockOutlinedIcon sx={{ color: '#fff', fontSize: 28 }} />
                     </Box>
                     <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#2c3e50' }}>
-                        Welcome Back
+                        Reset password form
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
-                        Please enter your details to sign in.
+                        Please enter your password to reset
                     </Typography>
                 </Box>
 
@@ -65,17 +58,7 @@ export default function Login() {
                         {error}
                     </Alert>
                 )}
-
-                <TextField
-                    fullWidth
-                    required
-                    label="Username"
-                    variant="outlined"
-                    margin="normal"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                />
-
+                
                 <TextField
                     fullWidth
                     required
@@ -88,30 +71,16 @@ export default function Login() {
                     sx={{ mb: 3 }}
                 />
 
-                <Button
-                    type="submit"
-                    fullWidth
-                    variant="contained"
-                    size="large"
+                <Button 
+                    type="submit" 
+                    fullWidth 
+                    variant="contained" 
+                    size="large" 
                     disabled={loading}
                     sx={{ py: 1.5, mb: 2, fontWeight: 'bold', fontSize: '1.1rem' }}
                 >
-                    {loading ? <CircularProgress size={26} color="inherit" /> : 'Sign In'}
+                    {loading ? <CircularProgress size={26} color="inherit" /> : 'Reset password'}
                 </Button>
-
-                <Typography textAlign="center" variant="body2">
-                    Don't have an account?{' '}
-                    <Link component={RouterLink} to="/register" sx={{ fontWeight: 'bold', textDecoration: 'none' }}>
-                        Sign Up
-                    </Link>
-                </Typography>
-
-                <Typography textAlign="center" variant="body2">
-                    Forgot password?{' '}
-                    <Link component={RouterLink} to="/forgot" sx={{ fontWeight: 'bold', textDecoration: 'none' }}>
-                        Forgot password
-                    </Link>
-                </Typography>
             </Paper>
         </Box>
     );
