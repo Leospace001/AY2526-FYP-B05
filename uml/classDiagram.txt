@@ -1,0 +1,81 @@
+---
+config:
+  class:
+    hideEmptyMembersBox: false
+title: Leosapce001
+---
+classDiagram
+direction RL
+    class BaseModel {
+	    - Long id
+	    - String description
+	    - String remarks
+	    - LocalDateTime createdAt
+	    - LocalDateTime updatedAt
+	    - boolean active
+	    + getId()
+	    + getDescription()
+	    + getRemarks()
+	    + getCreatedAt()
+	    + getUpdatedAt()
+	    + isActive()
+    }
+
+    class User {
+	    - String firstName
+	    - String lastName
+	    - String userName
+	    - String email
+	    - String password
+	    - int age
+	    - int phone
+    }
+
+    class Role {
+	    ROLE_USER
+	    ROLE_ADMIN
+    }
+
+    class UserRoleAssignment {
+	    - User user
+	    - Role role
+	    + getUser()
+	    + getRole()
+    }
+
+    class EmailRecord {
+	    - List~String~ recipients
+	    - String subject
+	    - String body
+	    - List~byte~ attachments
+	    - LocalDateTime scheduledAt
+	    - boolean sent
+	    - User createdBy
+	    + getRecipients()
+	    + getSubject()
+	    + getBody()
+	    + getAttachments()
+	    + getScheduledAt()
+	    + isSent()
+	    + getCreatedBy()
+    }
+
+    class Order {
+	    - User createdBy
+	    - User updatedBy
+	    - User approvedBy
+        + getCreatedBy()
+        + getUpdatedBy()
+        + getApprovedBy()
+    }
+
+	<<enumeration>> Role
+
+    BaseModel <|-- User
+    BaseModel <|-- UserRoleAssignment
+    BaseModel <|-- Role
+    BaseModel <|-- EmailRecord
+    BaseModel <|-- EmailRecord
+    User "1" *-- "1..*" Role
+    Role "1" *-- "1..*" UserRoleAssignment
+    User "1" *-- "0..*" Order : places

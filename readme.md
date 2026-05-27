@@ -1,3 +1,5 @@
+![alt text](uml/classDiagram.png)
+
 ### Clone the project from github
 ```
 git clone https://github.com/Leospace001/AY2526-FYP-B05.git
