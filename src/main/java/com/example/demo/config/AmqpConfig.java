@@ -1,4 +1,3 @@
-// src/main/java/com/example/demo/config/AmqpConfig.java
 package com.example.demo.config;
 
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
