@@ -16,3 +16,4 @@ settings.xml
 logs/user-activity.log
 Dockerfile
 .vscode/launch.json
+src/main/resources/credentials.json

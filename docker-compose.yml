@@ -45,6 +45,11 @@ services:
       - rabbitmq
       - db
     volumes:
+
+
+
+
+    
       - ./uploadFolder:/data/uploads
       - ./logs:/app/logs
   
