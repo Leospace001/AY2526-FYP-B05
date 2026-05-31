@@ -22,8 +22,7 @@ public class RoleAssignmentService {
     private UserRoleAssignmentRepository userRoleRepository;
 
     @Transactional
-    public void grantAdminRole(Long userId) {
-        User user = userRepository.findById(userId).orElseThrow();
+    public void grantAdminRole(User user) {
         Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN).orElseThrow();
 
         // Check if they already have an active admin role
@@ -32,8 +31,7 @@ public class RoleAssignmentService {
 
         if (!alreadyAdmin) {
             UserRoleAssignment newAssignment = new UserRoleAssignment(user, adminRole);
-            user.getRoleAssignments().add(newAssignment);
-            userRepository.save(user); // Cascade takes care of saving the assignment
+            userRoleRepository.save(newAssignment); // Cascade takes care of saving the assignment
         }
     }
 

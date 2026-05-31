@@ -45,24 +45,8 @@ services:
       - rabbitmq
       - db
     volumes:
-
-
-
-
-    
       - ./uploadFolder:/data/uploads
       - ./logs:/app/logs
-  
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   container_name: frontend
-  #   ports:
-  #     - "80:80"
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - app
   ui:
     build:
       context: ./ui
@@ -95,7 +79,7 @@ services:
       - ollama:/root/.ollama
       - ./entrypoint.sh:/entrypoint.sh
     restart: unless-stopped
-  
+
   adminer:
     image: adminer
     restart: always

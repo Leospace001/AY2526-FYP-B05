@@ -6,6 +6,9 @@ import com.example.demo.dto.UserRegister;
 import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.mapper.UserMapper;
 import com.example.demo.repository.UserRepository;
+
+import lombok.Getter;
+
 import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.PasswordResetTokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
+@Getter
 public class UserService {
 
     @Autowired

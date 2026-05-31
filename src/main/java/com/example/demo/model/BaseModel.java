@@ -17,7 +17,7 @@ public abstract class BaseModel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = false, columnDefinition = "varchar(255) default 'TAI MAN'")
+    @Column(nullable = true, unique = false, columnDefinition = "varchar(255) default 'TAI MAN'")
     private String name;
 
     @Column(nullable = true, unique = false, columnDefinition = "varchar(255) default 'TAI MAN'")

@@ -13,11 +13,7 @@ import org.hibernate.annotations.CreationTimestamp;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class User {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class User extends BaseModel {
 
     @Column(nullable = false, unique = false, columnDefinition = "varchar(255) default 'TAI MAN'")
     private String firstname;
@@ -39,15 +35,6 @@ public class User {
 
     @Column(nullable = true)
     private int phone;
-
-    @Column(nullable = false, columnDefinition = "boolean default true")
-    private boolean active = true;
-
-    @CreationTimestamp
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     private Set<UserRoleAssignment> roleAssignments = new HashSet<>();
