@@ -119,11 +119,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             {/* MUI Session Expired Modal */}
             <Dialog
                 open={isExpiredModalOpen}
-                disableEscapeKeyDown
-                onClose={(event, reason) => {
-                    if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
-                        setIsExpiredModalOpen(false);
+                // 🗑️ DELETED: disableEscapeKeyDown
+                onClose={(_, reason) => {
+                    // 🚀 This block right here ALREADY protects against the Escape key perfectly!
+                    if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+                        return;
                     }
+                    setIsExpiredModalOpen(false);
                 }}
             >
                 <DialogTitle sx={{ color: '#d32f2f', fontWeight: 'bold' }}>

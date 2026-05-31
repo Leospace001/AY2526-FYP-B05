@@ -19,7 +19,7 @@ interface UserInfo {
 }
 
 export default function UserManagement() {
-    const { user } = useContext(AuthContext);
+    const { user } = useContext(AuthContext)!;
     const [users, setUsers] = useState<UserInfo[]>([]);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);

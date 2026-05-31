@@ -52,8 +52,6 @@ services:
       context: ./ui
       dockerfile: Dockerfile
     container_name: ui
-    ports:
-      - 5173:5173
     restart: unless-stopped
     volumes:
       - ./ui:/app

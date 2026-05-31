@@ -71,7 +71,17 @@ export default function SendEmail() {
     const backupSelection = () => {
         const selection = window.getSelection();
         if (selection && selection.rangeCount > 0) {
-            setSavedRange(selection.getRangeAt(0).cloneRange()); // Hard clone the position array
+            setSavedRange(selection.getRangeAt(0).cloneRange()); 
+        }
+    };
+    
+    const restoreSelection = () => {
+        if (savedRange) {
+            const selection = window.getSelection();
+            if (selection) {
+                selection.removeAllRanges();
+                selection.addRange(savedRange);
+            }
         }
     };
 

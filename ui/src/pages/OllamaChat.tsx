@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
     Box, Typography, Paper, TextField, IconButton, 
-    CircularProgress, Avatar, Divider, Alert, Snackbar, Tooltip
+    Avatar, Divider, Alert, Snackbar, Tooltip
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import PersonIcon from '@mui/icons-material/Person';
 import StopCircleIcon from '@mui/icons-material/StopCircle';
-import DeleteSweepIcon from '@mui/icons-material/DeleteSweep'; // 🚀 Icon to clear chat
+import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 
 interface ChatMessage {
     id: string;
@@ -18,7 +18,6 @@ interface ChatMessage {
 const LOCAL_STORAGE_KEY = 'ollama_chat_history';
 
 export default function OllamaChat() {
-    // 🚀 1. LAZY INITIALIZATION: Load history from LocalStorage when the page first opens
     const [messages, setMessages] = useState<ChatMessage[]>(() => {
         const savedHistory = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (savedHistory) {
@@ -39,17 +38,14 @@ export default function OllamaChat() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    // 🚀 2. AUTO-SAVE: Whenever the 'messages' array changes, save it to the browser's hard drive
     useEffect(() => {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(messages));
     }, [messages]);
 
-    // Auto-scroll to the bottom whenever messages change
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    // 🚀 3. CLEAR CHAT FUNCTION
     const handleClearChat = () => {
         setMessages([]);
         localStorage.removeItem(LOCAL_STORAGE_KEY);
@@ -135,7 +131,6 @@ export default function OllamaChat() {
     return (
         <Box sx={{ p: 3, maxWidth: '900px', margin: '0 auto', height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
             
-            {/* --- HEADER --- */}
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                 <SmartToyIcon sx={{ fontSize: 32, color: '#3498db', mr: 2 }} />
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2c3e50' }}>
@@ -147,7 +142,6 @@ export default function OllamaChat() {
                 
                 <Box sx={{ flexGrow: 1 }} />
                 
-                {/* 🚀 CLEAR CHAT BUTTON */}
                 {messages.length > 0 && (
                     <Tooltip title="Clear Chat History">
                         <IconButton onClick={handleClearChat} color="error" disabled={isGenerating}>
@@ -157,7 +151,6 @@ export default function OllamaChat() {
                 )}
             </Box>
 
-            {/* --- CHAT HISTORY WINDOW --- */}
             <Paper sx={{ flexGrow: 1, mb: 3, p: 3, overflowY: 'auto', borderRadius: 3, boxShadow: 3, bgcolor: '#fdfdfd', display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {messages.length === 0 ? (
                     <Box sx={{ m: 'auto', textAlign: 'center', color: '#bdc3c7' }}>
@@ -182,7 +175,6 @@ export default function OllamaChat() {
                 <div ref={messagesEndRef} />
             </Paper>
 
-            {/* --- INPUT BAR --- */}
             <Paper component="form" onSubmit={handleSendMessage} sx={{ p: '2px 4px', display: 'flex', alignItems: 'center', borderRadius: 3, boxShadow: 3, border: '1px solid #dcdde1' }}>
                 <TextField
                     fullWidth
@@ -192,7 +184,8 @@ export default function OllamaChat() {
                     onChange={(e) => setInput(e.target.value)}
                     disabled={isGenerating}
                     sx={{ ml: 2, flex: 1 }}
-                    InputProps={{ disableUnderline: true }}
+                    // 🚀 FIXED: Updated to MUI v6 slotProps syntax
+                    slotProps={{ input: { disableUnderline: true } }}
                 />
                 <Divider sx={{ height: 28, m: 0.5 }} orientation="vertical" />
                 

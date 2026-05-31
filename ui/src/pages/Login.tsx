@@ -1,13 +1,15 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { Box, Typography, Paper, TextField, Button, CircularProgress, Link, Alert } from '@mui/material';
+import { Box, Typography, Paper, TextField, Button, CircularProgress, Alert } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api/axiosConfig';
 
 export default function Login() {
     const navigate = useNavigate();
-    const { login } = useContext(AuthContext);
+    
+    // 🚀 FIXED: Added the '!' to tell TypeScript this context definitely exists
+    const { login } = useContext(AuthContext)!;
 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -32,7 +34,6 @@ export default function Login() {
 
             if (!token) throw new Error("No token received.");
 
-            // 🚀 THE FIX: Just pass the raw string token! AuthContext will handle the rest.
             login(token);
 
             navigate('/');
@@ -99,18 +100,20 @@ export default function Login() {
                     {loading ? <CircularProgress size={26} color="inherit" /> : 'Sign In'}
                 </Button>
 
-                <Typography textAlign="center" variant="body2">
+                {/* 🚀 FIXED: Changed textAlign="center" to align="center" */}
+                <Typography align="center" variant="body2">
                     Don't have an account?{' '}
-                    <Link component={RouterLink} to="/register" sx={{ fontWeight: 'bold', textDecoration: 'none' }}>
+                    <Box component={RouterLink} to="/register" sx={{ fontWeight: 'bold', textDecoration: 'none', color: '#3498db' }}>
                         Sign Up
-                    </Link>
+                    </Box>
                 </Typography>
 
-                <Typography textAlign="center" variant="body2">
+                {/* 🚀 FIXED: Changed textAlign="center" to align="center" */}
+                <Typography align="center" variant="body2" sx={{ mt: 1 }}>
                     Forgot password?{' '}
-                    <Link component={RouterLink} to="/forgot" sx={{ fontWeight: 'bold', textDecoration: 'none' }}>
+                    <Box component={RouterLink} to="/forgot" sx={{ fontWeight: 'bold', textDecoration: 'none', color: '#3498db' }}>
                         Forgot password
-                    </Link>
+                    </Box>
                 </Typography>
             </Paper>
         </Box>

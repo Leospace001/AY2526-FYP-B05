@@ -19,7 +19,6 @@ export default function MyProfile() {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
     useEffect(() => {
-        // Automatically fetches ONLY this user's profile thanks to our smart backend controller
         api.get('/api/users')
             .then(response => {
                 if (response.data.content && response.data.content.length > 0) {
@@ -62,27 +61,27 @@ export default function MyProfile() {
 
             <Paper component="form" onSubmit={handleSubmit} sx={{ p: 4, borderRadius: 3, boxShadow: 3 }}>
                 <Grid container spacing={3}>
-                    {/* Username is read-only */}
-                    <Grid item xs={12}>
+                    {/* 🚀 FIXED: Removed 'item' and updated sizing props to MUI v6 standards */}
+                    <Grid size={12}>
                         <TextField label="Username" value={profile?.username || ''} disabled fullWidth />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField label="First Name" name="firstname" value={profile?.firstname || ''} onChange={handleChange} fullWidth required />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField label="Last Name" name="lastname" value={profile?.lastname || ''} onChange={handleChange} fullWidth required />
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid size={12}>
                         <TextField label="Email Address" name="email" type="email" value={profile?.email || ''} onChange={handleChange} fullWidth required />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField label="Age" name="age" type="number" value={profile?.age || ''} onChange={handleChange} fullWidth />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField label="Phone Number" name="phone" type="number" value={profile?.phone || ''} onChange={handleChange} fullWidth />
                     </Grid>
                     
-                    <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                    <Grid size={12} sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                         <Button 
                             type="submit" 
                             variant="contained" 

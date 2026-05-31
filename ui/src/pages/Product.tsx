@@ -241,13 +241,11 @@ export default function Products() {
 
     return (
         <Box sx={{ p: 2 }}>
-            {/* --- HEADER TITLE AND NEW SEARCH INPUT BAR ROW --- */}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', mb: 4, gap: 2 }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2c3e50' }}>
                     Available Material Stock Inventory
                 </Typography>
                 
-                {/* 🚀 THE LIVE CORE SEARCH INPUT BAR COMPONENT */}
                 <TextField 
                     size="small"
                     label="Search Products..."
@@ -266,7 +264,8 @@ export default function Products() {
             ) : (
                 <Grid container spacing={3}>
                     {products.map((item) => (
-                        <Grid item key={item.id} xs={12} sm={6} md={4} lg={3}>
+                        // 🚀 FIXED: MUI v6 syntax for grid sizes
+                        <Grid key={item.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
                             <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRadius: 2, boxShadow: 2 }}>
                                 <SecureProductImage imagePath={item.imagePath} alt={item.name || 'Product Stock Item'} />
                                 <CardContent sx={{ flexGrow: 1 }}>
@@ -292,7 +291,9 @@ export default function Products() {
                                 </CardContent>
                                 <CardActions sx={{ p: 2, pt: 0, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                                     <TextField
-                                        type="number" size="small" label="Quantity" inputProps={{ min: 1 }}
+                                        type="number" size="small" label="Quantity" 
+                                        // 🚀 FIXED: Updated to MUI v6 slotProps syntax
+                                        slotProps={{ htmlInput: { min: 1 } }}
                                         value={quantities[item.id] || 1}
                                         onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 1)}
                                         sx={{ width: '100%' }} disabled={item.quantity <= 0}
@@ -310,7 +311,6 @@ export default function Products() {
                 </Grid>
             )}
 
-            {/* INFINITE SCROLL SENTINEL TARGET */}
             <div ref={bottomSentinelRef} style={{ height: '40px', marginTop: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 {loading && <CircularProgress size={32} />}
                 {!hasMore && products.length > 0 && (
@@ -320,38 +320,38 @@ export default function Products() {
                 )}
             </div>
 
-            {/* ADMIN PRODUCT EDIT DIALOG MODAL BOX */}
             <Dialog open={isEditModalOpen} onClose={() => !isUpdating && setIsEditModalOpen(false)} maxWidth="sm" fullWidth>
                 <DialogTitle sx={{ fontWeight: 'bold', color: '#2c3e50' }}>Modify Product Profile #{editingProduct?.id}</DialogTitle>
                 <Box component="form" onSubmit={handleSaveEdit}>
                     <DialogContent dividers>
                         <Grid container spacing={2}>
-                            <Grid item xs={12}>
+                            {/* 🚀 FIXED: Removed 'item' and converted xs/sm to MUI v6 'size' props below */}
+                            <Grid size={12}>
                                 <TextField required fullWidth label="Product Designation Name" name="name" value={editFormData.name} onChange={handleEditFormChange} disabled={isUpdating} />
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid size={12}>
                                 <TextField required fullWidth multiline rows={2} label="Product Description" name="description" value={editFormData.description} onChange={handleEditFormChange} disabled={isUpdating} />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField required fullWidth type="number" label="Selling Price ($)" name="sellingPrice" slotProps={{ htmlInput: { step: '0.01', min: '0' } }} value={editFormData.sellingPrice} onChange={handleEditFormChange} disabled={isUpdating} />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField required fullWidth type="number" label="Cost Margin ($)" name="cost" slotProps={{ htmlInput: { step: '0.01', min: '0' } }} value={editFormData.cost} onChange={handleEditFormChange} disabled={isUpdating} />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField required fullWidth type="number" label="Quantity in Stock" name="quantity" slotProps={{ htmlInput: { min: '0' } }} value={editFormData.quantity} onChange={handleEditFormChange} disabled={isUpdating} />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField required fullWidth type="number" label="Minimum Level Alert" name="minimumLevel" slotProps={{ htmlInput: { min: '0' } }} value={editFormData.minimumLevel} onChange={handleEditFormChange} disabled={isUpdating} />
                             </Grid>
-                            <Grid item xs={12}><Divider sx={{ my: 1 }} /></Grid>
-                            <Grid item xs={12} sm={5} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                            <Grid size={12}><Divider sx={{ my: 1 }} /></Grid>
+                            <Grid size={{ xs: 12, sm: 5 }} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                 <Button component="label" variant="outlined" startIcon={<CloudUploadIcon />} disabled={isUpdating} sx={{ borderStyle: 'dashed', py: 1.5 }}>
                                     Replace Image
                                     <input type="file" hidden accept="image/*" onChange={handleEditFileChange} />
                                 </Button>
                             </Grid>
-                            <Grid item xs={12} sm={7}>
+                            <Grid size={{ xs: 12, sm: 7 }}>
                                 <Card variant="outlined" sx={{ bgcolor: '#fafafa', borderRadius: 1 }}>
                                     <CardMedia 
                                         component="img" 

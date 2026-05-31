@@ -1,19 +1,11 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { Box, Typography, Paper, TextField, Button, CircularProgress, Link, Alert } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, Paper, TextField, Button, CircularProgress, Alert } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { AuthContext } from '../context/AuthContext';
-import api from '../api/axiosConfig';
-import { useSearchParams } from 'react-router-dom';
 
 export default function ForgotPassword() {
-    const navigate = useNavigate();
-    const { login } = useContext(AuthContext); 
-    
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-     const [searchParams] = useSearchParams();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,16 +13,21 @@ export default function ForgotPassword() {
         setError('');
 
         try {
-            const response = await fetch('/api/forgot-password?email='+ email, { 
+            // 🚀 FIXED: Removed the unused 'const response =' assignment
+            await fetch('/api/forgot-password?email=' + email, { 
                 method: "POST",
-                headers :{
+                headers: {
                     "Content-Type": "text/plain"
                 },
                 body: email 
             });
+            
+            // You might want to add a success message state here later!
+            
         } catch (err: any) {
             console.error(err);
-            setError('Invalid username or password. Please try again.');
+            // You may want to update this error text to reflect a failed email send
+            setError('An error occurred. Please try again.');
         } finally {
             setLoading(false);
         }

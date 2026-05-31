@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { 
     Box, Typography, Paper, TextField, Button, Grid, 
-    CircularProgress, Snackbar, Alert, Link, InputAdornment 
-} from '@mui/material';
+    CircularProgress, Snackbar, Alert 
+} from '@mui/material'; // 🚀 FIXED: Removed the unused InputAdornment and Link imports
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import api from '../api/axiosConfig';
 
@@ -30,7 +30,6 @@ export default function Register() {
         setLoading(true);
         
         try {
-            // Fires the exact POST payload your Spring Boot backend is expecting
             await api.post('/api/register', {
                 ...formData,
                 age: parseInt(formData.age) || 0,
@@ -39,7 +38,6 @@ export default function Register() {
             
             setSnackbar({ open: true, message: 'Account created successfully! Redirecting to login...', severity: 'success' });
             
-            // Wait 1.5 seconds so the user can read the success message, then redirect
             setTimeout(() => {
                 navigate('/login');
             }, 1500);
@@ -70,25 +68,26 @@ export default function Register() {
                 </Box>
 
                 <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                    {/* 🚀 FIXED: Removed 'item' and converted xs/sm to MUI v6 'size' props below */}
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField fullWidth required label="First Name" name="firstname" value={formData.firstname} onChange={handleChange} />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField fullWidth required label="Last Name" name="lastname" value={formData.lastname} onChange={handleChange} />
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid size={12}>
                         <TextField fullWidth required label="Email Address" name="email" type="email" value={formData.email} onChange={handleChange} />
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid size={12}>
                         <TextField fullWidth required label="Username" name="username" value={formData.username} onChange={handleChange} />
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid size={12}>
                         <TextField fullWidth required label="Password" name="password" type="password" value={formData.password} onChange={handleChange} />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField fullWidth label="Age" name="age" type="number" value={formData.age} onChange={handleChange} />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField fullWidth label="Phone Number" name="phone" type="number" value={formData.phone} onChange={handleChange} />
                     </Grid>
                 </Grid>
@@ -104,11 +103,12 @@ export default function Register() {
                     {loading ? <CircularProgress size={26} color="inherit" /> : 'Sign Up'}
                 </Button>
 
-                <Typography textAlign="center" variant="body2">
+                {/* 🚀 FIXED: Changed textAlign="center" to align="center" and used Box for routing */}
+                <Typography align="center" variant="body2">
                     Already have an account?{' '}
-                    <Link component={RouterLink} to="/login" sx={{ fontWeight: 'bold', textDecoration: 'none' }}>
+                    <Box component={RouterLink} to="/login" sx={{ fontWeight: 'bold', textDecoration: 'none', color: '#3498db' }}>
                         Log In Here
-                    </Link>
+                    </Box>
                 </Typography>
             </Paper>
 

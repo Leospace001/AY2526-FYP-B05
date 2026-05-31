@@ -1,21 +1,22 @@
-# Use the official Node.js version from https://hub.docker.com/
-FROM node:26-alpine
-
-# Set the working directory inside the container to /app
+# STAGE 1: Build the React Application
+FROM node:26-alpine AS builder
 WORKDIR /app
-
-# Copy only the package.json file to the working directory
-COPY . /app
-ENV NODE_TLS_REJECT_UNAUTHORIZED=0
-RUN npm config set strict-ssl false
-# Install npm dependencies based on the package.json
-RUN npm i
-
-# Copy the rest of the application code to the working directory
+COPY package*.json ./
+RUN npm install
 COPY . .
+RUN npm run build 
 
-# Expose port 5002 to allow external access
-EXPOSE 5173
+# STAGE 2: Serve internally with Nginx
+FROM nginx:alpine
 
-# Specify the command to run the application when the container starts
-CMD [ "npm", "run", "dev"]
+# 🚀 1. Forcefully delete the default Nginx welcome page!
+RUN rm -rf /usr/share/nginx/html/*
+
+# 🚀 2. Inject a custom config so the internal UI Nginx understands React Router
+RUN echo "server { listen 80; location / { root /usr/share/nginx/html; index index.html; try_files \$uri \$uri/ /index.html; } }" > /etc/nginx/conf.d/default.conf
+
+# 🚀 3. Copy your compiled Vite files into the now-empty public folder
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

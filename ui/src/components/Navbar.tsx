@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import  { useContext, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api/axiosConfig';
@@ -73,7 +73,7 @@ export default function Navbar() {
                 }}>
                     <span>Shopping Cart</span>
                     <Badge badgeContent={cartCount} color="error" max={99} sx={{ '& .MuiBadge-badge': { fontWeight: 'bold' } }}>
-                        <ShoppingCartIcon size="small" style={{ color: '#ecf0f1' }} />
+                        <ShoppingCartIcon fontSize="small" style={{ color: '#ecf0f1' }} />
                     </Badge>
                 </Link>
 

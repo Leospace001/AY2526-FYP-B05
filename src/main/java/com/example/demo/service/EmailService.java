@@ -4,12 +4,20 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+
+import jakarta.mail.*;
+import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.example.demo.dto.EmailAttachmentDto;
 import com.example.demo.dto.EmailMessageDto;
+import com.example.demo.dto.MailBoxDto;
 import com.example.demo.repository.EmailRecordRepository;
 import com.example.demo.model.EmailRecord;
 import org.springframework.mail.MailException;
@@ -17,8 +25,10 @@ import org.springframework.mail.MailException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.util.Optional;
+import java.io.InputStream;
+import java.util.*;
 
 @Service
 public class EmailService {
@@ -33,6 +43,15 @@ public class EmailService {
 
     @Value("${spring.mail.username}")
     private String senderEmailAddress;
+
+    @Value("${spring.mail.host}")
+    private String imapHost;
+
+    @Value("spring.mail.username")
+    private String username;
+
+    @Value("spring.mail.password")
+    private String password;
 
     // Single listener taking the lightweight DTO
     @Transactional
@@ -93,6 +112,100 @@ public class EmailService {
             userActivityLogger.error("Mail reachable", record.getId(), e);
         } catch (Exception e) {
             userActivityLogger.error("Failed to send email for Record ID: {}", record.getId(), e);
+        }
+    }
+
+    public List<MailBoxDto> readInbox(int limit) {
+        List<MailBoxDto> emailList = new ArrayList<>();
+        Store store = null;
+        Folder inbox = null;
+
+        try {
+            Properties props = new Properties();
+            props.put("mail.store.protocol", "imaps");
+            props.put("mail.imaps.host", imapHost);
+            props.put("mail.imaps.port", "993");
+
+            Session session = Session.getInstance(props);
+            store = session.getStore("imaps");
+            store.connect(imapHost, username, password);
+
+            inbox = store.getFolder("INBOX");
+            inbox.open(Folder.READ_ONLY);
+
+            int totalMessages = inbox.getMessageCount();
+            int start = Math.max(1, totalMessages - limit + 1);
+            Message[] messages = inbox.getMessages(start, totalMessages);
+
+            for (int i = messages.length - 1; i >= 0; i--) { // Read newest first
+                Message msg = messages[i];
+                MailBoxDto dto = new MailBoxDto();
+
+                dto.setSubject(msg.getSubject());
+                dto.setSender(extractAddresses(msg.getFrom()));
+                dto.setTo(extractAddressList(msg.getRecipients(Message.RecipientType.TO)));
+                dto.setCc(extractAddressList(msg.getRecipients(Message.RecipientType.CC)));
+                dto.setBcc(extractAddressList(msg.getRecipients(Message.RecipientType.BCC)));
+
+                parseMessageContent(msg, dto);
+                emailList.add(dto);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to read emails: " + e.getMessage());
+        } finally {
+            try {
+                if (inbox != null && inbox.isOpen()) inbox.close(false);
+                if (store != null) store.close();
+            } catch (MessagingException e) {
+                e.printStackTrace();
+            }
+        }
+        return emailList;
+    }
+
+    private String extractAddresses(Address[] addresses) {
+        if (addresses == null || addresses.length == 0) return "";
+        return ((InternetAddress) addresses[0]).getAddress();
+    }
+
+    // Helper: Extract list of addresses
+    private List<String> extractAddressList(Address[] addresses) {
+        List<String> list = new ArrayList<>();
+        if (addresses != null) {
+            for (Address addr : addresses) {
+                list.add(((InternetAddress) addr).getAddress());
+            }
+        }
+        return list;
+    }
+
+    private void parseMessageContent(Part part, MailBoxDto dto) throws Exception {
+        if (part.isMimeType("text/plain")) {
+            if (dto.getBody() == null) {
+                dto.setBody((String) part.getContent());
+            }
+        } else if (part.isMimeType("multipart/*")) {
+            MimeMultipart multipart = (MimeMultipart) part.getContent();
+            for (int i = 0; i < multipart.getCount(); i++) {
+                parseMessageContent(multipart.getBodyPart(i), dto);
+            }
+        } else if (Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition()) || part.getFileName() != null) {
+            // It's an attachment!
+            InputStream is = part.getInputStream();
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            int nRead;
+            byte[] data = new byte[16384];
+            while ((nRead = is.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+            
+            EmailAttachmentDto attachment = new EmailAttachmentDto(
+                    part.getFileName(),
+                    part.getContentType(),
+                    buffer.toByteArray()
+            );
+            dto.getAttachments().add(attachment);
         }
     }
 }

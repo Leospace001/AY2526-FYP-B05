@@ -1,19 +1,15 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { Box, Typography, Paper, TextField, Button, CircularProgress, Link, Alert } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, Paper, TextField, Button, CircularProgress, Alert } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { AuthContext } from '../context/AuthContext';
-import api from '../api/axiosConfig';
 import { useSearchParams } from 'react-router-dom';
 
 export default function ResetPassword() {
-    const navigate = useNavigate();
-    const { login } = useContext(AuthContext); 
-    
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-     const [searchParams] = useSearchParams();
+    
+    // 🚀 We keep searchParams because you are actively using it to grab the token!
+    const [searchParams] = useSearchParams();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -22,16 +18,23 @@ export default function ResetPassword() {
 
         try {
             const token = searchParams.get("token");
-            const response = await fetch('/api/reset-password?token='+token, { 
+            
+            // 🚀 FIXED: Removed the unused 'const response =' assignment
+            await fetch('/api/reset-password?token=' + token, { 
                 method: "POST",
                 headers :{
                     "Content-Type": "text/plain"
                 },
                 body: password 
             });
+            
+            // Note: You might want to add a success message or redirect the user 
+            // back to the login page here after a successful reset!
+            
         } catch (err: any) {
             console.error(err);
-            setError('Invalid username or password. Please try again.');
+            // Updated the error message slightly to make more sense for a reset failure
+            setError('Failed to reset password. Your link may be expired.');
         } finally {
             setLoading(false);
         }

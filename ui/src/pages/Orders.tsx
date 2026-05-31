@@ -76,7 +76,7 @@ export default function Orders() {
     }, [page, rowsPerPage, orderBy, order]);
 
     // Table Handlers
-    const handleChangePage = (event: unknown, newPage: number) => setPage(newPage);
+    const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
     const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0);
@@ -116,9 +116,9 @@ export default function Orders() {
         setSnackbarOpen(true);
     };
 
-    const handleCloseSnackbar = (event?: React.SyntheticEvent | Event, reason?: string) => {
-        if (reason === 'clickaway') return;
-        setSnackbarOpen(false);
+    const handleCloseSnackbar = (_?: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === 'clickaway') return;
+    setSnackbarOpen(false);
     };
 
     const handleSaveEdit = async () => {
