@@ -184,7 +184,8 @@ public class SecurityConfig {
             "http://frontend",
             "http://ui:5173",
             "http://localhost",
-            "http://localhost:5173"
+            "http://localhost:5173",
+            "https://leospace.cc"
             ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
