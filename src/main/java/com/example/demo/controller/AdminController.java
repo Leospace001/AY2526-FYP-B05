@@ -2,21 +2,20 @@ package com.example.demo.controller;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.Operation;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-
 import com.example.demo.service.*;
-
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -70,5 +69,37 @@ public class AdminController {
                 .body(imageBytes);
     }
 
+    @PostMapping(value = "/base64", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "convert image to base 64 sring", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<Map<String, String>> identifyPlant(@RequestParam("image") MultipartFile file) {
+        try {
+            // 1. Get the dynamic MIME type (e.g., "image/jpeg" or "image/png")
+            String mimeType = file.getContentType();
+            
+            // Optional but recommended: Add a quick server-side security check!
+            if (mimeType == null || !mimeType.startsWith("image/")) {
+                return ResponseEntity.badRequest().body("{\"error\": \"Invalid file type. Must be an image.\"}");
+            }
 
+            // 2. Convert the raw bytes into a Base64 String
+            byte[] imageBytes = file.getBytes();
+            String rawBase64 = Base64.getEncoder().encodeToString(imageBytes);
+
+            // 3. Construct the exact Data URI format your AI endpoint wants
+            String fullBase64String = "data:" + mimeType + ";base64," + rawBase64;
+            Map<String, String> responseData = new HashMap<>();
+            responseData.put("base64Image", fullBase64String);
+
+            // --- YOU NOW HAVE THE PERFECT STRING! ---
+            // Example output: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD..."
+            // Send 'fullBase64String' to your AI model here!
+            
+            // 4. Return the result back to your React frontend
+            return ResponseEntity.ok().body(responseData);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("{\"error\": \"Failed to process image\"}");
+        }
+    }
 }

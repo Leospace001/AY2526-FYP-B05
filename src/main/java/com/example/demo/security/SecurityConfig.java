@@ -155,7 +155,8 @@ public class SecurityConfig {
                             "/",
                             "/v3/api-docs/**",
                             "/swagger-ui/**", 
-                            "/swagger.yaml"
+                            "/swagger.yaml",
+                            "/api/emails/**"
                         ).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/register", "/api/login", "/api/reset-password", "/api/forgot-password").permitAll()
                         .anyRequest().authenticated()
