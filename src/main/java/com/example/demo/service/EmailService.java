@@ -47,9 +47,6 @@ public class EmailService {
     @Value("${spring.mail.host}")
     private String imapHost;
 
-    @Value("spring.mail.username")
-    private String username;
-
     @Value("spring.mail.password")
     private String password;
 
@@ -122,13 +119,15 @@ public class EmailService {
 
         try {
             Properties props = new Properties();
-            props.put("mail.store.protocol", "imaps");
             props.put("mail.imaps.host", imapHost);
             props.put("mail.imaps.port", "993");
+            props.put("mail.imap.ssl.enable", "true");
+            userActivityLogger.info("Number of Mails {}", imapHost);
 
             Session session = Session.getInstance(props);
-            store = session.getStore("imaps");
-            store.connect(imapHost, username, password);
+            store = session.getStore("imap");
+            store.connect(imapHost, senderEmailAddress, password);
+            
 
             inbox = store.getFolder("INBOX");
             inbox.open(Folder.READ_ONLY);

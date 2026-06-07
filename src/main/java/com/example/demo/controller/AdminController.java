@@ -78,7 +78,10 @@ public class AdminController {
             
             // Optional but recommended: Add a quick server-side security check!
             if (mimeType == null || !mimeType.startsWith("image/")) {
-                return ResponseEntity.badRequest().body("{\"error\": \"Invalid file type. Must be an image.\"}");
+                Map<String, String> noImageResponse = new HashMap<>();
+                noImageResponse.put("error", "images is required");
+
+                return ResponseEntity.badRequest().body(noImageResponse);
             }
 
             // 2. Convert the raw bytes into a Base64 String
@@ -99,7 +102,9 @@ public class AdminController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("{\"error\": \"Failed to process image\"}");
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 }
