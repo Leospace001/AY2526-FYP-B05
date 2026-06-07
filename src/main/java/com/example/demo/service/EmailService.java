@@ -47,7 +47,7 @@ public class EmailService {
     @Value("${spring.mail.host}")
     private String imapHost;
 
-    @Value("spring.mail.password")
+    @Value("${spring.mail.password}")
     private String password;
 
     // Single listener taking the lightweight DTO
@@ -60,14 +60,16 @@ public class EmailService {
         Optional<EmailRecord> optionalRecord = emailRecordRepository.findById(messageDto.getEmailRecordId());
         if (optionalRecord.isEmpty()) {
             userActivityLogger.error("EmailRecord not found for ID: {}", messageDto.getEmailRecordId());
-            return; 
+            return;
         }
 
         EmailRecord record = optionalRecord.get();
 
         // 2. Logic for delivery timing
-        if (record.getScheduledSendTime() != null && record.getScheduledSendTime().isAfter(java.time.LocalDateTime.now())) {
-            userActivityLogger.info("Email is scheduled for future delivery. (Note: Standard RabbitMQ requires a delayed-message plugin for this).");
+        if (record.getScheduledSendTime() != null
+                && record.getScheduledSendTime().isAfter(java.time.LocalDateTime.now())) {
+            userActivityLogger.info(
+                    "Email is scheduled for future delivery. (Note: Standard RabbitMQ requires a delayed-message plugin for this).");
             // You will need a way to handle delays here, otherwise it sends immediately.
             sendEmailImmediately(record);
         } else {
@@ -99,7 +101,7 @@ public class EmailService {
             }
 
             mailSender.send(message);
-            
+
             // 4. Mark as sent in DB
             record.setSent(true);
             emailRecordRepository.save(record);
@@ -114,20 +116,17 @@ public class EmailService {
 
     public List<MailBoxDto> readInbox(int limit) {
         List<MailBoxDto> emailList = new ArrayList<>();
-        Store store = null;
         Folder inbox = null;
+        Store store = null;
+        Properties props = new Properties();
+        props.put("mail.imap.ssl.enable", "true");
+        Session session = Session.getDefaultInstance(props, null);
+        
 
         try {
-            Properties props = new Properties();
-            props.put("mail.imaps.host", imapHost);
-            props.put("mail.imaps.port", "993");
-            props.put("mail.imap.ssl.enable", "true");
-            userActivityLogger.info("Number of Mails {}", imapHost);
-
-            Session session = Session.getInstance(props);
-            store = session.getStore("imap");
-            store.connect(imapHost, senderEmailAddress, password);
-            
+            store = session.getStore("imaps");
+            store.connect(imapHost,senderEmailAddress,password);
+            userActivityLogger.info("imapHost={}; senderEmailAddress={}; password={}",imapHost, senderEmailAddress, password);
 
             inbox = store.getFolder("INBOX");
             inbox.open(Folder.READ_ONLY);
@@ -149,13 +148,18 @@ public class EmailService {
                 parseMessageContent(msg, dto);
                 emailList.add(dto);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Failed to read emails: " + e.getMessage());
+        } catch (AuthenticationFailedException e) {
+            userActivityLogger.error("Login failed: {}", e.getMessage());
+        }
+
+        catch (Exception e) {
+            userActivityLogger.error("Failed to read emails: {}", e.getMessage());
         } finally {
             try {
-                if (inbox != null && inbox.isOpen()) inbox.close(false);
-                if (store != null) store.close();
+                if (inbox != null && inbox.isOpen())
+                    inbox.close(false);
+                if (store != null)
+                    store.close();
             } catch (MessagingException e) {
                 e.printStackTrace();
             }
@@ -164,7 +168,8 @@ public class EmailService {
     }
 
     private String extractAddresses(Address[] addresses) {
-        if (addresses == null || addresses.length == 0) return "";
+        if (addresses == null || addresses.length == 0)
+            return "";
         return ((InternetAddress) addresses[0]).getAddress();
     }
 
@@ -180,31 +185,60 @@ public class EmailService {
     }
 
     private void parseMessageContent(Part part, MailBoxDto dto) throws Exception {
-        if (part.isMimeType("text/plain")) {
-            if (dto.getBody() == null) {
-                dto.setBody((String) part.getContent());
-            }
-        } else if (part.isMimeType("multipart/*")) {
+        String contentType = part.getContentType().toLowerCase();
+        String disposition = part.getDisposition();
+
+        // 1. Handle Multipart Containers (Dig Deeper!)
+        if (part.isMimeType("multipart/*")) {
             MimeMultipart multipart = (MimeMultipart) part.getContent();
             for (int i = 0; i < multipart.getCount(); i++) {
                 parseMessageContent(multipart.getBodyPart(i), dto);
             }
-        } else if (Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition()) || part.getFileName() != null) {
-            // It's an attachment!
-            InputStream is = part.getInputStream();
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            int nRead;
-            byte[] data = new byte[16384];
-            while ((nRead = is.read(data, 0, data.length)) != -1) {
-                buffer.write(data, 0, nRead);
-            }
+            return; // We've parsed the children, stop processing this container
+        }
+
+        // 2. Handle Attachments and Inline Images
+        // We check this BEFORE text, because sometimes email clients send text files as attachments!
+        if (Part.ATTACHMENT.equalsIgnoreCase(disposition) || 
+            Part.INLINE.equalsIgnoreCase(disposition) || 
+            part.getFileName() != null) {
             
-            EmailAttachmentDto attachment = new EmailAttachmentDto(
-                    part.getFileName(),
-                    part.getContentType(),
-                    buffer.toByteArray()
-            );
-            dto.getAttachments().add(attachment);
+            // Note: If an email client sets an inline image but no filename, we give it a default one.
+            String fileName = part.getFileName() != null ? part.getFileName() : "inline-file-" + UUID.randomUUID();
+
+            // Try-with-resources ensures the InputStream is always closed, preventing memory leaks
+            try (InputStream is = part.getInputStream();
+                 ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+                 
+                int nRead;
+                byte[] data = new byte[16384]; // 16KB chunk size is optimal
+                while ((nRead = is.read(data, 0, data.length)) != -1) {
+                    buffer.write(data, 0, nRead);
+                }
+
+                EmailAttachmentDto attachment = new EmailAttachmentDto(
+                        fileName,
+                        part.getContentType(),
+                        buffer.toByteArray()
+                );
+                
+                // IMPORTANT: Ensure your MailBoxDto initializes the attachments list: 
+                // private List<EmailAttachmentDto> attachments = new ArrayList<>();
+                dto.getAttachments().add(attachment);
+            }
+            return; // We handled the attachment, skip text processing
+        }
+
+        // 3. Handle the Email Body (HTML is king, Plain Text is the fallback)
+        if (part.isMimeType("text/html")) {
+            // If we find HTML, we always want to use it. It overwrites plain text.
+            dto.setBody((String) part.getContent());
+        } 
+        else if (part.isMimeType("text/plain")) {
+            // If we find Plain Text, ONLY set it if we haven't already found an HTML body.
+            if (dto.getBody() == null) {
+                dto.setBody((String) part.getContent());
+            }
         }
     }
 }

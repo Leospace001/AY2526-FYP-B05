@@ -17,6 +17,7 @@ import Register from './pages/Register';
 import ResetPassword from './pages/ResetPassword';
 import ForgotPassword from './pages/ForgotPassword';
 import PlantIdentifier from './pages/PlantIdentifer';
+import EmailInbox from './pages/Email';
 
 // 1. Define Props for the Protected Route
 interface ProtectedRouteProps {
@@ -61,7 +62,9 @@ function AppRoutes() {
 
                     <Route path="/plant" element={<PlantIdentifier />} />
 
-                     <Route path="/forgot" element={<ForgotPassword />} />
+                    <Route path="/forgot" element={<ForgotPassword />} />
+
+                     <Route path="/email" element={<EmailInbox />} />
 
                     {/* 🚀 NEW PROTECTED ROUTE: Product Creation Form (Admins Only) */}
                     <Route path="/products/create" element={
