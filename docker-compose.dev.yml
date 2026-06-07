@@ -21,14 +21,7 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: demod
       RABBITMQ_DEFAULT_PASS: demo
-    
-  certbot:
-    image: certbot/certbot
-    container_name: certbot
-    volumes:
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    command: certonly --webroot -w /var/www/certbot --force-renewal --email yuen7895123@yahoo.com.hk -d leospace.cc --agree-tos
+
   app:
     build:
       context: .
