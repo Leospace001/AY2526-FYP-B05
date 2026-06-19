@@ -12,6 +12,7 @@ import {
 // 🟢 Explicitly import Grid2 (or standard Grid depending on MUI subversion configuration)
 import Grid from '@mui/material/Grid'; 
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 
@@ -39,6 +40,10 @@ export default function Cart() {
 
     // 🚀 Modal control state and dynamic form bindings
     const [openCheckoutModal, setOpenCheckoutModal] = useState<boolean>(false);
+    const [openEditModal, setOpenEditModal] = useState<boolean>(false);
+    const [editingItem, setEditingItem] = useState<CartItem | null>(null);
+    const [editQuantity, setEditQuantity] = useState<number>(1);
+    const [updating, setUpdating] = useState<boolean>(false);
     const [checkoutForm, setCheckoutForm] = useState({
         name: '',
         description: '',
@@ -66,10 +71,54 @@ export default function Cart() {
             const response = await api.delete<CartResponse>(`/api/cart/items/${cartItemId}`);
             setCart(response.data);
             refreshCartCount();
+            window.dispatchEvent(new Event('cart-updated'));
             setSnackbar({ open: true, message: 'Item removed from cart.', severity: 'success' });
         } catch (error) {
             console.error('Failed to remove cart item:', error);
             setSnackbar({ open: true, message: 'Failed to drop item from cart.', severity: 'error' });
+        }
+    };
+
+    const handleEditOpen = (item: CartItem) => {
+        setEditingItem(item);
+        setEditQuantity(item.quantity);
+        setOpenEditModal(true);
+    };
+
+    const handleEditClose = () => {
+        if (!updating) {
+            setOpenEditModal(false);
+            setEditingItem(null);
+        }
+    };
+
+    const handleConfirmEdit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingItem || editQuantity < 1) {
+            setSnackbar({ open: true, message: 'Quantity must be at least 1.', severity: 'error' });
+            return;
+        }
+
+        setUpdating(true);
+        try {
+            const response = await api.put<CartResponse>(
+                `/api/cart/items/${editingItem.id}`,
+                { quantity: editQuantity }
+            );
+            setCart(response.data);
+            refreshCartCount();
+            window.dispatchEvent(new Event('cart-updated'));
+            setOpenEditModal(false);
+            setEditingItem(null);
+            setSnackbar({ open: true, message: 'Cart item quantity updated.', severity: 'success' });
+        } catch (error: unknown) {
+            console.error('Failed to update cart item:', error);
+            const message =
+                (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+                ?? 'Failed to update item quantity.';
+            setSnackbar({ open: true, message, severity: 'error' });
+        } finally {
+            setUpdating(false);
         }
     };
 
@@ -171,7 +220,10 @@ export default function Cart() {
                                             <TableCell align="center">{item.quantity}</TableCell>
                                             <TableCell align="right">${(item.sellingPrice * item.quantity).toFixed(2)}</TableCell>
                                             <TableCell align="center">
-                                                <IconButton color="error" onClick={() => handleRemoveItem(item.id)}>
+                                                <IconButton color="primary" onClick={() => handleEditOpen(item)} aria-label="Edit quantity">
+                                                    <EditIcon />
+                                                </IconButton>
+                                                <IconButton color="error" onClick={() => handleRemoveItem(item.id)} aria-label="Remove item">
                                                     <DeleteIcon />
                                                 </IconButton>
                                             </TableCell>
@@ -210,6 +262,51 @@ export default function Cart() {
                     </Grid>
                 </Grid>
             )}
+
+            {/* Edit quantity dialog */}
+            <Dialog
+                open={openEditModal}
+                onClose={handleEditClose}
+                maxWidth="xs"
+                fullWidth
+                sx={{ '& .MuiPaper-root': { borderRadius: 3 } }}
+            >
+                <DialogTitle sx={{ fontWeight: 'bold', color: '#2c3e50', pt: 3 }}>
+                    Edit Quantity
+                </DialogTitle>
+                <Box component="form" onSubmit={handleConfirmEdit}>
+                    <DialogContent dividers sx={{ py: 2 }}>
+                        {editingItem && (
+                            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                                Stock Item #{editingItem.stockId} — ${editingItem.sellingPrice.toFixed(2)} each
+                            </Typography>
+                        )}
+                        <TextField
+                            required
+                            fullWidth
+                            type="number"
+                            label="Quantity"
+                            value={editQuantity}
+                            onChange={(e) => setEditQuantity(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                            disabled={updating}
+                        />
+                    </DialogContent>
+                    <DialogActions sx={{ px: 3, py: 2.5, gap: 1 }}>
+                        <Button color="inherit" disabled={updating} onClick={handleEditClose}>
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            color="primary"
+                            disabled={updating}
+                            sx={{ fontWeight: 'bold', px: 3 }}
+                        >
+                            {updating ? <CircularProgress size={24} color="inherit" /> : 'Save'}
+                        </Button>
+                    </DialogActions>
+                </Box>
+            </Dialog>
 
             {/* 🚀 CHECKOUT MULTIPART POPUP DIALOG FORM */}
             <Dialog 

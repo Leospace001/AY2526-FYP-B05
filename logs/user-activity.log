@@ -12845,3 +12845,202 @@ Caused by: java.net.ConnectException: Connection refused
 2026-06-19 07:34:34 [http-nio-8080-exec-8] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 15 ms
 2026-06-19 07:34:37 [http-nio-8080-exec-9] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 14 ms
 2026-06-19 07:34:40 [http-nio-8080-exec-10] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 13 ms
+2026-06-19 08:14:12 [main] INFO  com.example.demo.DemoApplication - Starting DemoApplication v0.0.1-SNAPSHOT using Java 17.0.19 with PID 1 (/app/app.jar started by root in /app)
+2026-06-19 08:14:12 [main] INFO  com.example.demo.DemoApplication - No active profile set, falling back to 1 default profile: "default"
+2026-06-19 08:14:14 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-06-19 08:14:14 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 70 ms. Found 13 JPA repository interfaces.
+2026-06-19 08:14:14 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2026-06-19 08:14:14 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2026-06-19 08:14:14 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-06-19 08:14:14 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.10]
+2026-06-19 08:14:14 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-06-19 08:14:14 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2492 ms
+2026-06-19 08:14:14 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-06-19 08:14:15 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.2.5.Final
+2026-06-19 08:14:15 [main] INFO  org.hibernate.cfg.Environment - HHH000406: Using bytecode reflection optimizer
+2026-06-19 08:14:15 [main] INFO  o.h.b.i.BytecodeProviderInitiator - HHH000021: Bytecode provider name : bytebuddy
+2026-06-19 08:14:15 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-06-19 08:14:15 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-06-19 08:14:15 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@3bb8aabc
+2026-06-19 08:14:15 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-06-19 08:14:15 [main] INFO  o.h.b.i.BytecodeProviderInitiator - HHH000021: Bytecode provider name : bytebuddy
+2026-06-19 08:14:16 [main] INFO  o.h.m.i.EntityInstantiatorPojoStandard - HHH000182: No default (no-argument) constructor for class: com.example.demo.model.LogEvent (class must be instantiated by Interceptor)
+2026-06-19 08:14:16 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+2026-06-19 08:14:16 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-06-19 08:14:17 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-06-19 08:14:17 [main] ERROR UserActivity - ❌ Google Drive Configuration Error: Invalid credentials format or network issue.
+java.io.IOException: Invalid PKCS#8 data.
+	at com.google.auth.oauth2.OAuth2Utils.privateKeyFromPkcs8(OAuth2Utils.java:241)
+	at com.google.auth.oauth2.ServiceAccountCredentials.fromPkcs8(ServiceAccountCredentials.java:436)
+	at com.google.auth.oauth2.ServiceAccountCredentials.fromJson(ServiceAccountCredentials.java:199)
+	at com.google.auth.oauth2.GoogleCredentials.fromStream(GoogleCredentials.java:200)
+	at com.google.auth.oauth2.GoogleCredentials.fromStream(GoogleCredentials.java:166)
+	at com.example.demo.config.GoogleDriveConfig.googleDriveService(GoogleDriveConfig.java:47)
+	at com.example.demo.config.GoogleDriveConfig$$SpringCGLIB$$0.CGLIB$googleDriveService$0(<generated>)
+	at com.example.demo.config.GoogleDriveConfig$$SpringCGLIB$$2.invoke(<generated>)
+	at org.springframework.cglib.proxy.MethodProxy.invokeSuper(MethodProxy.java:258)
+	at org.springframework.context.annotation.ConfigurationClassEnhancer$BeanMethodInterceptor.intercept(ConfigurationClassEnhancer.java:331)
+	at com.example.demo.config.GoogleDriveConfig$$SpringCGLIB$$0.googleDriveService(<generated>)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:139)
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:655)
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiateUsingFactoryMethod(ConstructorResolver.java:493)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.instantiateUsingFactoryMethod(AbstractAutowireCapableBeanFactory.java:1332)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1162)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:560)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:520)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:326)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:324)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:200)
+	at org.springframework.beans.factory.config.DependencyDescriptor.resolveCandidate(DependencyDescriptor.java:254)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1417)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1337)
+	at org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor$AutowiredFieldElement.resolveFieldValue(AutowiredAnnotationBeanPostProcessor.java:711)
+	at org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor$AutowiredFieldElement.inject(AutowiredAnnotationBeanPostProcessor.java:694)
+	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:145)
+	at org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor.postProcessProperties(AutowiredAnnotationBeanPostProcessor.java:483)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1416)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:597)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:520)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:326)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:324)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:200)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:973)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:941)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:608)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:734)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:436)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:312)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1306)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1295)
+	at com.example.demo.DemoApplication.main(DemoApplication.java:25)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.springframework.boot.loader.MainMethodRunner.run(MainMethodRunner.java:49)
+	at org.springframework.boot.loader.Launcher.launch(Launcher.java:95)
+	at org.springframework.boot.loader.Launcher.launch(Launcher.java:58)
+	at org.springframework.boot.loader.JarLauncher.main(JarLauncher.java:65)
+2026-06-19 08:14:17 [main] WARN  UserActivity - ⚠️ Google Drive service will be unavailable. Please verify the content of your 'credentials.json'.
+2026-06-19 08:14:19 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@18f8ebd4, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@7e1fb22c, org.springframework.security.web.context.SecurityContextHolderFilter@3e12c5de, org.springframework.security.web.header.HeaderWriterFilter@dbda472, org.springframework.web.filter.CorsFilter@38fc34fd, org.springframework.security.web.authentication.logout.LogoutFilter@552cb0d5, com.example.demo.security.SecurityConfig$JsonUsernamePasswordAuthenticationFilter@15639d09, com.example.demo.security.JwtRequestFilter@3e900e1a, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@1f521c69, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@2b3abeeb, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@7178d811, org.springframework.security.web.session.SessionManagementFilter@7bef7505, org.springframework.security.web.access.ExceptionTranslationFilter@18b45500, org.springframework.security.web.access.intercept.AuthorizationFilter@3dcbbbc]
+2026-06-19 08:14:19 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2026-06-19 08:14:19 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2026-06-19 08:14:19 [main] INFO  o.s.a.r.c.CachingConnectionFactory - Attempting to connect to: [rabbitmq:5672]
+2026-06-19 08:14:19 [main] INFO  o.s.a.r.l.SimpleMessageListenerContainer - Broker not available; cannot force queue declarations during start: java.net.ConnectException: Connection refused
+2026-06-19 08:14:19 [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] INFO  o.s.a.r.c.CachingConnectionFactory - Attempting to connect to: [rabbitmq:5672]
+2026-06-19 08:14:19 [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] ERROR o.s.a.r.l.SimpleMessageListenerContainer - Failed to check/redeclare auto-delete queue(s).
+org.springframework.amqp.AmqpConnectException: java.net.ConnectException: Connection refused
+	at org.springframework.amqp.rabbit.support.RabbitExceptionTranslator.convertRabbitAccessException(RabbitExceptionTranslator.java:61)
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.createBareConnection(AbstractConnectionFactory.java:594)
+	at org.springframework.amqp.rabbit.connection.CachingConnectionFactory.createConnection(CachingConnectionFactory.java:687)
+	at org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils.createConnection(ConnectionFactoryUtils.java:257)
+	at org.springframework.amqp.rabbit.core.RabbitTemplate.doExecute(RabbitTemplate.java:2225)
+	at org.springframework.amqp.rabbit.core.RabbitTemplate.execute(RabbitTemplate.java:2198)
+	at org.springframework.amqp.rabbit.core.RabbitTemplate.execute(RabbitTemplate.java:2178)
+	at org.springframework.amqp.rabbit.core.RabbitAdmin.getQueueInfo(RabbitAdmin.java:459)
+	at org.springframework.amqp.rabbit.core.RabbitAdmin.getQueueProperties(RabbitAdmin.java:443)
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.attemptDeclarations(AbstractMessageListenerContainer.java:1891)
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.redeclareElementsIfNecessary(AbstractMessageListenerContainer.java:1858)
+	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer$AsyncMessageProcessingConsumer.initialize(SimpleMessageListenerContainer.java:1384)
+	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer$AsyncMessageProcessingConsumer.run(SimpleMessageListenerContainer.java:1230)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+Caused by: java.net.ConnectException: Connection refused
+	at java.base/sun.nio.ch.Net.pollConnect(Native Method)
+	at java.base/sun.nio.ch.Net.pollConnectNow(Net.java:684)
+	at java.base/sun.nio.ch.NioSocketImpl.timedFinishConnect(NioSocketImpl.java:547)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:602)
+	at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
+	at java.base/java.net.Socket.connect(Socket.java:633)
+	at com.rabbitmq.client.impl.SocketFrameHandlerFactory.create(SocketFrameHandlerFactory.java:59)
+	at com.rabbitmq.client.ConnectionFactory.newConnection(ConnectionFactory.java:1223)
+	at com.rabbitmq.client.ConnectionFactory.newConnection(ConnectionFactory.java:1173)
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.connectAddresses(AbstractConnectionFactory.java:632)
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.connect(AbstractConnectionFactory.java:607)
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.createBareConnection(AbstractConnectionFactory.java:557)
+	... 12 common frames omitted
+2026-06-19 08:14:19 [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] INFO  o.s.a.r.c.CachingConnectionFactory - Attempting to connect to: [rabbitmq:5672]
+2026-06-19 08:14:19 [main] INFO  com.example.demo.DemoApplication - Started DemoApplication in 7.582 seconds (process running for 8.416)
+2026-06-19 08:14:22 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-06-19 08:14:22 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-06-19 08:14:22 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2026-06-19 08:14:22 [http-nio-8080-exec-1] INFO  UserActivity - admin logged in successfully: 
+2026-06-19 08:14:22 [http-nio-8080-exec-2] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 21 ms
+2026-06-19 08:14:22 [http-nio-8080-exec-4] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 10 ms
+2026-06-19 08:14:22 [http-nio-8080-exec-5] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 8 ms
+2026-06-19 08:14:24 [http-nio-8080-exec-7] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 19 ms
+2026-06-19 08:14:24 [http-nio-8080-exec-8] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 9 ms
+2026-06-19 08:14:24 [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] WARN  o.s.a.r.l.SimpleMessageListenerContainer - Consumer raised exception, processing can restart if the connection factory supports it. Exception summary: org.springframework.amqp.AmqpConnectException: java.net.ConnectException: Connection refused
+2026-06-19 08:14:24 [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] INFO  o.s.a.r.l.SimpleMessageListenerContainer - Restarting Consumer@1fd35a92: tags=[[]], channel=null, acknowledgeMode=AUTO local queue size=0
+2026-06-19 08:14:24 [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-2] INFO  o.s.a.r.c.CachingConnectionFactory - Attempting to connect to: [rabbitmq:5672]
+2026-06-19 08:14:24 [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-2] INFO  o.s.a.r.c.CachingConnectionFactory - Created new connection: rabbitConnectionFactory#1f129467:3/SimpleConnection@10c92cc [delegate=amqp://demod@172.18.0.4:5672/, localPort=36368]
+2026-06-19 08:14:25 [http-nio-8080-exec-9] INFO  UserActivity - User admin authenticated successfully and accessed /api/order/page with method GET in 30 ms
+2026-06-19 08:14:25 [http-nio-8080-exec-10] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 49 ms
+2026-06-19 08:14:26 [http-nio-8080-exec-1] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 24 ms
+2026-06-19 08:14:26 [http-nio-8080-exec-2] INFO  UserActivity - User admin authenticated successfully and accessed /api/stock/ with method GET in 27 ms
+2026-06-19 08:14:26 [http-nio-8080-exec-3] INFO  UserActivity - User admin authenticated successfully and accessed /api/admin/image/1781850850228_download.png with method GET in 44 ms
+2026-06-19 08:14:27 [http-nio-8080-exec-5] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart/items with method POST in 12 ms
+2026-06-19 08:14:28 [http-nio-8080-exec-7] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 12 ms
+2026-06-19 08:14:29 [http-nio-8080-exec-8] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 11 ms
+2026-06-19 08:14:29 [http-nio-8080-exec-10] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 14 ms
+2026-06-19 08:14:29 [http-nio-8080-exec-9] INFO  UserActivity - User admin authenticated successfully and accessed /api/admin/image/1781850850228_download.png with method GET in 16 ms
+2026-06-19 08:14:32 [http-nio-8080-exec-1] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 14 ms
+2026-06-19 08:14:34 [http-nio-8080-exec-3] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart/items/6 with method PUT in 30 ms
+2026-06-19 08:14:34 [http-nio-8080-exec-4] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 14 ms
+2026-06-19 08:14:34 [http-nio-8080-exec-6] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 12 ms
+2026-06-19 08:14:35 [http-nio-8080-exec-7] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 27 ms
+2026-06-19 08:14:37 [http-nio-8080-exec-8] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart/items/6 with method PUT in 42 ms
+2026-06-19 08:14:37 [http-nio-8080-exec-9] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 15 ms
+2026-06-19 08:14:37 [http-nio-8080-exec-2] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 14 ms
+2026-06-19 08:14:38 [http-nio-8080-exec-3] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 18 ms
+2026-06-19 08:14:41 [http-nio-8080-exec-4] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 13 ms
+2026-06-19 08:14:44 [http-nio-8080-exec-5] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 17 ms
+2026-06-19 08:14:47 [http-nio-8080-exec-7] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 18 ms
+2026-06-19 08:14:50 [http-nio-8080-exec-8] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 17 ms
+2026-06-19 08:14:53 [http-nio-8080-exec-10] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 29 ms
+2026-06-19 08:14:56 [http-nio-8080-exec-9] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 14 ms
+2026-06-19 08:14:59 [http-nio-8080-exec-1] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 23 ms
+2026-06-19 08:15:02 [http-nio-8080-exec-2] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 29 ms
+2026-06-19 08:15:05 [http-nio-8080-exec-4] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 16 ms
+2026-06-19 08:15:08 [http-nio-8080-exec-5] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 17 ms
+2026-06-19 08:15:11 [http-nio-8080-exec-6] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 21 ms
+2026-06-19 08:15:12 [http-nio-8080-exec-8] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 27 ms
+2026-06-19 08:15:14 [http-nio-8080-exec-9] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 13 ms
+2026-06-19 08:15:17 [http-nio-8080-exec-1] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 14 ms
+2026-06-19 08:15:18 [http-nio-8080-exec-3] INFO  UserActivity - User admin authenticated successfully and accessed /api/emails/inbox with method GET in 22 ms
+2026-06-19 08:15:18 [http-nio-8080-exec-2] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 23 ms
+2026-06-19 08:15:20 [http-nio-8080-exec-3] INFO  UserActivity - imapHost=mail14.serv00.com; senderEmailAddress=kandajunko@kandajunko.serv00.net; password=P@ssw0rd
+2026-06-19 08:15:21 [http-nio-8080-exec-4] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 20 ms
+2026-06-19 08:15:24 [http-nio-8080-exec-6] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 17 ms
+2026-06-19 08:15:27 [http-nio-8080-exec-7] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 9 ms
+2026-06-19 08:15:30 [http-nio-8080-exec-10] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 9 ms
+2026-06-19 08:15:33 [http-nio-8080-exec-9] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 9 ms
+2026-06-19 08:15:36 [http-nio-8080-exec-2] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 15 ms
+2026-06-19 08:15:39 [http-nio-8080-exec-5] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 16 ms
+2026-06-19 08:15:42 [http-nio-8080-exec-7] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 12 ms
+2026-06-19 08:15:45 [http-nio-8080-exec-8] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 18 ms
+2026-06-19 08:15:48 [http-nio-8080-exec-10] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 16 ms
+2026-06-19 08:15:51 [http-nio-8080-exec-9] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 23 ms
+2026-06-19 08:15:54 [http-nio-8080-exec-1] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 18 ms
+2026-06-19 08:15:57 [http-nio-8080-exec-2] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 17 ms
+2026-06-19 08:16:00 [http-nio-8080-exec-5] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 11 ms
+2026-06-19 08:16:03 [http-nio-8080-exec-7] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 25 ms
+2026-06-19 08:16:06 [http-nio-8080-exec-8] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 10 ms
+2026-06-19 08:16:09 [http-nio-8080-exec-3] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 17 ms
+2026-06-19 08:16:12 [http-nio-8080-exec-10] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 17 ms
+2026-06-19 08:16:12 [http-nio-8080-exec-1] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 12 ms
+2026-06-19 08:16:15 [http-nio-8080-exec-2] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 15 ms
+2026-06-19 08:16:18 [http-nio-8080-exec-4] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 13 ms
+2026-06-19 08:16:21 [http-nio-8080-exec-5] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 9 ms
+2026-06-19 08:16:24 [http-nio-8080-exec-7] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 13 ms
+2026-06-19 08:16:27 [http-nio-8080-exec-8] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 15 ms
+2026-06-19 08:16:30 [http-nio-8080-exec-3] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 9 ms
+2026-06-19 08:16:33 [http-nio-8080-exec-9] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 17 ms
+2026-06-19 08:16:36 [http-nio-8080-exec-1] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 11 ms
+2026-06-19 08:16:39 [http-nio-8080-exec-2] INFO  UserActivity - User admin authenticated successfully and accessed /api/cart with method GET in 17 ms

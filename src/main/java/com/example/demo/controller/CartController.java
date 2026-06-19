@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.dto.AddToCartRequest;
 import com.example.demo.dto.CartDto;
+import com.example.demo.dto.UpdateCartItemRequest;
 import com.example.demo.model.User;
 import com.example.demo.security.CustomUserDetails;
 import com.example.demo.service.CartService;
@@ -49,6 +50,19 @@ public class CartController {
         User user = userPrincipal.getUser();
         Long userId = user.getId();
         return ResponseEntity.ok(cartService.addToCart(userId, request));
+    }
+
+    @PutMapping("/items/{cartItemId}")
+    @Operation(summary = "Update the quantity of a cart item")
+    public ResponseEntity<CartDto> updateCartItem(
+        @PathVariable Long cartItemId,
+        @RequestBody UpdateCartItemRequest request,
+        Authentication authentication
+    ) {
+        CustomUserDetails userPrincipal = (CustomUserDetails) authentication.getPrincipal();
+        User user = userPrincipal.getUser();
+        Long userId = user.getId();
+        return ResponseEntity.ok(cartService.updateCartItemQuantity(userId, cartItemId, request));
     }
 
     @DeleteMapping("/items/{cartItemId}")

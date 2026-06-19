@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.dto.AddToCartRequest;
 import com.example.demo.dto.CartDto;
+import com.example.demo.dto.UpdateCartItemRequest;
 import com.example.demo.mapper.CartMapper;
 import com.example.demo.model.Cart;
 import com.example.demo.model.CartItem;
@@ -78,6 +79,28 @@ public class CartService {
         if (deleted == 0) {
             throw new RuntimeException("Item not found in cart with ID: " + cartItemId);
         }
+        return toCartDto(cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Cart not found for user ID: " + userId)));
+    }
+
+    @Transactional
+    public CartDto updateCartItemQuantity(Long userId, Long cartItemId, UpdateCartItemRequest request) {
+        if (request.getQuantity() == null || request.getQuantity() < 1) {
+            throw new RuntimeException("Quantity must be at least 1");
+        }
+
+        CartItem item = cartItemRepository.findOwnedByIdAndUserId(cartItemId, userId)
+                .orElseThrow(() -> new RuntimeException("Item not found in cart with ID: " + cartItemId));
+
+        Stock stock = item.getStock();
+        if (stock.getQuantity() < request.getQuantity()) {
+            throw new RuntimeException(
+                    "Not enough stock available. Current warehouse stock: " + stock.getQuantity());
+        }
+
+        item.setQuantity(request.getQuantity());
+        cartItemRepository.save(item);
+
         return toCartDto(cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Cart not found for user ID: " + userId)));
     }

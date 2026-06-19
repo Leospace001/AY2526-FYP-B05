@@ -8,7 +8,7 @@ services:
         - ./nginx/dev.conf:/etc/nginx/conf.d/default.conf
       depends_on:
         - app
-      restart: unless-stopped
+      restart: no
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -38,7 +38,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       DOMAIN: http://localhost
-    restart: unless-stopped
+    restart: no
     depends_on:
       - rabbitmq
       - db
@@ -50,7 +50,7 @@ services:
       context: ./ui
       dockerfile: Dockerfile
     container_name: ui
-    restart: unless-stopped
+    restart: no
     volumes:
       - ./ui:/app
       - /app/node_modules
@@ -64,6 +64,7 @@ services:
       - POSTGRES_PASSWORD=postgres
     volumes:
       - pgdata:/var/lib/postgresql/data
+    restart: no
   
   ollama:
     image: ollama/ollama:latest
@@ -74,11 +75,11 @@ services:
     volumes:
       - ollama:/root/.ollama
       - ./entrypoint.sh:/entrypoint.sh
-    restart: unless-stopped
+    restart: no
 
   adminer:
     image: adminer
-    restart: always
+    restart: no
     ports:
       - 7070:8080
 volumes:

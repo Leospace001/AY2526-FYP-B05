@@ -27,6 +27,14 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
     Optional<CartItem> findByCart_IdAndStock_Id(Long cartId, Long stockId);
 
+    @Query("""
+        SELECT ci FROM CartItem ci
+        JOIN ci.cart c
+        JOIN FETCH ci.stock s
+        WHERE ci.id = :id AND c.userId = :userId
+        """)
+    Optional<CartItem> findOwnedByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
+
     @Modifying(clearAutomatically = true)
     @Query(value = """
         DELETE FROM cart_items ci
