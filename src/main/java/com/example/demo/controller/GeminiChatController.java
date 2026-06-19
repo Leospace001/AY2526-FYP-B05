@@ -1,14 +1,21 @@
 package com.example.demo.controller;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.example.demo.dto.GeminiChatRequest;
+import com.example.demo.dto.GeminiChatResponse;
+import com.example.demo.dto.GeminiStatusResponse;
+import com.example.demo.exception.GeminiApiException;
 import com.example.demo.service.GeminiService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,11 +29,31 @@ public class GeminiChatController {
     @Autowired
     private GeminiService geminiService;
 
-    @PostMapping(value = "/gemini", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "Stream a Gemini chat response via the backend proxy")
-    public SseEmitter chat(@RequestBody GeminiChatRequest request) {
-        SseEmitter emitter = new SseEmitter(120_000L);
-        geminiService.streamChat(request.getMessage(), emitter);
-        return emitter;
+    @GetMapping("/gemini/status")
+    @Operation(summary = "Test whether this server can reach Gemini (diagnostic)")
+    public ResponseEntity<GeminiStatusResponse> status() {
+        return ResponseEntity.ok(geminiService.checkStatus());
+    }
+
+    @PostMapping("/gemini")
+    @Operation(summary = "Send a prompt to Gemini via the backend proxy")
+    public ResponseEntity<?> chat(@RequestBody GeminiChatRequest request) {
+        try {
+            String text = geminiService.generateContent(request.getMessage());
+            return ResponseEntity.ok(new GeminiChatResponse(text));
+        } catch (GeminiApiException ex) {
+            Map<String, Object> body = new HashMap<>();
+            body.put("error", "Gemini Error");
+            body.put("message", ex.getMessage());
+            body.put("upstreamStatus", ex.getStatusCode());
+            return ResponseEntity.status(mapToHttpStatus(ex.getStatusCode())).body(body);
+        }
+    }
+
+    private HttpStatus mapToHttpStatus(int upstreamStatus) {
+        if (upstreamStatus == 400) {
+            return HttpStatus.BAD_REQUEST;
+        }
+        return HttpStatus.BAD_GATEWAY;
     }
 }

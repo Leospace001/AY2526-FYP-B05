@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import api from '../api/axiosConfig';
 import {
     Box, Typography, Paper, TextField, IconButton,
     Avatar, Divider, Alert, Snackbar, Tooltip
@@ -22,82 +23,30 @@ const GEMINI_MODEL = 'gemini-2.0-flash';
 type SnackbarSeverity = 'error' | 'warning' | 'info';
 
 function resolveChatError(error: unknown): { message: string; severity: SnackbarSeverity } {
-    const err = error as { message?: string };
-    const rawMessage = err.message ?? 'Failed to connect to chat service.';
+    const err = error as {
+        message?: string;
+        response?: { status?: number; data?: { message?: string; upstreamStatus?: number } };
+    };
+
+    const apiMessage = err.response?.data?.message;
+    const upstreamStatus = err.response?.data?.upstreamStatus;
+    const rawMessage = apiMessage ?? err.message ?? 'Failed to connect to chat service.';
+
+    if (upstreamStatus === 403 || rawMessage.includes('403')) {
+        return {
+            message: 'Gemini blocked the server (403). Your EC2 region may not be supported — use us-east-1 or configure GEMINI_PROXY_HOST on the server.',
+            severity: 'warning',
+        };
+    }
 
     if (rawMessage.toLowerCase().includes('api key')) {
         return {
-            message: 'Gemini is not configured on the server. Contact the administrator.',
+            message: 'Gemini is not configured on the server. Set GEMINI_API_KEY in the server environment.',
             severity: 'error',
         };
     }
 
     return { message: rawMessage, severity: 'error' };
-}
-
-async function streamGeminiViaBackend(
-    message: string,
-    onChunk: (chunk: string) => void,
-    signal: AbortSignal
-): Promise<void> {
-    const token = localStorage.getItem('token');
-    const response = await fetch('/api/chat/gemini', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            Accept: 'text/event-stream',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ message }),
-        signal,
-    });
-
-    if (!response.ok) {
-        let errorMessage = `Chat service error (${response.status}).`;
-        try {
-            const body = await response.json();
-            errorMessage = body.message ?? errorMessage;
-        } catch {
-            const text = await response.text();
-            if (text) errorMessage = text;
-        }
-        throw new Error(errorMessage);
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-        throw new Error('Streaming is not supported by this browser.');
-    }
-
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let currentEvent = 'message';
-
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-
-        for (const line of lines) {
-            if (line.startsWith('event:')) {
-                currentEvent = line.slice(6).trim();
-            } else if (line.startsWith('data:')) {
-                const data = line.slice(5).trim();
-                if (currentEvent === 'error') {
-                    throw new Error(data || 'Gemini request failed.');
-                }
-                if (currentEvent === 'done' || data === '[DONE]') {
-                    return;
-                }
-                if (data) {
-                    onChunk(data);
-                }
-            }
-        }
-    }
 }
 
 export default function GeminiChat() {
@@ -156,27 +105,20 @@ export default function GeminiChat() {
         abortControllerRef.current = new AbortController();
 
         try {
-            let accumulatedBotResponse = '';
-
-            await streamGeminiViaBackend(
-                userPrompt,
-                (chunk) => {
-                    accumulatedBotResponse += chunk;
-                    setMessages(prev => prev.map(msg =>
-                        msg.id === botMsgId
-                            ? { ...msg, content: accumulatedBotResponse, isError: false }
-                            : msg
-                    ));
-                },
-                abortControllerRef.current.signal
+            const response = await api.post<{ text: string }>(
+                '/api/chat/gemini',
+                { message: userPrompt },
+                { signal: abortControllerRef.current.signal }
             );
 
-            if (!accumulatedBotResponse.trim()) {
-                setMessages(prev => prev.filter(msg => msg.id !== botMsgId));
-            }
+            setMessages(prev => prev.map(msg =>
+                msg.id === botMsgId
+                    ? { ...msg, content: response.data.text, isError: false }
+                    : msg
+            ));
         } catch (error: unknown) {
-            const err = error as { name?: string };
-            if (err.name === 'AbortError') {
+            const err = error as { name?: string; code?: string };
+            if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
                 setMessages(prev => prev.filter(msg => !(msg.id === botMsgId && !msg.content.trim())));
                 return;
             }
@@ -225,7 +167,10 @@ export default function GeminiChat() {
             </Box>
 
             <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
-                Requests go through your Spring Boot server — users do not need a VPN or a Gemini API key in the browser.
+                Requests go to <strong>/api/chat/gemini</strong> on your server — not Google from the browser.
+                If chat fails with 403, Gemini is blocking your <strong>server&apos;s region</strong> (common on HK/Asia EC2).
+                Your laptop VPN does not fix that for other users. Move EC2 to <strong>us-east-1</strong> or set{' '}
+                <strong>GEMINI_PROXY_HOST</strong> on the server, then run <strong>GET /api/chat/gemini/status</strong> to verify.
             </Alert>
 
             <Paper sx={{ flexGrow: 1, mb: 3, p: 3, overflowY: 'auto', borderRadius: 3, boxShadow: 3, bgcolor: '#fdfdfd', display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -233,7 +178,7 @@ export default function GeminiChat() {
                     <Box sx={{ m: 'auto', textAlign: 'center', color: '#bdc3c7' }}>
                         <AutoAwesomeIcon sx={{ fontSize: 60, mb: 2, opacity: 0.5 }} />
                         <Typography variant="h6">Gemini Engine Ready</Typography>
-                        <Typography variant="body2">Type a prompt below to start streaming.</Typography>
+                        <Typography variant="body2">Type a prompt below to send via the backend proxy.</Typography>
                     </Box>
                 ) : (
                     messages.map((msg) => (
@@ -286,7 +231,7 @@ export default function GeminiChat() {
 
             <Snackbar
                 open={snackbar.open}
-                autoHideDuration={6000}
+                autoHideDuration={8000}
                 onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
             >
                 <Alert severity={snackbar.severity} variant="filled">{snackbar.message}</Alert>
