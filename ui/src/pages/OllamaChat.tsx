@@ -18,7 +18,7 @@ interface ChatMessage {
 }
 
 const LOCAL_STORAGE_KEY = 'gemini_chat_history';
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 
 type SnackbarSeverity = 'error' | 'warning' | 'info';
 
@@ -35,6 +35,13 @@ function resolveChatError(error: unknown): { message: string; severity: Snackbar
     if (upstreamStatus === 403 || rawMessage.includes('403')) {
         return {
             message: 'Gemini blocked the server (403). Your EC2 region may not be supported — use us-east-1 or configure GEMINI_PROXY_HOST on the server.',
+            severity: 'warning',
+        };
+    }
+
+    if (upstreamStatus === 429 || rawMessage.includes('429') || rawMessage.toLowerCase().includes('quota')) {
+        return {
+            message: 'Gemini quota or rate limit hit (429). If the model is gemini-2.0-flash, switch to gemini-2.5-flash — 2.0 was shut down in June 2026.',
             severity: 'warning',
         };
     }

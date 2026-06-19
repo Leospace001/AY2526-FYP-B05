@@ -50,7 +50,7 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       DOMAIN: https://leospace.cc
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: gemini-2.0-flash
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
       GEMINI_PROXY_HOST: ${GEMINI_PROXY_HOST:-}
       GEMINI_PROXY_PORT: ${GEMINI_PROXY_PORT:-0}
     restart: unless-stopped

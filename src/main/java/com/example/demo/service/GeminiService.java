@@ -30,7 +30,7 @@ public class GeminiService {
     @Value("${app.gemini.api-key:}")
     private String apiKey;
 
-    @Value("${app.gemini.model:gemini-2.0-flash}")
+    @Value("${app.gemini.model:gemini-2.5-flash}")
     private String model;
 
     @Value("${app.gemini.proxy-host:}")
@@ -145,6 +145,14 @@ public class GeminiService {
             return "Gemini blocked this request (403). Your server's region/IP may not be supported. "
                     + "Use an EC2 region such as us-east-1, or set GEMINI_PROXY_HOST/GEMINI_PROXY_PORT on the server. "
                     + "Details: " + googleMessage;
+        }
+        if (statusCode == 429) {
+            if (googleMessage.contains("limit: 0") || googleMessage.contains("free_tier")) {
+                return "Gemini quota exhausted or model unavailable on free tier (429). "
+                        + "Model '" + model + "' may be deprecated or out of quota — try GEMINI_MODEL=gemini-2.5-flash "
+                        + "or enable billing at https://ai.google.dev. Details: " + googleMessage;
+            }
+            return "Gemini rate limit reached (429). Wait a minute and retry. Details: " + googleMessage;
         }
         return "Gemini API error (" + statusCode + "): " + googleMessage;
     }

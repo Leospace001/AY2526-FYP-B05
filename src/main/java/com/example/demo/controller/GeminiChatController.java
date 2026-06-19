@@ -54,6 +54,9 @@ public class GeminiChatController {
         if (upstreamStatus == 400) {
             return HttpStatus.BAD_REQUEST;
         }
+        if (upstreamStatus == 429) {
+            return HttpStatus.TOO_MANY_REQUESTS;
+        }
         return HttpStatus.BAD_GATEWAY;
     }
 }
