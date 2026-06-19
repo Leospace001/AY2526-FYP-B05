@@ -22,7 +22,7 @@ public class EmailRecord {
 
     private String subject;
 
-    @Column(length = 1000)
+    @Column(columnDefinition = "TEXT")
     private String body;
 
     @ElementCollection

@@ -108,7 +108,7 @@ public class EmailService {
             userActivityLogger.info("Email sent successfully for Record ID: {}", record.getId());
 
         } catch (MailException e) {
-            userActivityLogger.error("Mail reachable", record.getId(), e);
+            userActivityLogger.error("Failed to send email for Record ID: {}", record.getId(), e);
         } catch (Exception e) {
             userActivityLogger.error("Failed to send email for Record ID: {}", record.getId(), e);
         }

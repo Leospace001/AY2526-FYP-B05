@@ -45,7 +45,8 @@ public class EmailProducer {
     private String uploadDir;
 
     public void sendEmailToQueue(EmailRequestDto emailDto, User user) {
-        // 1. Map DTO to DB Record
+        validateEmailRequest(emailDto);
+
         EmailRecord record = emailRecordMapper.emailRequestDtoToEmailRecord(emailDto);
         record.setRecipients(emailDto.getRecipients());
         record.setScheduledSendTime(emailDto.getSendTime());
@@ -53,7 +54,6 @@ public class EmailProducer {
         record.setSent(false);
 
         try {
-            // 2. Save Attachments to Disk
             if (emailDto.getAttachments() != null && !emailDto.getAttachments().isEmpty()) {
                 List<String> attachmentPaths = new ArrayList<>();
                 for (MultipartFile file : emailDto.getAttachments()) {
@@ -67,18 +67,31 @@ public class EmailProducer {
                 }
                 record.setAttachmentPaths(attachmentPaths);
             }
-            
-            // 3. Save to DB First
+
             record = emailRecordRepository.save(record);
-            
-            // 4. Send ONLY the ID to RabbitMQ
+
             EmailMessageDto messageDto = new EmailMessageDto(record.getId());
             rabbitTemplate.convertAndSend(exchange, routingKey, messageDto);
             logger.info("Successfully queued email record ID: {}", record.getId());
 
         } catch (Exception e) {
             logger.error("Failed to process and queue email request", e);
-            throw new RuntimeException("Could not queue email", e);
+            throw new RuntimeException("Could not queue email: " + e.getMessage(), e);
+        }
+    }
+
+    private void validateEmailRequest(EmailRequestDto emailDto) {
+        if (emailDto == null) {
+            throw new IllegalArgumentException("Email request is missing. Use multipart/form-data with recipients, subject, and body.");
+        }
+        if (emailDto.getRecipients() == null || emailDto.getRecipients().isEmpty()) {
+            throw new IllegalArgumentException("At least one recipient is required.");
+        }
+        if (emailDto.getSubject() == null || emailDto.getSubject().isBlank()) {
+            throw new IllegalArgumentException("Subject is required.");
+        }
+        if (emailDto.getBody() == null || emailDto.getBody().isBlank()) {
+            throw new IllegalArgumentException("Email body is required.");
         }
     }
 }

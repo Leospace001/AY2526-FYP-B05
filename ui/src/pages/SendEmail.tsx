@@ -64,14 +64,14 @@ export default function SendEmail() {
         multipartPayload.append('body', htmlBody);
 
         if (sendTime) {
-            multipartPayload.append('sendTime', new Date(sendTime).toISOString());
+            // datetime-local value — keep as local time; do not convert to UTC ISO
+            multipartPayload.append('sendTime', sendTime.length === 16 ? `${sendTime}:00` : sendTime);
         }
         attachments.forEach((file) => multipartPayload.append('attachments', file));
 
         try {
-            await api.post('/api/emails/send', multipartPayload, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
+            // Do NOT set Content-Type manually — axios must add the multipart boundary
+            await api.post('/api/emails/send', multipartPayload);
             setSnackbar({ open: true, message: 'HTML email sent successfully!', severity: 'success' });
             setRecipientString('');
             setSubject('');
@@ -79,9 +79,11 @@ export default function SendEmail() {
             setAttachments([]);
             setHtmlBody(EMPTY_BODY);
             setIsCodeView(false);
-        } catch (error) {
+        } catch (error: unknown) {
             console.error(error);
-            setSnackbar({ open: true, message: 'Failed to send email.', severity: 'error' });
+            const err = error as { response?: { data?: { message?: string } }; message?: string };
+            const message = err.response?.data?.message ?? err.message ?? 'Failed to send email.';
+            setSnackbar({ open: true, message, severity: 'error' });
         } finally {
             setSubmitting(false);
         }

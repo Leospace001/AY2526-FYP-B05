@@ -46,6 +46,18 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     }
 }, (error) => Promise.reject(error));
 
+// Let the browser set multipart boundary for FormData uploads
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+    if (config.data instanceof FormData && config.headers) {
+        if (config.headers instanceof AxiosHeaders) {
+            config.headers.delete('Content-Type');
+        } else {
+            delete (config.headers as Record<string, string>)['Content-Type'];
+        }
+    }
+    return config;
+});
+
 api.interceptors.response.use(
     (response) => response,
     (error) => {
