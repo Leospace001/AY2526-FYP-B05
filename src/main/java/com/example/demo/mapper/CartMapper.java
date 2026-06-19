@@ -22,6 +22,7 @@ public interface CartMapper {
     List<CartItemDto> cartItemsToCartItemDtos(List<CartItem> items);
 
     @Mapping(source = "stock.id", target = "stockId")
+    @Mapping(source = "stock.name", target = "productName")
     @Mapping(source = "stock.sellingPrice", target = "sellingPrice")
     @Mapping(source = "stock.imagePath", target = "imagePath")
     CartItemDto cartItemToCartItemDto(CartItem cartItem);

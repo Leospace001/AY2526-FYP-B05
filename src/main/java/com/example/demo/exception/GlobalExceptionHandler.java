@@ -12,6 +12,15 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     // 🟢 Intercept UserAlreadyExistsException and build a clean 409 Conflict layout
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
+        Map<String, Object> errorBody = new HashMap<>();
+        errorBody.put("error", "Bad Request");
+        errorBody.put("message", ex.getMessage());
+        errorBody.put("status", HttpStatus.BAD_REQUEST.value());
+        return new ResponseEntity<>(errorBody, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<Map<String, Object>> handleUserAlreadyExists(UserAlreadyExistsException ex) {
         Map<String, Object> errorBody = new HashMap<>();

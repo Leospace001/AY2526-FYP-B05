@@ -1,6 +1,7 @@
 package com.example.demo.security;
 
 import com.example.demo.service.CustomUserDetailsService;
+import com.example.demo.service.LogEventService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -9,7 +10,6 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.*;
@@ -21,7 +21,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.*;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.web.cors.*;
@@ -37,14 +38,14 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final JwtUtil jwtUtil;
+    private final LogEventService logEventService;
     private static final Logger userActivityLogger = LoggerFactory.getLogger("UserActivity");
 
-    @Autowired
-    private JwtRequestFilter jwtRequestFilter;
-
-    public SecurityConfig(CustomUserDetailsService userDetailsService, JwtUtil jwtUtil) {
+    public SecurityConfig(CustomUserDetailsService userDetailsService, JwtUtil jwtUtil,
+                          LogEventService logEventService) {
         this.userDetailsService = userDetailsService;
         this.jwtUtil = jwtUtil;
+        this.logEventService = logEventService;
     }
 
     @Bean
@@ -66,9 +67,48 @@ public class SecurityConfig {
     }
 
     @Bean
+    public JwtRequestFilter jwtRequestFilter() {
+        return new JwtRequestFilter(userDetailsService, jwtUtil, logEventService);
+    }
+
+    @Bean
     public JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordAuthenticationFilter(
             AuthenticationManager authManager) {
         return new JsonUsernamePasswordAuthenticationFilter(authManager, jwtUtil);
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   AuthenticationManager authManager,
+                                                   JsonUsernamePasswordAuthenticationFilter jsonFilter,
+                                                   JwtRequestFilter jwtRequestFilter) throws Exception {
+        return http
+                .csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                            "/",
+                            "/v3/api-docs/**",
+                            "/swagger-ui/**",
+                            "/swagger.yaml",
+                            "/api/emails/**"
+                        ).permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/register", "/api/login", "/api/reset-password", "/api/forgot-password").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jsonFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtRequestFilter, AuthorizationFilter.class)
+                .exceptionHandling(exception -> exception
+                    .authenticationEntryPoint((request, response, authException) -> {
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.setContentType("application/json");
+                        response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Access token missing or expired.\"}");
+                    })
+                )
+                .build();
     }
 
     public static class JsonUsernamePasswordAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
@@ -78,23 +118,13 @@ public class SecurityConfig {
         public JsonUsernamePasswordAuthenticationFilter(AuthenticationManager authManager, JwtUtil jwtUtil) {
             super.setAuthenticationManager(authManager);
             this.jwtUtil = jwtUtil;
-            setFilterProcessesUrl("/api/login"); 
+            setFilterProcessesUrl("/api/login");
         }
 
-        // 🟢 FIX: We intercept requests before attemptAuthentication can run.
-        // If a request is going to /api/register, we jump out of this filter completely 
-        // and send it down the standard Spring filter line.
         @Override
-        public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
-                throws IOException, ServletException {
-            HttpServletRequest request = (HttpServletRequest) req;
-            
-            if (!"/api/login".equals(request.getServletPath())) {
-                chain.doFilter(req, res); // Skip this filter entirely
-                return;
-            }
-            
-            super.doFilter(req, res, chain);
+        protected boolean requiresAuthentication(HttpServletRequest request, HttpServletResponse response) {
+            return "/api/login".equals(request.getServletPath())
+                    && "POST".equalsIgnoreCase(request.getMethod());
         }
 
         @SuppressWarnings("unchecked")
@@ -143,52 +173,18 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   AuthenticationManager authManager,
-                                                   JsonUsernamePasswordAuthenticationFilter jsonFilter) throws Exception {
-        return http
-                .csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                            "/",
-                            "/v3/api-docs/**",
-                            "/swagger-ui/**", 
-                            "/swagger.yaml",
-                            "/api/emails/**"
-                        ).permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/register", "/api/login", "/api/reset-password", "/api/forgot-password").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jsonFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(jwtRequestFilter, JsonUsernamePasswordAuthenticationFilter.class)
-                
-                .exceptionHandling(exception -> exception
-                    .authenticationEntryPoint((request, response, authException) -> {
-                        // This block now ONLY triggers if someone tries to visit secure endpoints 
-                        // without an authorization token header.
-                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                        response.setContentType("application/json");
-                        response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Access token missing or expired.\"}");
-                    })
-                )
-                .build();
-    }
-
-    @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
+        config.setAllowedOriginPatterns(List.of(
             "http://frontend",
             "http://ui:5173",
-            "http://localhost",
-            "http://localhost:5173",
-            "https://leospace.cc"
-            ));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+            "http://localhost*",
+            "https://leospace.cc",
+            "https://www.leospace.cc",
+            "http://leospace.cc",
+            "http://www.leospace.cc"
+        ));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 

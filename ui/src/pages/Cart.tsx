@@ -19,6 +19,7 @@ import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 interface CartItem {
     id: number;
     stockId: number;
+    productName?: string;
     sellingPrice: number;
     imagePath: string;
     quantity: number;
@@ -213,7 +214,7 @@ export default function Cart() {
                                                     <SecureImage imagePath={item.imagePath} alt="Product image thumbnail" height="60px" />
                                                 </Box>
                                                 <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                                                    Stock Item #{item.stockId}
+                                                    {item.productName || `Stock Item #${item.stockId}`}
                                                 </Typography>
                                             </TableCell>
                                             <TableCell align="center">${item.sellingPrice.toFixed(2)}</TableCell>
@@ -278,7 +279,7 @@ export default function Cart() {
                     <DialogContent dividers sx={{ py: 2 }}>
                         {editingItem && (
                             <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                                Stock Item #{editingItem.stockId} — ${editingItem.sellingPrice.toFixed(2)} each
+                                {editingItem.productName || `Stock Item #${editingItem.stockId}`} — ${editingItem.sellingPrice.toFixed(2)} each
                             </Typography>
                         )}
                         <TextField
