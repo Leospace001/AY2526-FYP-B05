@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Box, Paper, Typography, CircularProgress, Alert, 
-    List, ListItem, ListItemText, ListItemButton, 
-    Divider, IconButton, Avatar 
+import {
+    Box, Paper, Typography, CircularProgress, Alert,
+    List, ListItem, ListItemText, ListItemButton,
+    Divider, IconButton, Avatar, Button,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EmailIcon from '@mui/icons-material/Email';
+import EditIcon from '@mui/icons-material/Edit';
+import { Link as RouterLink } from 'react-router-dom';
 import api from '../api/axiosConfig'; // Adjust this import path if needed!
 
 // 1. Define the TypeScript interface matching your Spring Boot MailBoxDto
@@ -118,9 +120,17 @@ export default function EmailInbox() {
                 <Avatar sx={{ bgcolor: '#1976d2', mr: 2 }}>
                     <EmailIcon />
                 </Avatar>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2c3e50' }}>
+                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2c3e50', flexGrow: 1 }}>
                     System Inbox
                 </Typography>
+                <Button
+                    component={RouterLink}
+                    to="/emails/send"
+                    variant="contained"
+                    startIcon={<EditIcon />}
+                >
+                    Compose
+                </Button>
             </Box>
 
             <Paper sx={{ borderRadius: 3, boxShadow: 3, overflow: 'hidden' }}>
