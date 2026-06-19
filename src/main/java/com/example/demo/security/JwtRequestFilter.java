@@ -55,29 +55,38 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         }
 
         final String authHeader = request.getHeader("Authorization");
-        String username = null;
-        String jwt = null;
         String method = request.getMethod();
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            jwt = authHeader.substring(7);
-            username = jwtUtil.extractUsername(jwt);
-            
-        }
+            String jwt = authHeader.substring(7).trim();
+            if (!jwt.isEmpty()) {
+                try {
+                    String username = jwtUtil.extractUsername(jwt);
+                    if (username != null) {
+                        UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+                        if (jwtUtil.validateToken(jwt, userDetails)) {
+                            UsernamePasswordAuthenticationToken authToken =
+                                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                            SecurityContextHolder.getContext().setAuthentication(authToken);
 
-            if (jwtUtil.validateToken(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-                long duration = System.currentTimeMillis() - startTime;
-                Instant instant = Instant.ofEpochMilli(duration);
-                LogEvent logEvent = new LogEvent(username, path, method, currentTime, instant);
-                logEventService.createLogEvent(logEvent);
-                userActivityLogger.info("User {} authenticated successfully and accessed {} with method {} in {} ms", username, path, method, duration);
+                            try {
+                                long duration = System.currentTimeMillis() - startTime;
+                                Instant instant = Instant.ofEpochMilli(duration);
+                                LogEvent logEvent = new LogEvent(username, path, method, currentTime, instant);
+                                logEventService.createLogEvent(logEvent);
+                                userActivityLogger.info(
+                                        "User {} authenticated successfully and accessed {} with method {} in {} ms",
+                                        username, path, method, duration);
+                            } catch (Exception logError) {
+                                userActivityLogger.warn("Authenticated {} but failed to persist log event", username, logError);
+                            }
+                        }
+                    }
+                } catch (Exception tokenError) {
+                    userActivityLogger.warn("Invalid or expired JWT on {} {}: {}", method, path, tokenError.getMessage());
+                }
             }
         }
 

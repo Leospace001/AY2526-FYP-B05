@@ -129,7 +129,7 @@ public class OrderService {
     @Transactional
     public OrderResponse checkoutCart(User user, OrderRequest dto) {
         // 1. Fetch the user's active shopping cart
-        Cart cart = cartRepository.findByUserId(user.getId())
+        Cart cart = cartRepository.findWithItemsAndStockByUserId(user.getId())
                 .orElseThrow(() -> new RuntimeException("No active shopping cart found for this user"));
 
         if (cart.getItems().isEmpty()) {

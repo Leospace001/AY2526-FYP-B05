@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
+import { AuthContext } from '../context/AuthContext';
 import SecureImage from '../components/SecureImage';
 import { 
     Box, Typography, Paper, Table, TableBody, TableCell, 
@@ -30,6 +31,7 @@ interface CartResponse {
 
 export default function Cart() {
     const navigate = useNavigate();
+    const { refreshCartCount } = useContext(AuthContext)!;
     const [cart, setCart] = useState<CartResponse | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [submitting, setSubmitting] = useState<boolean>(false);
@@ -59,12 +61,14 @@ export default function Cart() {
         fetchCartData();
     }, []);
 
-    const handleRemoveItem = async (itemId: number) => {
+    const handleRemoveItem = async (cartItemId: number) => {
         try {
-            await api.delete(`/api/cart/items/${itemId}`);
+            const response = await api.delete<CartResponse>(`/api/cart/items/${cartItemId}`);
+            setCart(response.data);
+            refreshCartCount();
             setSnackbar({ open: true, message: 'Item removed from cart.', severity: 'success' });
-            fetchCartData();
         } catch (error) {
+            console.error('Failed to remove cart item:', error);
             setSnackbar({ open: true, message: 'Failed to drop item from cart.', severity: 'error' });
         }
     };

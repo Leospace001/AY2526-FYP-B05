@@ -22,12 +22,11 @@ public class Cart {
     @Column(nullable = false, unique = true)
     private Long userId;
     // Inside Cart.java
-    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<CartItem> items = new ArrayList<>();
 
-    // Helper method to keep both sides of the relationship in sync
     public void addItem(CartItem item) {
-        // items.add(item);
+        items.add(item);
         item.setCart(this);
     }
 

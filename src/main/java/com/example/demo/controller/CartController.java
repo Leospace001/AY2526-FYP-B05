@@ -63,15 +63,17 @@ public class CartController {
         return ResponseEntity.ok(cartService.removeFromCart(userId, cartItemId));
     }
 
-    @DeleteMapping("{userId}")
+    @DeleteMapping("/clear/{userId}")
     @Operation(summary = "Clear the entire shopping cart")
     public ResponseEntity<Void> clearMyCart(
         Authentication authentication,
-        @PathVariable Long orderId
+        @PathVariable Long userId
     ) {
         CustomUserDetails userPrincipal = (CustomUserDetails) authentication.getPrincipal();
         User user = userPrincipal.getUser();
-        Long userId = user.getId();
+        if (!user.getId().equals(userId)) {
+            return ResponseEntity.status(403).build();
+        }
         cartService.clearCart(userId);
         return ResponseEntity.noContent().build();
     }
