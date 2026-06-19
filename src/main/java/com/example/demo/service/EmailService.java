@@ -84,8 +84,8 @@ public class EmailService {
 
             helper.setTo(record.getRecipients().toArray(new String[0]));
             helper.setFrom(senderEmailAddress);
-            helper.setSubject(record.getSubject()); // Assuming EmailRecord has getSubject()
-            helper.setText(record.getBody(), true); // Assuming EmailRecord has getBody()
+            helper.setSubject(record.getSubject());
+            EmailInlineImageProcessor.setHtmlBodyWithInlineImages(helper, record.getBody());
 
             // 3. Attach files using FileSystemResource and the saved paths
             if (record.getAttachmentPaths() != null) {
