@@ -49,6 +49,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       DOMAIN: https://leospace.cc
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: gemini-2.0-flash
     restart: unless-stopped
     depends_on:
       - rabbitmq

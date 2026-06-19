@@ -3,6 +3,8 @@ pgdata
 pgdata/**
 ui/node_modules
 ui/node_modules/**
+ui/.env
+.env
 logs
 logs/**
 frontend/.DS_Store
@@ -18,3 +20,4 @@ Dockerfile
 .vscode/launch.json
 src/main/resources/credentials.json
 certbot/conf/renewal/leospace.cc.conf
+ui/.env

@@ -284,8 +284,8 @@ export default function Products() {
                                         <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
                                             ${item.sellingPrice.toFixed(2)}
                                         </Typography>
-                                        <Typography variant="body2" color={item.quantity <= item.minimumLevel ? "error" : "textSecondary"} sx={{ fontWeight: 'medium' }}>
-                                            {item.quantity <= 0 ? 'Out of Stock' : `Available Qty: ${item.quantity}`}
+                                        <Typography variant="body2" color={(item.quantity ?? 0) <= (item.minimumLevel ?? 0) ? "error" : "textSecondary"} sx={{ fontWeight: 'medium' }}>
+                                            {(item.quantity ?? 0) <= 0 ? 'Out of Stock' : `Available Qty: ${item.quantity}`}
                                         </Typography>
                                     </Box>
                                 </CardContent>
@@ -296,13 +296,13 @@ export default function Products() {
                                         slotProps={{ htmlInput: { min: 1 } }}
                                         value={quantities[item.id] || 1}
                                         onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 1)}
-                                        sx={{ width: '100%' }} disabled={item.quantity <= 0}
+                                        sx={{ width: '100%' }} disabled={(item.quantity ?? 0) <= 0}
                                     />
                                     <Button
                                         variant="contained" color="primary" fullWidth startIcon={<AddShoppingCartIcon />}
-                                        onClick={() => handleAddToCart(item.id)} disabled={item.quantity <= 0} sx={{ fontWeight: 'bold', py: 1 }}
+                                        onClick={() => handleAddToCart(item.id)} disabled={(item.quantity ?? 0) <= 0} sx={{ fontWeight: 'bold', py: 1 }}
                                     >
-                                        {item.quantity <= 0 ? 'Empty' : 'Add To Cart'}
+                                        {(item.quantity ?? 0) <= 0 ? 'Empty' : 'Add To Cart'}
                                     </Button>
                                 </CardActions>
                             </Card>

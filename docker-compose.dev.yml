@@ -38,6 +38,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       DOMAIN: http://localhost
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: gemini-2.0-flash
     restart: no
     depends_on:
       - rabbitmq

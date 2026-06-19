@@ -1,22 +1,104 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-    Box, Typography, Paper, TextField, IconButton, 
+import {
+    Box, Typography, Paper, TextField, IconButton,
     Avatar, Divider, Alert, Snackbar, Tooltip
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'; // Better icon for Gemini!
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import PersonIcon from '@mui/icons-material/Person';
 import StopCircleIcon from '@mui/icons-material/StopCircle';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
-import { GoogleGenAI } from '@google/genai';
 
 interface ChatMessage {
     id: string;
     role: 'user' | 'bot';
     content: string;
+    isError?: boolean;
 }
 
 const LOCAL_STORAGE_KEY = 'gemini_chat_history';
+const GEMINI_MODEL = 'gemini-2.0-flash';
+
+type SnackbarSeverity = 'error' | 'warning' | 'info';
+
+function resolveChatError(error: unknown): { message: string; severity: SnackbarSeverity } {
+    const err = error as { message?: string };
+    const rawMessage = err.message ?? 'Failed to connect to chat service.';
+
+    if (rawMessage.toLowerCase().includes('api key')) {
+        return {
+            message: 'Gemini is not configured on the server. Contact the administrator.',
+            severity: 'error',
+        };
+    }
+
+    return { message: rawMessage, severity: 'error' };
+}
+
+async function streamGeminiViaBackend(
+    message: string,
+    onChunk: (chunk: string) => void,
+    signal: AbortSignal
+): Promise<void> {
+    const token = localStorage.getItem('token');
+    const response = await fetch('/api/chat/gemini', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ message }),
+        signal,
+    });
+
+    if (!response.ok) {
+        let errorMessage = `Chat service error (${response.status}).`;
+        try {
+            const body = await response.json();
+            errorMessage = body.message ?? errorMessage;
+        } catch {
+            const text = await response.text();
+            if (text) errorMessage = text;
+        }
+        throw new Error(errorMessage);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+        throw new Error('Streaming is not supported by this browser.');
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let currentEvent = 'message';
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        for (const line of lines) {
+            if (line.startsWith('event:')) {
+                currentEvent = line.slice(6).trim();
+            } else if (line.startsWith('data:')) {
+                const data = line.slice(5).trim();
+                if (currentEvent === 'error') {
+                    throw new Error(data || 'Gemini request failed.');
+                }
+                if (currentEvent === 'done' || data === '[DONE]') {
+                    return;
+                }
+                if (data) {
+                    onChunk(data);
+                }
+            }
+        }
+    }
+}
 
 export default function GeminiChat() {
     const [messages, setMessages] = useState<ChatMessage[]>(() => {
@@ -24,8 +106,8 @@ export default function GeminiChat() {
         if (savedHistory) {
             try {
                 return JSON.parse(savedHistory);
-            } catch (e) {
-                console.error("Failed to parse chat history");
+            } catch {
+                console.error('Failed to parse chat history');
                 return [];
             }
         }
@@ -34,8 +116,12 @@ export default function GeminiChat() {
 
     const [input, setInput] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'error' as 'error' | 'warning' | 'info' });
-    
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'error' as SnackbarSeverity,
+    });
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -58,60 +144,52 @@ export default function GeminiChat() {
         if (!input.trim() || isGenerating) return;
 
         const userPrompt = input.trim();
-        setInput(''); 
-        
-        const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: userPrompt };
+        setInput('');
+
+        const userMsg: ChatMessage = { id: crypto.randomUUID(), role: 'user', content: userPrompt };
         setMessages(prev => [...prev, userMsg]);
 
-        const botMsgId = (Date.now() + 1).toString();
+        const botMsgId = crypto.randomUUID();
         setMessages(prev => [...prev, { id: botMsgId, role: 'bot', content: '' }]);
 
         setIsGenerating(true);
         abortControllerRef.current = new AbortController();
 
         try {
-            // 🚀 2. Use Vite's environment variable syntax!
-            const apiKey = 'AIzaSyA5kRNjgmzptmuvZAmK8Zm0gKZ3k8odc8E'; 
-            if (!apiKey) {
-                throw new Error("Gemini API Key is missing from .env file.");
-            }
-
-            // 🚀 3. Initialize the SDK
-            const ai = new GoogleGenAI({ apiKey: apiKey });
-
-            // 🚀 4. Call the official generateContentStream method
-            const responseStream = await ai.models.generateContentStream({
-                model: 'gemini-3.5-flash',
-                contents: userPrompt,
-            });
-
             let accumulatedBotResponse = '';
 
-            // 🚀 5. Loop through the clean text chunks as the SDK processes them!
-            for await (const chunk of responseStream) {
-                
-                // If the user clicked the "Stop" button, break out of the stream
-                if (abortControllerRef.current?.signal.aborted) {
-                    console.log("Stream manually stopped.");
-                    break; 
-                }
+            await streamGeminiViaBackend(
+                userPrompt,
+                (chunk) => {
+                    accumulatedBotResponse += chunk;
+                    setMessages(prev => prev.map(msg =>
+                        msg.id === botMsgId
+                            ? { ...msg, content: accumulatedBotResponse, isError: false }
+                            : msg
+                    ));
+                },
+                abortControllerRef.current.signal
+            );
 
-                accumulatedBotResponse += chunk.text;
-
-                setMessages(prev => prev.map(msg => 
-                    msg.id === botMsgId 
-                        ? { ...msg, content: accumulatedBotResponse } 
-                        : msg
-                ));
+            if (!accumulatedBotResponse.trim()) {
+                setMessages(prev => prev.filter(msg => msg.id !== botMsgId));
+            }
+        } catch (error: unknown) {
+            const err = error as { name?: string };
+            if (err.name === 'AbortError') {
+                setMessages(prev => prev.filter(msg => !(msg.id === botMsgId && !msg.content.trim())));
+                return;
             }
 
-        } catch (error: any) {
-            if (error.name === 'AbortError') {
-                console.log("Stream manually aborted by user.");
-            } else {
-                console.error("Chat generation failed:", error);
-                setSnackbar({ open: true, message: error.message || 'Failed to connect to Gemini.', severity: 'error' });
-            }
+            console.error('Chat generation failed:', error);
+            const { message, severity } = resolveChatError(error);
+
+            setMessages(prev => prev.map(msg =>
+                msg.id === botMsgId
+                    ? { ...msg, content: message, isError: true }
+                    : msg
+            ));
+            setSnackbar({ open: true, message, severity });
         } finally {
             setIsGenerating(false);
             abortControllerRef.current = null;
@@ -119,27 +197,24 @@ export default function GeminiChat() {
     };
 
     const handleStopGeneration = () => {
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-            setIsGenerating(false);
-        }
+        abortControllerRef.current?.abort();
+        setIsGenerating(false);
     };
 
     return (
         <Box sx={{ p: 3, maxWidth: '900px', margin: '0 auto', height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
-            
+
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                {/* Updated Icon for Gemini */}
                 <AutoAwesomeIcon sx={{ fontSize: 32, color: '#8e44ad', mr: 2 }} />
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2c3e50' }}>
                     Gemini AI Chat
                 </Typography>
                 <Typography variant="caption" sx={{ ml: 2, bgcolor: '#f3e5f5', color: '#8e44ad', px: 1.5, py: 0.5, borderRadius: 2, fontWeight: 'bold' }}>
-                    gemini-1.5-flash
+                    {GEMINI_MODEL}
                 </Typography>
-                
+
                 <Box sx={{ flexGrow: 1 }} />
-                
+
                 {messages.length > 0 && (
                     <Tooltip title="Clear Chat History">
                         <IconButton onClick={handleClearChat} color="error" disabled={isGenerating}>
@@ -148,6 +223,10 @@ export default function GeminiChat() {
                     </Tooltip>
                 )}
             </Box>
+
+            <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
+                Requests go through your Spring Boot server — users do not need a VPN or a Gemini API key in the browser.
+            </Alert>
 
             <Paper sx={{ flexGrow: 1, mb: 3, p: 3, overflowY: 'auto', borderRadius: 3, boxShadow: 3, bgcolor: '#fdfdfd', display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {messages.length === 0 ? (
@@ -159,10 +238,18 @@ export default function GeminiChat() {
                 ) : (
                     messages.map((msg) => (
                         <Box key={msg.id} sx={{ display: 'flex', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 2 }}>
-                            <Avatar sx={{ bgcolor: msg.role === 'user' ? '#3498db' : '#8e44ad', width: 36, height: 36 }}>
+                            <Avatar sx={{ bgcolor: msg.role === 'user' ? '#3498db' : msg.isError ? '#e67e22' : '#8e44ad', width: 36, height: 36 }}>
                                 {msg.role === 'user' ? <PersonIcon fontSize="small" /> : <AutoAwesomeIcon fontSize="small" />}
                             </Avatar>
-                            <Paper sx={{ p: 2, maxWidth: '75%', borderRadius: 3, bgcolor: msg.role === 'user' ? '#e3f2fd' : '#ffffff', color: '#2c3e50', boxShadow: 1, border: msg.role === 'bot' ? '1px solid #eee' : 'none' }}>
+                            <Paper sx={{
+                                p: 2,
+                                maxWidth: '75%',
+                                borderRadius: 3,
+                                bgcolor: msg.isError ? '#fff8e1' : msg.role === 'user' ? '#e3f2fd' : '#ffffff',
+                                color: msg.isError ? '#e65100' : '#2c3e50',
+                                boxShadow: 1,
+                                border: msg.isError ? '1px solid #ffe082' : msg.role === 'bot' ? '1px solid #eee' : 'none',
+                            }}>
                                 <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                                     {msg.content}
                                 </Typography>
@@ -185,7 +272,7 @@ export default function GeminiChat() {
                     slotProps={{ input: { disableUnderline: true } }}
                 />
                 <Divider sx={{ height: 28, m: 0.5 }} orientation="vertical" />
-                
+
                 {isGenerating ? (
                     <IconButton color="error" sx={{ p: '10px' }} onClick={handleStopGeneration}>
                         <StopCircleIcon />
@@ -197,9 +284,13 @@ export default function GeminiChat() {
                 )}
             </Paper>
 
-            <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}>
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+            >
                 <Alert severity={snackbar.severity} variant="filled">{snackbar.message}</Alert>
             </Snackbar>
         </Box>
     );
-}
+};
