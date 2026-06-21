@@ -116,6 +116,7 @@ public class SecurityConfig {
                     auth.requestMatchers(org.springframework.http.HttpMethod.POST,
                             "/api/register", "/api/login", "/api/reset-password", "/api/forgot-password").permitAll();
                     auth.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auth/oauth/providers").permitAll();
+                    auth.requestMatchers("/ws/**").permitAll();
                     if (oauthEnabled) {
                         auth.requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll();
                     }

@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 
@@ -19,6 +19,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import PlantIdentifier from './pages/PlantIdentifer';
 import EmailInbox from './pages/Email';
 import OAuthCallback from './pages/OAuthCallback';
+
+const GroupChat = React.lazy(() => import('./pages/GroupChat'));
 
 // 1. Define Props for the Protected Route
 interface ProtectedRouteProps {
@@ -83,6 +85,13 @@ function AppRoutes() {
                             <Route path="/chat" element={
                                 <ProtectedRoute>
                                     <OllamaChat />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/groups" element={
+                                <ProtectedRoute>
+                                    <Suspense fallback={<h2>Loading group chat...</h2>}>
+                                        <GroupChat />
+                                    </Suspense>
                                 </ProtectedRoute>
                             } />
                             <Route path="/emails/send" element={

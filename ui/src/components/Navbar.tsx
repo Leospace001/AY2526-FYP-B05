@@ -78,6 +78,7 @@ export default function Navbar() {
                 </Link>
 
                 <Link to="/chat" style={getLinkStyle(location.pathname === '/chat', '#3498db')}>AI Chat</Link>
+                <Link to="/groups" style={getLinkStyle(location.pathname === '/groups', '#9b59b6')}>Group Chat</Link>
 
                  <Link to="/email" style={getLinkStyle(location.pathname === '/email', '#3498db')}>Email</Link>
 
