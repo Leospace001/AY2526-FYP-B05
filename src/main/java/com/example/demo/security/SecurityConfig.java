@@ -21,6 +21,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.*;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
@@ -199,7 +200,10 @@ public class SecurityConfig {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
-            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Invalid username or password\"}");
+            String message = failed instanceof DisabledException
+                    ? "Account is disabled"
+                    : "Invalid username or password";
+            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + message + "\"}");
         }
     }
 

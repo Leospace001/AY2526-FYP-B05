@@ -41,4 +41,10 @@ public class User extends BaseModel {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     private Set<PasswordResetToken> token = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private Set<UserIdentity> identities = new HashSet<>();
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean localLoginEnabled = false;
 }

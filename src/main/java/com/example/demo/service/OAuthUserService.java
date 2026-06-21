@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -43,6 +44,9 @@ public class OAuthUserService {
         User user = resolveOAuthUser(provider, oauth2User);
         User loadedUser = userRepository.findWithRolesById(user.getId())
                 .orElseThrow(() -> new RuntimeException("User not found after OAuth sign-in."));
+        if (!loadedUser.isActive()) {
+            throw new DisabledException("Account is disabled");
+        }
         return new CustomUserDetails(loadedUser);
     }
 
@@ -77,6 +81,7 @@ public class OAuthUserService {
         user.setUsername(generateUniqueUsername(provider, email, providerUserId));
         // OAuth-only accounts cannot use password login until they set one via reset flow
         user.setPassword(passwordEncoder.encode("oauth-" + UUID.randomUUID()));
+        user.setLocalLoginEnabled(false);
         user.setActive(true);
 
         Role defaultRole = roleRepository.findByName(ERole.ROLE_USER)

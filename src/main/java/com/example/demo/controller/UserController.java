@@ -13,13 +13,13 @@ import com.example.demo.service.UserService;
 import com.example.demo.model.User;
 import com.example.demo.security.CustomUserDetails;
 import com.example.demo.dto.UserInfo;
-import com.example.demo.dto.UserRegister;
-import com.example.demo.mapper.UserMapper;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.Operation;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -27,9 +27,6 @@ public class UserController {
 
     @Autowired
     private UserService userService;
-
-    @Autowired
-    private UserMapper userMapper;
     
     @GetMapping
     @Operation(summary = "Get users (Admin gets all, Normal user gets only themselves)", security = @SecurityRequirement(name = "bearerAuth"))
@@ -52,7 +49,7 @@ public class UserController {
             // 🚀 NORMAL USER: Extract their identity directly from the token
             CustomUserDetails userPrincipal = (CustomUserDetails) authentication.getPrincipal();
             User user = userService.getUserByUsername(userPrincipal.getUsername());
-            UserInfo userInfo = userMapper.userToUserInfo(user);
+            UserInfo userInfo = userService.toUserInfo(user);
 
             // Wrap their single profile into a Page format so the frontend doesn't break
             Page<UserInfo> singleUserPage = new PageImpl<>(
@@ -82,8 +79,55 @@ public class UserController {
         // 2. Pass the username, the form data, and the admin status to the service.
         // If isAdmin is false, the service will refuse to change the account's active/inactive status!
         User user = userService.updateUser(username, userInfo, isAdmin);
-        UserInfo updatedUserInfo = userMapper.userToUserInfo(user);
+        UserInfo updatedUserInfo = userService.toUserInfo(user);
         
         return ResponseEntity.ok(updatedUserInfo);
+    }
+
+    @PostMapping("/{username}/roles/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Grant admin role to a user", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<UserInfo> grantAdminRole(
+            @PathVariable String username,
+            Authentication authentication) {
+        CustomUserDetails actingAdmin = (CustomUserDetails) authentication.getPrincipal();
+        try {
+            return ResponseEntity.ok(userService.grantAdminRole(username, actingAdmin.getUsername()));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @DeleteMapping("/{username}/roles/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Revoke admin role from a user", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<UserInfo> revokeAdminRole(
+            @PathVariable String username,
+            Authentication authentication) {
+        CustomUserDetails actingAdmin = (CustomUserDetails) authentication.getPrincipal();
+        try {
+            return ResponseEntity.ok(userService.revokeAdminRole(username, actingAdmin.getUsername()));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PatchMapping("/{username}/active")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Enable or disable a user account", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<UserInfo> setUserActive(
+            @PathVariable String username,
+            @RequestBody Map<String, Boolean> body,
+            Authentication authentication) {
+        CustomUserDetails actingAdmin = (CustomUserDetails) authentication.getPrincipal();
+        Boolean active = body.get("active");
+        if (active == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        try {
+            return ResponseEntity.ok(userService.setUserActive(username, active, actingAdmin.getUsername()));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

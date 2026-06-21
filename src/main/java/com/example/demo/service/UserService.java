@@ -11,12 +11,16 @@ import lombok.Getter;
 
 import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.PasswordResetTokenRepository;
+import com.example.demo.repository.UserIdentityRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
+import com.example.demo.model.UserRoleAssignment;
+import com.example.demo.model.UserIdentity;
 
 @Service
 @Getter
@@ -36,6 +40,12 @@ public class UserService {
 
     @Autowired
     private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Autowired
+    private UserIdentityRepository userIdentityRepository;
+
+    @Autowired
+    private RoleAssignmentService roleAssignmentService;
     
     public User registerUser(UserRegister userRegister) {
         User newUser = new User();
@@ -48,6 +58,7 @@ public class UserService {
 
         String encodedPassword = passwordEncoder.encode(rawPassword);
         newUser.setPassword(encodedPassword);
+        newUser.setLocalLoginEnabled(true);
         Role defaultRole = roleRepository.findByName(ERole.ROLE_USER)
             .orElseThrow(() -> new RuntimeException("Default role not found."));
         // user.addRole(defaultRole);
@@ -66,8 +77,54 @@ public class UserService {
                     
         Pageable pageable = PageRequest.of(page, size, sort);
         Page<User> userPage = userRepository.findAll(pageable);
-        
-        return userPage.map(user -> userMapper.userToUserInfo(user));
+
+        List<Long> userIds = userPage.getContent().stream().map(User::getId).toList();
+        Map<Long, List<UserIdentity>> identitiesByUserId = userIds.isEmpty()
+                ? Map.of()
+                : userIdentityRepository.findByUser_IdIn(userIds).stream()
+                        .collect(Collectors.groupingBy(identity -> identity.getUser().getId()));
+
+        return userPage.map(user -> toUserInfo(user, identitiesByUserId.getOrDefault(user.getId(), List.of())));
+    }
+
+    public UserInfo toUserInfo(User user) {
+        List<UserIdentity> identities = userIdentityRepository.findByUser_Id(user.getId());
+        return toUserInfo(user, identities);
+    }
+
+    private UserInfo toUserInfo(User user, List<UserIdentity> identities) {
+        UserInfo info = userMapper.userToUserInfo(user);
+        info.setRoles(extractActiveRoles(user));
+        info.setAuthMethods(buildAuthMethods(user, identities));
+        return info;
+    }
+
+    private List<String> extractActiveRoles(User user) {
+        return user.getRoleAssignments().stream()
+                .collect(Collectors.groupingBy(
+                        UserRoleAssignment::getRole,
+                        Collectors.collectingAndThen(
+                                Collectors.maxBy(Comparator.comparing(UserRoleAssignment::getAssignedDate)),
+                                optional -> optional.filter(UserRoleAssignment::isActive)
+                                        .map(assignment -> assignment.getRole().getName().name()))))
+                .values().stream()
+                .flatMap(Optional::stream)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
+    private List<String> buildAuthMethods(User user, List<UserIdentity> identities) {
+        List<String> methods = new ArrayList<>();
+        if (user.isLocalLoginEnabled()) {
+            methods.add("password");
+        }
+        identities.stream()
+                .map(UserIdentity::getProvider)
+                .distinct()
+                .sorted()
+                .forEach(methods::add);
+        return methods;
     }
 
     public User getUserByUsername (String username) {
@@ -120,6 +177,7 @@ public class UserService {
 
     public void changeUserPassword(User user, String password) {
         user.setPassword(passwordEncoder.encode(password));
+        user.setLocalLoginEnabled(true);
         userRepository.save(user);
     }
 
@@ -128,6 +186,34 @@ public class UserService {
             .orElseThrow(() -> new RuntimeException("Token not found"));;
         resetToken.setActive(false);
         passwordResetTokenRepository.save(resetToken);
+    }
+
+    public UserInfo grantAdminRole(String targetUsername, String actingAdminUsername) {
+        if (targetUsername.equals(actingAdminUsername)) {
+            throw new IllegalArgumentException("You cannot change your own admin role.");
+        }
+        User user = getUserByUsername(targetUsername);
+        roleAssignmentService.grantAdminRole(user);
+        return toUserInfo(userRepository.findByUsername(targetUsername).orElseThrow());
+    }
+
+    public UserInfo revokeAdminRole(String targetUsername, String actingAdminUsername) {
+        if (targetUsername.equals(actingAdminUsername)) {
+            throw new IllegalArgumentException("You cannot change your own admin role.");
+        }
+        User user = getUserByUsername(targetUsername);
+        roleAssignmentService.revokeAdminRole(user.getId());
+        return toUserInfo(userRepository.findByUsername(targetUsername).orElseThrow());
+    }
+
+    public UserInfo setUserActive(String targetUsername, boolean active, String actingAdminUsername) {
+        if (targetUsername.equals(actingAdminUsername) && !active) {
+            throw new IllegalArgumentException("You cannot block your own account.");
+        }
+        User user = getUserByUsername(targetUsername);
+        user.setActive(active);
+        userRepository.save(user);
+        return toUserInfo(user);
     }
     
 }

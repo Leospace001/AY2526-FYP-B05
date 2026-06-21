@@ -14,6 +14,7 @@ import com.example.demo.model.User;
 import com.example.demo.model.UserRoleAssignment;
 import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.UserIdentityRepository;
 import com.example.demo.service.UserService;
 
 @Configuration
@@ -34,6 +35,9 @@ public class DataSeeder implements CommandLineRunner {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private UserIdentityRepository userIdentityRepository;
+
     @Override
     public void run(String... args) {
         Role adminRole = ensureRole(ERole.ROLE_ADMIN, "administrator");
@@ -46,6 +50,19 @@ public class DataSeeder implements CommandLineRunner {
         ensureDefaultUser(
                 new UserRegister("Max", "Yuen", "testing", "P@ssw0rd", "230686966@stu.vtc.edu.hk", 20, 22222222),
                 userRole);
+        backfillLocalLoginEnabled();
+    }
+
+    private void backfillLocalLoginEnabled() {
+        userRepository.findAll().forEach(user -> {
+            if (!user.isLocalLoginEnabled() && user.getPassword() != null) {
+                boolean hasOAuthIdentity = !userIdentityRepository.findByUser_Id(user.getId()).isEmpty();
+                if (!hasOAuthIdentity) {
+                    user.setLocalLoginEnabled(true);
+                    userRepository.save(user);
+                }
+            }
+        });
     }
 
     private Role ensureRole(ERole roleName, String description) {
@@ -66,6 +83,7 @@ public class DataSeeder implements CommandLineRunner {
         userMapper.userRegisterDto(account, user);
         user.setPassword(userService.getPasswordEncoder().encode(account.getPassword()));
         user.setActive(true);
+        user.setLocalLoginEnabled(true);
 
         for (Role role : roles) {
             user.getRoleAssignments().add(new UserRoleAssignment(user, role));

@@ -1,7 +1,8 @@
 package com.example.demo.dto;
 
 import lombok.*;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Getter
@@ -23,5 +24,10 @@ public class UserInfo {
     private int phone;
 
     private boolean isActive;
+
+    private List<String> roles = new ArrayList<>();
+
+    /** Login methods linked to this account, e.g. password, google, github */
+    private List<String> authMethods = new ArrayList<>();
     
 }

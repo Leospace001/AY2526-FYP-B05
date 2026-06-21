@@ -1,5 +1,7 @@
 package com.example.demo.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,4 +21,8 @@ public interface UserIdentityRepository extends JpaRepository<UserIdentity, Long
     Optional<UserIdentity> findByProviderAndProviderUserIdWithUser(
             @Param("provider") String provider,
             @Param("providerUserId") String providerUserId);
+
+    List<UserIdentity> findByUser_Id(Long userId);
+
+    List<UserIdentity> findByUser_IdIn(Collection<Long> userIds);
 }

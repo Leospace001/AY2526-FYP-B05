@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { 
-    Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
-    TableHead, TableRow, TablePagination, IconButton, Dialog, DialogTitle, 
-    DialogContent, DialogActions, Button, TextField, Snackbar, Alert, Switch, FormControlLabel 
+import {
+    Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
+    TableHead, TableRow, TablePagination, IconButton, Dialog, DialogTitle,
+    DialogContent, DialogActions, Button, TextField, Snackbar, Alert,
+    Switch, FormControlLabel, Chip, Tooltip
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import api from '../api/axiosConfig';
 import { AuthContext } from '../context/AuthContext';
 
@@ -16,6 +18,25 @@ interface UserInfo {
     age: number;
     phone: number;
     active: boolean;
+    roles: string[];
+    authMethods: string[];
+}
+
+const AUTH_METHOD_LABELS: Record<string, string> = {
+    password: 'Password',
+    google: 'Google',
+    github: 'GitHub',
+};
+
+function formatAuthMethod(method: string): string {
+    return AUTH_METHOD_LABELS[method] ?? method.charAt(0).toUpperCase() + method.slice(1);
+}
+
+function authMethodColor(method: string): 'default' | 'primary' | 'secondary' | 'success' {
+    if (method === 'password') return 'default';
+    if (method === 'google') return 'primary';
+    if (method === 'github') return 'secondary';
+    return 'success';
 }
 
 export default function UserManagement() {
@@ -27,7 +48,11 @@ export default function UserManagement() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<UserInfo | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+
+    const isSelf = editingUser?.username === user?.sub;
 
     const fetchUsers = async () => {
         try {
@@ -46,7 +71,8 @@ export default function UserManagement() {
     }, [page, rowsPerPage]);
 
     const handleOpenEdit = (selectedUser: UserInfo) => {
-        setEditingUser(selectedUser);
+        setEditingUser({ ...selectedUser });
+        setIsAdmin(selectedUser.roles?.includes('ROLE_ADMIN') ?? false);
         setIsModalOpen(true);
     };
 
@@ -63,26 +89,62 @@ export default function UserManagement() {
         e.preventDefault();
         if (!editingUser) return;
 
+        setSaving(true);
         try {
             await api.put(`/api/users/${editingUser.username}`, editingUser);
+
+            const wasAdmin = users.find(u => u.username === editingUser.username)?.roles?.includes('ROLE_ADMIN') ?? false;
+            if (!isSelf && isAdmin !== wasAdmin) {
+                if (isAdmin) {
+                    await api.post(`/api/users/${editingUser.username}/roles/admin`);
+                } else {
+                    await api.delete(`/api/users/${editingUser.username}/roles/admin`);
+                }
+            }
+
             setSnackbar({ open: true, message: 'User updated successfully!', severity: 'success' });
             setIsModalOpen(false);
-            fetchUsers(); // Refresh table
+            fetchUsers();
         } catch (error) {
             console.error(error);
             setSnackbar({ open: true, message: 'Failed to update user', severity: 'error' });
+        } finally {
+            setSaving(false);
         }
     };
 
-    // Security check: Only render if Admin
+    const handleToggleBlock = async (targetUser: UserInfo) => {
+        if (targetUser.username === user?.sub) {
+            setSnackbar({ open: true, message: 'You cannot block your own account.', severity: 'error' });
+            return;
+        }
+        const nextActive = !targetUser.active;
+        try {
+            await api.patch(`/api/users/${targetUser.username}/active`, { active: nextActive });
+            setSnackbar({
+                open: true,
+                message: nextActive ? 'User unblocked.' : 'User blocked from logging in.',
+                severity: 'success'
+            });
+            fetchUsers();
+        } catch (error) {
+            console.error(error);
+            setSnackbar({ open: true, message: 'Failed to update account status', severity: 'error' });
+        }
+    };
+
     if (!user?.roles?.includes('ROLE_ADMIN')) {
         return <Typography variant="h6" color="error" sx={{ p: 3 }}>Access Denied.</Typography>;
     }
 
     return (
-        <Box sx={{ p: 3, maxWidth: '1200px', margin: '0 auto' }}>
-            <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold', color: '#2c3e50' }}>User Management</Typography>
-            
+        <Box sx={{ p: 3, maxWidth: '1400px', margin: '0 auto' }}>
+            <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold', color: '#2c3e50' }}>User Management</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                One email can be linked to multiple sign-in methods. When a user signs in with Google or GitHub
+                using the same email as an existing account, those providers are added to the same user record.
+            </Typography>
+
             <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
                 <Table>
                     <TableHead sx={{ bgcolor: '#f5f6fa' }}>
@@ -90,6 +152,8 @@ export default function UserManagement() {
                             <TableCell sx={{ fontWeight: 'bold' }}>Username</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }}>Full Name</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Login Methods</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Roles</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
                         </TableRow>
@@ -101,14 +165,59 @@ export default function UserManagement() {
                                 <TableCell>{u.firstname} {u.lastname}</TableCell>
                                 <TableCell>{u.email}</TableCell>
                                 <TableCell>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                        {(u.authMethods ?? []).length > 0 ? (
+                                            u.authMethods.map((method) => (
+                                                <Chip
+                                                    key={method}
+                                                    label={formatAuthMethod(method)}
+                                                    size="small"
+                                                    color={authMethodColor(method)}
+                                                    variant="outlined"
+                                                />
+                                            ))
+                                        ) : (
+                                            <Typography variant="caption" color="text.secondary">None</Typography>
+                                        )}
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                        {(u.roles ?? []).map((role) => (
+                                            <Chip
+                                                key={role}
+                                                icon={role === 'ROLE_ADMIN' ? <AdminPanelSettingsIcon /> : undefined}
+                                                label={role === 'ROLE_ADMIN' ? 'Admin' : 'User'}
+                                                size="small"
+                                                color={role === 'ROLE_ADMIN' ? 'warning' : 'default'}
+                                            />
+                                        ))}
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
                                     <Typography variant="body2" sx={{ color: u.active ? '#2ecc71' : '#e74c3c', fontWeight: 'bold' }}>
-                                        {u.active ? 'ACTIVE' : 'INACTIVE'}
+                                        {u.active ? 'ACTIVE' : 'BLOCKED'}
                                     </Typography>
                                 </TableCell>
                                 <TableCell>
-                                    <IconButton color="primary" onClick={() => handleOpenEdit(u)}>
-                                        <EditIcon />
-                                    </IconButton>
+                                    <Tooltip title="Edit profile, roles, and status">
+                                        <IconButton color="primary" onClick={() => handleOpenEdit(u)}>
+                                            <EditIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                    {u.username !== user?.sub && (
+                                        <Tooltip title={u.active ? 'Block login' : 'Unblock login'}>
+                                            <Button
+                                                size="small"
+                                                color={u.active ? 'error' : 'success'}
+                                                variant="outlined"
+                                                onClick={() => handleToggleBlock(u)}
+                                                sx={{ ml: 1 }}
+                                            >
+                                                {u.active ? 'Block' : 'Unblock'}
+                                            </Button>
+                                        </Tooltip>
+                                    )}
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -127,12 +236,10 @@ export default function UserManagement() {
                 />
             </TableContainer>
 
-            {/* Admin Edit Modal */}
             <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)} maxWidth="sm" fullWidth>
                 <DialogTitle sx={{ fontWeight: 'bold' }}>Edit User: {editingUser?.username}</DialogTitle>
                 <Box component="form" onSubmit={handleSave}>
                     <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        {/* Username is read-only because it is the database identifier */}
                         <TextField label="Username" value={editingUser?.username || ''} disabled fullWidth />
                         <Box sx={{ display: 'flex', gap: 2 }}>
                             <TextField label="First Name" name="firstname" value={editingUser?.firstname || ''} onChange={handleFormChange} fullWidth required />
@@ -143,17 +250,61 @@ export default function UserManagement() {
                             <TextField label="Age" name="age" type="number" value={editingUser?.age || ''} onChange={handleFormChange} fullWidth />
                             <TextField label="Phone" name="phone" type="number" value={editingUser?.phone || ''} onChange={handleFormChange} fullWidth />
                         </Box>
-                        
-                        {/* 🚀 The Admin-Only Status Toggle */}
-                        <FormControlLabel 
-                            control={<Switch checked={editingUser?.active || false} onChange={handleFormChange} name="active" color="primary" />} 
-                            label={editingUser?.active ? "Account is Active" : "Account is Disabled"} 
-                            sx={{ mt: 1 }}
+
+                        <Box>
+                            <Typography variant="subtitle2" sx={{ mb: 1 }}>Linked login methods</Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                {(editingUser?.authMethods ?? []).map((method) => (
+                                    <Chip
+                                        key={method}
+                                        label={formatAuthMethod(method)}
+                                        size="small"
+                                        color={authMethodColor(method)}
+                                    />
+                                ))}
+                            </Box>
+                        </Box>
+
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={isAdmin}
+                                    onChange={(e) => setIsAdmin(e.target.checked)}
+                                    disabled={isSelf}
+                                    color="warning"
+                                />
+                            }
+                            label={isAdmin ? 'Administrator access' : 'Standard user access'}
                         />
+                        {isSelf && (
+                            <Typography variant="caption" color="text.secondary">
+                                You cannot change your own admin role.
+                            </Typography>
+                        )}
+
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={editingUser?.active || false}
+                                    onChange={handleFormChange}
+                                    name="active"
+                                    color="primary"
+                                    disabled={isSelf}
+                                />
+                            }
+                            label={editingUser?.active ? 'Account can log in' : 'Account is blocked'}
+                        />
+                        {isSelf && (
+                            <Typography variant="caption" color="text.secondary">
+                                You cannot block your own account.
+                            </Typography>
+                        )}
                     </DialogContent>
                     <DialogActions sx={{ p: 2 }}>
-                        <Button onClick={() => setIsModalOpen(false)} color="inherit">Cancel</Button>
-                        <Button type="submit" variant="contained" color="primary">Save Changes</Button>
+                        <Button onClick={() => setIsModalOpen(false)} color="inherit" disabled={saving}>Cancel</Button>
+                        <Button type="submit" variant="contained" color="primary" disabled={saving}>
+                            {saving ? 'Saving...' : 'Save Changes'}
+                        </Button>
                     </DialogActions>
                 </Box>
             </Dialog>
