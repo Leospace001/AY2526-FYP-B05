@@ -74,6 +74,7 @@ services:
   db:
     image: 'postgres:15.3-alpine'
     container_name: postgresdb
+    restart: unless-stopped
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -89,11 +90,11 @@ services:
     volumes:
       - ollama:/root/.ollama
       - ./entrypoint.sh:/entrypoint.sh
-    restart: unless-stopped
+    restart: no
 
   adminer:
     image: adminer
-    restart: always
+    restart: unless-stopped
     ports:
       - 7070:8080
 volumes:

@@ -29,6 +29,14 @@ export default function PlantIdentifier() {
     const [plantDetails, setPlantDetails] = useState<PlantDetails | null>(null); 
     const [error, setError] = useState('');
 
+    const handleFetchFengShuiDetails = async () => {
+        if (!plantName || plantName === 'Unknown Plant') return;
+        setPlantDetails(null);
+        setError('');
+        await fetchGeminiDetails(plantName);
+    };
+
+
     // --- 1. HANDLE FILE SELECTION & RESTRICTION ---
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -119,7 +127,6 @@ export default function PlantIdentifier() {
 
             if (detectedName) {
                 setPlantName(detectedName);
-                await fetchGeminiDetails(detectedName);
             } else {
                 setPlantName("Unknown Plant");
             }
@@ -176,20 +183,37 @@ export default function PlantIdentifier() {
                             color="primary"
                             fullWidth
                             size="large"
-                            disabled={!selectedImage || loading || geminiLoading}
+                            disabled={!selectedImage || loading}
                             onClick={handleIdentifyPlant}
-                            endIcon={!loading && !geminiLoading && <SearchIcon />}
+                            endIcon={!loading &&  <SearchIcon />}
                             sx={{ py: 1.5, fontWeight: 'bold', fontSize: '1.05rem', mb: 2 }}
                         >
-                            {loading || geminiLoading ? <CircularProgress size={26} color="inherit" /> : 'Identify Plant'}
+                            {loading ? <CircularProgress size={26} color="inherit" /> : 'Identify Plant'}
                         </Button>
 
                         {plantName && (
-                            <Box sx={{ bgcolor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 2, p: 2, textAlign: 'center' }}>
+                            <Box sx={{ bgcolor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 2, p: 2, textAlign: 'center', mb:2 }}>
                                 <Typography variant="overline" sx={{ color: '#16a34a', fontWeight: 'bold' }}>Match Found</Typography>
                                 <Typography variant="h5" sx={{ color: '#15803d', fontWeight: 'bold' }}>{plantName}</Typography>
                             </Box>
                         )}
+
+                        {plantName && plantName !== 'Unknown Plant' && (
+                            <Button
+                                variant="contained"
+                                color="warning"
+                                fullWidth
+                                size="large"
+                                disabled={geminiLoading}
+                                onClick={handleFetchFengShuiDetails}
+                                startIcon={!geminiLoading && <CompassCalibrationIcon />}
+                                sx={{ py: 1.5, fontWeight: 'bold', fontSize: '1.05rem', mb: 2 }}
+                            >
+                                {geminiLoading ? <CircularProgress size={26} color="inherit" /> : 'Feng Shui Details'}
+                            </Button>
+                        )}
+
+
                     </Grid>
 
                     {/* 右邊：Gemini 三大板塊資訊 */}
