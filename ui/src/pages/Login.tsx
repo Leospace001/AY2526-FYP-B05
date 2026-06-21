@@ -1,20 +1,55 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { Box, Typography, Paper, TextField, Button, CircularProgress, Alert } from '@mui/material';
+import React, { useState, useContext, useEffect } from 'react';
+import { useNavigate, Link as RouterLink, useSearchParams } from 'react-router-dom';
+import { Box, Typography, Paper, TextField, Button, CircularProgress, Alert, Divider } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import GoogleIcon from '@mui/icons-material/Google';
+import GitHubIcon from '@mui/icons-material/GitHub';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api/axiosConfig';
 
+function resolveLoginError(err: unknown): string {
+    const apiErr = err as {
+        message?: string;
+        response?: { status?: number; data?: { message?: string } };
+    };
+    if (!apiErr.response) {
+        return 'Cannot reach the server. Check that the backend is running and try again.';
+    }
+    if (apiErr.response.status === 401) {
+        return apiErr.response.data?.message ?? 'Invalid username or password. Please try again.';
+    }
+    return apiErr.response.data?.message ?? apiErr.message ?? 'Login failed. Please try again.';
+}
+
 export default function Login() {
     const navigate = useNavigate();
-    
-    // 🚀 FIXED: Added the '!' to tell TypeScript this context definitely exists
+    const [searchParams] = useSearchParams();
     const { login } = useContext(AuthContext)!;
 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [oauthProviders, setOauthProviders] = useState<string[]>(['google', 'github']);
+
+    useEffect(() => {
+        const oauthError = searchParams.get('error');
+        if (oauthError) {
+            setError(decodeURIComponent(oauthError));
+        }
+    }, [searchParams]);
+
+    useEffect(() => {
+        api.get<string[]>('/api/auth/oauth/providers')
+            .then((response) => {
+                if (response.data.length > 0) {
+                    setOauthProviders(response.data);
+                }
+            })
+            .catch(() => {
+                // Keep default buttons visible; backend will validate on redirect
+            });
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -32,17 +67,20 @@ export default function Login() {
                 token = token.slice(7);
             }
 
-            if (!token) throw new Error("No token received.");
+            if (!token) throw new Error('No token received.');
 
             login(token);
-
             navigate('/');
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
-            setError('Invalid username or password. Please try again.');
+            setError(resolveLoginError(err));
         } finally {
             setLoading(false);
         }
+    };
+
+    const startOAuth = (provider: string) => {
+        window.location.href = `/oauth2/authorization/${provider}`;
     };
 
     return (
@@ -57,7 +95,7 @@ export default function Login() {
                         Welcome Back
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
-                        Please enter your details to sign in.
+                        Sign in with your account or a connected provider.
                     </Typography>
                 </Box>
 
@@ -66,6 +104,32 @@ export default function Login() {
                         {error}
                     </Alert>
                 )}
+
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>
+                    {oauthProviders.includes('google') && (
+                        <Button
+                            fullWidth
+                            variant="outlined"
+                            startIcon={<GoogleIcon />}
+                            onClick={() => startOAuth('google')}
+                            sx={{ py: 1.2, fontWeight: 'bold' }}
+                        >
+                            Continue with Google
+                        </Button>
+                    )}
+                    {oauthProviders.includes('github') && (
+                        <Button
+                            fullWidth
+                            variant="outlined"
+                            startIcon={<GitHubIcon />}
+                            onClick={() => startOAuth('github')}
+                            sx={{ py: 1.2, fontWeight: 'bold' }}
+                        >
+                            Continue with GitHub
+                        </Button>
+                    )}
+                    <Divider sx={{ my: 1 }}>or use username</Divider>
+                </Box>
 
                 <TextField
                     fullWidth
@@ -100,7 +164,6 @@ export default function Login() {
                     {loading ? <CircularProgress size={26} color="inherit" /> : 'Sign In'}
                 </Button>
 
-                {/* 🚀 FIXED: Changed textAlign="center" to align="center" */}
                 <Typography align="center" variant="body2">
                     Don't have an account?{' '}
                     <Box component={RouterLink} to="/register" sx={{ fontWeight: 'bold', textDecoration: 'none', color: '#3498db' }}>
@@ -108,7 +171,6 @@ export default function Login() {
                     </Box>
                 </Typography>
 
-                {/* 🚀 FIXED: Changed textAlign="center" to align="center" */}
                 <Typography align="center" variant="body2" sx={{ mt: 1 }}>
                     Forgot password?{' '}
                     <Box component={RouterLink} to="/forgot" sx={{ fontWeight: 'bold', textDecoration: 'none', color: '#3498db' }}>

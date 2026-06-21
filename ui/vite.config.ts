@@ -13,12 +13,21 @@ export default defineConfig({
 		strictPort: true,
 		port: 5173,
 		proxy: {
-      // 🚀 THE MAGIC: Tell Vite to forward all /api requests to Spring Boot!
       '/api': {
         target: 'http://app:8080',
         changeOrigin: true,
         secure: false,
-      }
+      },
+      '/oauth2': {
+        target: 'http://app:8080',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/login/oauth2': {
+        target: 'http://app:8080',
+        changeOrigin: true,
+        secure: false,
+      },
     }
 	},
 });

@@ -5,6 +5,8 @@ import com.example.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.demo.security.CustomUserDetails;
 
 @Service
@@ -14,29 +16,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     private UserRepository userRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-    //     List<SimpleGrantedAuthority> authorities = user.getRoleAssignments().stream()
-    // .collect(Collectors.groupingBy(
-    //     assignment -> assignment.getRole(),
-    //     Collectors.collectingAndThen(
-    //         Collectors.maxBy(Comparator.comparing(UserRoleAssignment::getAssignedDate)),
-    //         optional -> optional.filter(UserRoleAssignment::isActive) // 最新の割り当てがアクティブかどうかを確認
-    //             .map(assignment -> new SimpleGrantedAuthority(assignment.getRole().getName().name()))
-    //     )
-    // ))
-    // .values().stream()
-    // .flatMap(Optional::stream) // Optionalの中身を取り出し、空ならスキップ
-    // .distinct() // ロールの重複を排除
-    // .collect(Collectors.toList());
-
-        // return new org.springframework.security.core.userdetails.User(
-        //     user.getUsername(),
-        //     user.getPassword(), // this is your BCrypt password
-        //     authorities
-        // );
+        User user = userRepository.findWithRolesByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
         return new CustomUserDetails(user);
     }
 }

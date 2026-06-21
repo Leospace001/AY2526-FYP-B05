@@ -28,6 +28,8 @@ services:
     container_name: spring-app
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     environment:
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
@@ -38,11 +40,15 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       DOMAIN: http://localhost
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
       GEMINI_PROXY_HOST: ${GEMINI_PROXY_HOST:-}
       GEMINI_PROXY_PORT: ${GEMINI_PROXY_PORT:-0}
-    restart: no
+    restart: unless-stopped
     depends_on:
       - rabbitmq
       - db

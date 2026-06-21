@@ -17,9 +17,10 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.*;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
@@ -39,25 +40,37 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
     private final JwtUtil jwtUtil;
     private final LogEventService logEventService;
+    private final ClientRegistrationRepository clientRegistrationRepository;
+    private final OAuth2LoginSuccessHandler oauth2LoginSuccessHandler;
+    private final OAuth2LoginFailureHandler oauth2LoginFailureHandler;
+    private final PasswordEncoder passwordEncoder;
     private static final Logger userActivityLogger = LoggerFactory.getLogger("UserActivity");
 
     public SecurityConfig(CustomUserDetailsService userDetailsService, JwtUtil jwtUtil,
-                          LogEventService logEventService) {
+                          LogEventService logEventService,
+                          ClientRegistrationRepository clientRegistrationRepository,
+                          OAuth2LoginSuccessHandler oauth2LoginSuccessHandler,
+                          OAuth2LoginFailureHandler oauth2LoginFailureHandler,
+                          PasswordEncoder passwordEncoder) {
         this.userDetailsService = userDetailsService;
         this.jwtUtil = jwtUtil;
         this.logEventService = logEventService;
+        this.clientRegistrationRepository = clientRegistrationRepository;
+        this.oauth2LoginSuccessHandler = oauth2LoginSuccessHandler;
+        this.oauth2LoginFailureHandler = oauth2LoginFailureHandler;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+    private boolean isOAuthEnabled() {
+        return clientRegistrationRepository.findByRegistrationId("google") != null
+                || clientRegistrationRepository.findByRegistrationId("github") != null;
     }
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
+        provider.setPasswordEncoder(passwordEncoder);
         return provider;
     }
 
@@ -82,22 +95,32 @@ public class SecurityConfig {
                                                    AuthenticationManager authManager,
                                                    JsonUsernamePasswordAuthenticationFilter jsonFilter,
                                                    JwtRequestFilter jwtRequestFilter) throws Exception {
-        return http
+        boolean oauthEnabled = isOAuthEnabled();
+
+        http
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(
+                        oauthEnabled ? SessionCreationPolicy.IF_REQUIRED : SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers(
                             "/",
                             "/v3/api-docs/**",
                             "/swagger-ui/**",
                             "/swagger.yaml",
                             "/api/emails/**"
-                        ).permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/register", "/api/login", "/api/reset-password", "/api/forgot-password").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().authenticated()
-                )
+                    ).permitAll();
+                    auth.requestMatchers(org.springframework.http.HttpMethod.POST,
+                            "/api/register", "/api/login", "/api/reset-password", "/api/forgot-password").permitAll();
+                    auth.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auth/oauth/providers").permitAll();
+                    if (oauthEnabled) {
+                        auth.requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll();
+                    }
+                    auth.requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll();
+                    auth.anyRequest().authenticated();
+                })
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jsonFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtRequestFilter, AuthorizationFilter.class)
@@ -107,8 +130,15 @@ public class SecurityConfig {
                         response.setContentType("application/json");
                         response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Access token missing or expired.\"}");
                     })
-                )
-                .build();
+                );
+
+        if (oauthEnabled) {
+            http.oauth2Login(oauth2 -> oauth2
+                    .successHandler(oauth2LoginSuccessHandler)
+                    .failureHandler(oauth2LoginFailureHandler));
+        }
+
+        return http.build();
     }
 
     public static class JsonUsernamePasswordAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
@@ -131,7 +161,8 @@ public class SecurityConfig {
         @Override
         public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
                 throws AuthenticationException {
-            if ("application/json".equals(request.getContentType())) {
+            String contentType = request.getContentType();
+            if (contentType != null && contentType.toLowerCase().startsWith("application/json")) {
                 try {
                     Map<String, String> authRequest = objectMapper.readValue(request.getInputStream(), Map.class);
                     String username = authRequest.get("username");

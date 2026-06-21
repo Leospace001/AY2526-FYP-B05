@@ -18,6 +18,7 @@ import ResetPassword from './pages/ResetPassword';
 import ForgotPassword from './pages/ForgotPassword';
 import PlantIdentifier from './pages/PlantIdentifer';
 import EmailInbox from './pages/Email';
+import OAuthCallback from './pages/OAuthCallback';
 
 // 1. Define Props for the Protected Route
 interface ProtectedRouteProps {
@@ -43,79 +44,65 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin 
 // 3. The Layout and Routing
 function AppRoutes() {
     return (
-        <div style={{ display: 'flex', minHeight: '100vh' }}>
+        <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/oauth/callback" element={<OAuthCallback />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/reset" element={<ResetPassword />} />
+            <Route path="/forgot" element={<ForgotPassword />} />
 
-            {/* Left Sidebar */}
-            <Navbar />
-
-            {/* Main Content Area */}
-            <div style={{ flex: 1, padding: '40px', backgroundColor: '#f8f9fa' }}>
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-
-                    <Route path="/reset" element={<ResetPassword />} />
-
-                    {/* Public or General User Product Catalog */}
-                    <Route path="/products" element={<Products />} />
-
-                    <Route path="/register" element={<Register />} />
-
-                    <Route path="/plant" element={<PlantIdentifier />} />
-
-                    <Route path="/forgot" element={<ForgotPassword />} />
-
-                     <Route path="/email" element={<EmailInbox />} />
-
-                    {/* 🚀 NEW PROTECTED ROUTE: Product Creation Form (Admins Only) */}
-                    <Route path="/products/create" element={
-                        <ProtectedRoute requireAdmin={true}>
-                            <CreateProduct />
-                        </ProtectedRoute>
-                    } />
-
-                    <Route path="/cart" element={
-                        <ProtectedRoute>
-                            <Cart />
-                        </ProtectedRoute>
-                    } />
-
-                    <Route path="/" element={
-                        <ProtectedRoute>
-                            <h2>Welcome to the Dashboard</h2>
-                            <p>Select an option from the sidebar.</p>
-                        </ProtectedRoute>
-                    } />
-
-                    <Route path="/orders" element={
-                        <ProtectedRoute>
-                            <Orders />
-                        </ProtectedRoute>
-                    } />
-
-                    <Route path="/chat" element={
-                        <ProtectedRoute>
-                            <OllamaChat />
-                        </ProtectedRoute>
-                    } />
-
-                    <Route path="/emails/send" element={
-                        <ProtectedRoute>
-                            <SendEmail />
-                        </ProtectedRoute>
-                    } />
-
-                    <Route path="/profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
-                    <Route path="/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
-
-                    <Route path="/admin" element={
-                        <ProtectedRoute requireAdmin={true}>
-                            <h2>Admin Configuration</h2>
-                            <p>Admin Only Content Goes Here</p>
-                        </ProtectedRoute>
-                    } />
-                </Routes>
-            </div>
-        </div>
+            <Route path="/*" element={
+                <div style={{ display: 'flex', minHeight: '100vh' }}>
+                    <Navbar />
+                    <div style={{ flex: 1, padding: '40px', backgroundColor: '#f8f9fa' }}>
+                        <Routes>
+                            <Route path="/products" element={<Products />} />
+                            <Route path="/plant" element={<PlantIdentifier />} />
+                            <Route path="/email" element={<EmailInbox />} />
+                            <Route path="/products/create" element={
+                                <ProtectedRoute requireAdmin={true}>
+                                    <CreateProduct />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/cart" element={
+                                <ProtectedRoute>
+                                    <Cart />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/" element={
+                                <ProtectedRoute>
+                                    <h2>Welcome to the Dashboard</h2>
+                                    <p>Select an option from the sidebar.</p>
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/orders" element={
+                                <ProtectedRoute>
+                                    <Orders />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/chat" element={
+                                <ProtectedRoute>
+                                    <OllamaChat />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/emails/send" element={
+                                <ProtectedRoute>
+                                    <SendEmail />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
+                            <Route path="/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
+                            <Route path="/admin" element={
+                                <ProtectedRoute requireAdmin={true}>
+                                    <h2>Admin Configuration</h2>
+                                    <p>Admin Only Content Goes Here</p>
+                                </ProtectedRoute>
+                            } />
+                        </Routes>
+                    </div>
+                </div>
+            } />
+        </Routes>
     );
 }
 

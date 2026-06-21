@@ -23,6 +23,7 @@ import com.example.demo.model.User;
 import com.example.demo.security.JwtUtil;
 import com.example.demo.service.UserService;
 import com.example.demo.service.EmailProducer;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.context.Context;
 
@@ -47,6 +48,9 @@ public class AuthController {
 
     @Autowired
     private SpringTemplateEngine templateEngine;
+
+    @Autowired
+    private ClientRegistrationRepository clientRegistrationRepository;
 
     @Value("${DOMAIN}")
     private String domainUrl;
@@ -79,6 +83,19 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorPayload);
         }
 
+    }
+
+    @GetMapping("/api/auth/oauth/providers")
+    @Operation(summary = "List enabled OAuth login providers")
+    public ResponseEntity<List<String>> getOAuthProviders() {
+        List<String> providers = new ArrayList<>();
+        if (clientRegistrationRepository.findByRegistrationId("google") != null) {
+            providers.add("google");
+        }
+        if (clientRegistrationRepository.findByRegistrationId("github") != null) {
+            providers.add("github");
+        }
+        return ResponseEntity.ok(providers);
     }
 
     @PostMapping("/api/login")

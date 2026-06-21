@@ -44,7 +44,14 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         long startTime = System.currentTimeMillis();
         String method = request.getMethod();
 
-        if ("/api/login".equals(path) || "/api/register".equals(path)) {
+        if ("/api/login".equals(path) || "/api/register".equals(path)
+                || "/api/auth/oauth/providers".equals(path)
+                || path.startsWith("/api/forgot-password") || path.startsWith("/api/reset-password")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        if (path.startsWith("/oauth2/") || path.startsWith("/login/oauth2/")) {
             filterChain.doFilter(request, response);
             return;
         }

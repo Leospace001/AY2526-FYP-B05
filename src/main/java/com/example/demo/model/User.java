@@ -27,7 +27,7 @@ public class User extends BaseModel {
     @Column(nullable = false, columnDefinition = "varchar(255) default 'abc@mail.com'")
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String password;
 
     @Column(nullable = true)
