@@ -184,8 +184,10 @@ public class OrderService {
     }
 
     private void applyFulfillmentDetails(Order order, User user, OrderRequest dto) {
-        DeliveryAddress address = deliveryAddressService.resolveForOrder(user, dto.getDeliveryAddressId());
-        PaymentMethod payment = paymentMethodService.resolveForOrder(user, dto.getPaymentMethodId());
+        DeliveryAddress address = deliveryAddressService.resolveForCheckout(
+                user, dto.getDeliveryAddressId(), dto.getDeliveryAddress(), dto.getSaveDeliveryAddress());
+        PaymentMethod payment = paymentMethodService.resolveForCheckout(
+                user, dto.getPaymentMethodId(), dto.getPaymentMethod(), dto.getSavePaymentMethod());
 
         order.setDeliveryAddressId(address.getId());
         order.setDeliveryLabel(address.getLabel());

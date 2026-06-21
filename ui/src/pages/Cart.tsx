@@ -1,16 +1,16 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { AuthContext } from '../context/AuthContext';
 import SecureImage from '../components/SecureImage';
-import { 
-    Box, Typography, Paper, Table, TableBody, TableCell, 
-    TableContainer, TableHead, TableRow, IconButton, Button, 
+import {
+    Box, Typography, Paper, Table, TableBody, TableCell,
+    TableContainer, TableHead, TableRow, IconButton, Button,
     CircularProgress, Divider, Alert, Snackbar,
-    Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Link
+    Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem,
+    ToggleButton, ToggleButtonGroup, FormControlLabel, Checkbox
 } from '@mui/material';
-// 🟢 Explicitly import Grid2 (or standard Grid depending on MUI subversion configuration)
-import Grid from '@mui/material/Grid'; 
+import Grid from '@mui/material/Grid';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -31,6 +31,49 @@ interface CartResponse {
     items: CartItem[];
 }
 
+interface SavedAddress {
+    id: number;
+    label: string;
+    recipientName: string;
+    phone?: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state?: string;
+    postalCode: string;
+    country: string;
+    isDefault?: boolean;
+    default?: boolean;
+}
+
+interface SavedPayment {
+    id: number;
+    label: string;
+    cardholderName: string;
+    cardBrand: string;
+    cardLastFour: string;
+    expiryMonth: number;
+    expiryYear: number;
+    isDefault?: boolean;
+    default?: boolean;
+}
+
+type FulfillmentMode = 'saved' | 'new';
+
+const emptyAddress = {
+    label: '', recipientName: '', phone: '', addressLine1: '', addressLine2: '',
+    city: '', state: '', postalCode: '', country: '',
+};
+
+const emptyPayment = {
+    label: '', cardholderName: '', cardBrand: 'Visa', cardNumber: '',
+    expiryMonth: 1, expiryYear: new Date().getFullYear(),
+};
+
+function isDefaultFlag(item: { isDefault?: boolean; default?: boolean }) {
+    return item.isDefault ?? item.default ?? false;
+}
+
 export default function Cart() {
     const navigate = useNavigate();
     const { refreshCartCount } = useContext(AuthContext)!;
@@ -39,28 +82,30 @@ export default function Cart() {
     const [submitting, setSubmitting] = useState<boolean>(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
-    // 🚀 Modal control state and dynamic form bindings
     const [openCheckoutModal, setOpenCheckoutModal] = useState<boolean>(false);
     const [openEditModal, setOpenEditModal] = useState<boolean>(false);
     const [editingItem, setEditingItem] = useState<CartItem | null>(null);
     const [editQuantity, setEditQuantity] = useState<number>(1);
     const [updating, setUpdating] = useState<boolean>(false);
-    const [checkoutForm, setCheckoutForm] = useState({
-        name: '',
-        description: '',
-        remarks: '',
-        deliveryAddressId: '' as number | '',
-        paymentMethodId: '' as number | '',
-    });
-    const [addresses, setAddresses] = useState<Array<{ id: number; label: string; recipientName: string; isDefault?: boolean; default?: boolean }>>([]);
-    const [paymentMethods, setPaymentMethods] = useState<Array<{ id: number; label: string; cardBrand: string; cardLastFour: string; isDefault?: boolean; default?: boolean }>>([]);
+
+    const [checkoutForm, setCheckoutForm] = useState({ name: '', description: '', remarks: '' });
+    const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+    const [paymentMethods, setPaymentMethods] = useState<SavedPayment[]>([]);
+    const [addressMode, setAddressMode] = useState<FulfillmentMode>('new');
+    const [paymentMode, setPaymentMode] = useState<FulfillmentMode>('new');
+    const [selectedAddressId, setSelectedAddressId] = useState<number | ''>('');
+    const [selectedPaymentId, setSelectedPaymentId] = useState<number | ''>('');
+    const [newAddress, setNewAddress] = useState(emptyAddress);
+    const [newPayment, setNewPayment] = useState(emptyPayment);
+    const [saveNewAddress, setSaveNewAddress] = useState(false);
+    const [saveNewPayment, setSaveNewPayment] = useState(false);
 
     const fetchCartData = async () => {
         try {
             const response = await api.get<CartResponse>('/api/cart');
             setCart(response.data);
         } catch (error) {
-            console.error("Failed to load shopping cart contents:", error);
+            console.error('Failed to load shopping cart contents:', error);
             setSnackbar({ open: true, message: 'Could not recover your active cart session.', severity: 'error' });
         } finally {
             setLoading(false);
@@ -127,67 +172,123 @@ export default function Cart() {
         }
     };
 
-    // Opens the details entry popup
     const handleCheckoutOpen = async () => {
         try {
             const [addrRes, payRes] = await Promise.all([
                 api.get('/api/addresses'),
                 api.get('/api/payment-methods'),
             ]);
-            const addrList = addrRes.data as Array<{ id: number; label: string; recipientName: string; isDefault?: boolean; default?: boolean }>;
-            const payList = payRes.data as Array<{ id: number; label: string; cardBrand: string; cardLastFour: string; isDefault?: boolean; default?: boolean }>;
+            const addrList = addrRes.data as SavedAddress[];
+            const payList = payRes.data as SavedPayment[];
             setAddresses(addrList);
             setPaymentMethods(payList);
 
-            const defaultAddr = addrList.find(a => a.isDefault || a.default);
-            const defaultPay = payList.find(p => p.isDefault || p.default);
+            const defaultAddr = addrList.find(a => isDefaultFlag(a));
+            const defaultPay = payList.find(p => isDefaultFlag(p));
 
-            setCheckoutForm(prev => ({
-                ...prev,
-                deliveryAddressId: defaultAddr?.id ?? '',
-                paymentMethodId: defaultPay?.id ?? '',
-            }));
+            setAddressMode(addrList.length > 0 ? 'saved' : 'new');
+            setPaymentMode(payList.length > 0 ? 'saved' : 'new');
+            setSelectedAddressId(defaultAddr?.id ?? '');
+            setSelectedPaymentId(defaultPay?.id ?? '');
+            setNewAddress(emptyAddress);
+            setNewPayment(emptyPayment);
+            setSaveNewAddress(false);
+            setSaveNewPayment(false);
+            setCheckoutForm({ name: '', description: '', remarks: '' });
             setOpenCheckoutModal(true);
         } catch {
-            setSnackbar({ open: true, message: 'Could not load checkout options. Add an address and payment method under Orders.', severity: 'error' });
+            setAddresses([]);
+            setPaymentMethods([]);
+            setAddressMode('new');
+            setPaymentMode('new');
+            setNewAddress(emptyAddress);
+            setNewPayment(emptyPayment);
+            setOpenCheckoutModal(true);
         }
     };
 
-    const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleCheckoutFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setCheckoutForm(prev => ({
-            ...prev,
-            [name]: name === 'deliveryAddressId' || name === 'paymentMethodId'
-                ? (value === '' ? '' : Number(value))
-                : value,
-        }));
+        setCheckoutForm(prev => ({ ...prev, [name]: value }));
     };
 
-    // 🚀 Executes the final authorized payload transaction to the Spring Boot backend
+    const validateCheckout = (): string | null => {
+        if (!checkoutForm.name.trim()) {
+            return 'Order name is required.';
+        }
+        if (addressMode === 'saved') {
+            if (!selectedAddressId) {
+                return 'Please select a delivery address or enter a new one.';
+            }
+        } else {
+            if (!newAddress.recipientName.trim() || !newAddress.addressLine1.trim()
+                || !newAddress.city.trim() || !newAddress.postalCode.trim() || !newAddress.country.trim()) {
+                return 'Please complete the required delivery address fields.';
+            }
+            if (saveNewAddress && !newAddress.label.trim()) {
+                return 'Please add a label if you want to save this address.';
+            }
+        }
+        if (paymentMode === 'saved') {
+            if (!selectedPaymentId) {
+                return 'Please select a payment method or enter a new one.';
+            }
+        } else {
+            const digits = newPayment.cardNumber.replace(/\D/g, '');
+            if (!newPayment.cardholderName.trim() || digits.length < 4) {
+                return 'Please enter cardholder name and a valid card number.';
+            }
+            if (saveNewPayment && !newPayment.label.trim()) {
+                return 'Please add a label if you want to save this payment method.';
+            }
+        }
+        return null;
+    };
+
     const handleConfirmCheckout = async (e: React.FormEvent) => {
         e.preventDefault();
+        const validationError = validateCheckout();
+        if (validationError) {
+            setSnackbar({ open: true, message: validationError, severity: 'error' });
+            return;
+        }
+
         setSubmitting(true);
         try {
-            if (!checkoutForm.deliveryAddressId || !checkoutForm.paymentMethodId) {
-                setSnackbar({ open: true, message: 'Please select a delivery address and payment method.', severity: 'error' });
-                setSubmitting(false);
-                return;
-            }
-            await api.post('/api/order/checkout', {
+            const payload: Record<string, unknown> = {
                 name: checkoutForm.name,
                 description: checkoutForm.description,
                 remarks: checkoutForm.remarks,
-                deliveryAddressId: checkoutForm.deliveryAddressId,
-                paymentMethodId: checkoutForm.paymentMethodId,
-            });
-            
+            };
+
+            if (addressMode === 'saved') {
+                payload.deliveryAddressId = selectedAddressId;
+            } else {
+                payload.deliveryAddress = { ...newAddress };
+                payload.saveDeliveryAddress = saveNewAddress;
+            }
+
+            if (paymentMode === 'saved') {
+                payload.paymentMethodId = selectedPaymentId;
+            } else {
+                payload.paymentMethod = { ...newPayment };
+                payload.savePaymentMethod = saveNewPayment;
+            }
+
+            await api.post('/api/order/checkout', payload);
+
             setSnackbar({ open: true, message: 'Order submitted successfully!', severity: 'success' });
             setOpenCheckoutModal(false);
-            
+            refreshCartCount();
             setTimeout(() => navigate('/orders'), 1500);
-        } catch (error) {
-            console.error("Checkout transaction failed:", error);
-            setSnackbar({ open: true, message: 'Checkout transaction failed.', severity: 'error' });
+        } catch (error: unknown) {
+            console.error('Checkout transaction failed:', error);
+            const err = error as { response?: { data?: { message?: string } } };
+            setSnackbar({
+                open: true,
+                message: err.response?.data?.message || 'Checkout transaction failed.',
+                severity: 'error',
+            });
         } finally {
             setSubmitting(false);
         }
@@ -230,9 +331,7 @@ export default function Cart() {
                     </Button>
                 </Paper>
             ) : (
-                // 🟢 Updated wrapper context tags to match Grid2 signature parameters
                 <Grid container spacing={4}>
-                    {/* Items List Table Column */}
                     <Grid size={{ xs: 12, md: 8 }}>
                         <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: 2, overflow: 'hidden' }}>
                             <Table>
@@ -274,7 +373,6 @@ export default function Cart() {
                         </TableContainer>
                     </Grid>
 
-                    {/* Transaction Order Summary Checklist Column */}
                     <Grid size={{ xs: 12, md: 4 }}>
                         <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 2, bgcolor: '#fdfdfd' }}>
                             <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
@@ -287,13 +385,13 @@ export default function Cart() {
                                     ${calculateTotal().toFixed(2)}
                                 </Typography>
                             </Box>
-                            <Button 
-                                variant="contained" 
-                                color="primary" 
-                                fullWidth 
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                fullWidth
                                 size="large"
                                 disabled={submitting}
-                                onClick={handleCheckoutOpen} // 🚀 Triggers the modal popup dialog layout
+                                onClick={handleCheckoutOpen}
                                 sx={{ fontWeight: 'bold', py: 1.5, borderRadius: 2 }}
                             >
                                 Proceed to Checkout
@@ -303,7 +401,6 @@ export default function Cart() {
                 </Grid>
             )}
 
-            {/* Edit quantity dialog */}
             <Dialog
                 open={openEditModal}
                 onClose={handleEditClose}
@@ -335,148 +432,267 @@ export default function Cart() {
                         <Button color="inherit" disabled={updating} onClick={handleEditClose}>
                             Cancel
                         </Button>
-                        <Button
-                            type="submit"
-                            variant="contained"
-                            color="primary"
-                            disabled={updating}
-                            sx={{ fontWeight: 'bold', px: 3 }}
-                        >
+                        <Button type="submit" variant="contained" color="primary" disabled={updating} sx={{ fontWeight: 'bold', px: 3 }}>
                             {updating ? <CircularProgress size={24} color="inherit" /> : 'Save'}
                         </Button>
                     </DialogActions>
                 </Box>
             </Dialog>
 
-            {/* 🚀 CHECKOUT MULTIPART POPUP DIALOG FORM */}
-            <Dialog 
-                open={openCheckoutModal} 
+            <Dialog
+                open={openCheckoutModal}
                 onClose={() => !submitting && setOpenCheckoutModal(false)}
-                maxWidth="sm"
+                maxWidth="md"
                 fullWidth
                 sx={{ '& .MuiPaper-root': { borderRadius: 3 } }}
             >
                 <DialogTitle sx={{ fontWeight: 'bold', color: '#2c3e50', pt: 3 }}>
                     Checkout
                 </DialogTitle>
-                
+
                 <Box component="form" onSubmit={handleConfirmCheckout}>
                     <DialogContent dividers sx={{ py: 2 }}>
-                        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                            Choose your delivery address and payment method. Manage saved options on the{' '}
-                            <Link component={RouterLink} to="/orders" underline="hover">Orders page</Link>.
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                            Enter delivery and payment details below. You can use saved options or fill in one-off details for this order only.
                         </Typography>
 
-                        {addresses.length === 0 || paymentMethods.length === 0 ? (
-                            <Alert severity="warning" sx={{ mb: 2 }}>
-                                {addresses.length === 0 && paymentMethods.length === 0
-                                    ? 'Add a delivery address and payment method on the Orders page before checkout.'
-                                    : addresses.length === 0
-                                        ? 'Add a delivery address on the Orders page before checkout.'
-                                        : 'Add a payment method on the Orders page before checkout.'}
-                            </Alert>
-                        ) : null}
-
-                        <TextField
-                            select
-                            required
-                            fullWidth
-                            margin="normal"
-                            label="Delivery address"
-                            name="deliveryAddressId"
-                            value={checkoutForm.deliveryAddressId}
-                            onChange={handleFormChange}
-                            disabled={submitting}
-                        >
-                            {addresses.map(addr => (
-                                <MenuItem key={addr.id} value={addr.id}>
-                                    {addr.label} — {addr.recipientName}{(addr.isDefault || addr.default) ? ' (Default)' : ''}
-                                </MenuItem>
-                            ))}
-                        </TextField>
-
-                        <TextField
-                            select
-                            required
-                            fullWidth
-                            margin="normal"
-                            label="Payment method"
-                            name="paymentMethodId"
-                            value={checkoutForm.paymentMethodId}
-                            onChange={handleFormChange}
-                            disabled={submitting}
-                        >
-                            {paymentMethods.map(pm => (
-                                <MenuItem key={pm.id} value={pm.id}>
-                                    {pm.label} — {pm.cardBrand} •••• {pm.cardLastFour}{(pm.isDefault || pm.default) ? ' (Default)' : ''}
-                                </MenuItem>
-                            ))}
-                        </TextField>
-                        
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Order details</Typography>
                         <TextField
                             required
                             fullWidth
-                            margin="normal"
+                            margin="dense"
                             label="Order name"
                             name="name"
-                            variant="outlined"
                             placeholder="e.g. Weekly grocery order"
                             value={checkoutForm.name}
-                            onChange={handleFormChange}
+                            onChange={handleCheckoutFormChange}
                             disabled={submitting}
                         />
-
                         <TextField
                             fullWidth
-                            margin="normal"
+                            margin="dense"
                             label="Order description"
                             name="description"
-                            variant="outlined"
                             multiline
                             rows={2}
                             value={checkoutForm.description}
-                            onChange={handleFormChange}
+                            onChange={handleCheckoutFormChange}
                             disabled={submitting}
                         />
-
                         <TextField
                             fullWidth
-                            margin="normal"
+                            margin="dense"
                             label="Special remarks"
                             name="remarks"
-                            variant="outlined"
                             multiline
                             rows={2}
                             value={checkoutForm.remarks}
-                            onChange={handleFormChange}
+                            onChange={handleCheckoutFormChange}
                             disabled={submitting}
                         />
+
+                        <Divider sx={{ my: 2.5 }} />
+
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Delivery address</Typography>
+                            <ToggleButtonGroup
+                                size="small"
+                                exclusive
+                                value={addressMode}
+                                onChange={(_, value: FulfillmentMode | null) => value && setAddressMode(value)}
+                                disabled={submitting}
+                            >
+                                <ToggleButton value="saved" disabled={addresses.length === 0}>Saved</ToggleButton>
+                                <ToggleButton value="new">New</ToggleButton>
+                            </ToggleButtonGroup>
+                        </Box>
+
+                        {addressMode === 'saved' ? (
+                            addresses.length === 0 ? (
+                                <Alert severity="info" sx={{ mb: 1 }}>No saved addresses yet. Switch to New to enter one for this order.</Alert>
+                            ) : (
+                                <TextField
+                                    select
+                                    required
+                                    fullWidth
+                                    margin="dense"
+                                    label="Choose saved address"
+                                    value={selectedAddressId}
+                                    onChange={(e) => setSelectedAddressId(e.target.value === '' ? '' : Number(e.target.value))}
+                                    disabled={submitting}
+                                >
+                                    {addresses.map(addr => (
+                                        <MenuItem key={addr.id} value={addr.id}>
+                                            {addr.label} — {addr.recipientName}{isDefaultFlag(addr) ? ' (Default)' : ''}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
+                            )
+                        ) : (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1 }}>
+                                {saveNewAddress && (
+                                    <TextField
+                                        label="Label (e.g. Home)"
+                                        required
+                                        value={newAddress.label}
+                                        onChange={e => setNewAddress({ ...newAddress, label: e.target.value })}
+                                        disabled={submitting}
+                                    />
+                                )}
+                                <TextField
+                                    label="Recipient name"
+                                    required
+                                    value={newAddress.recipientName}
+                                    onChange={e => setNewAddress({ ...newAddress, recipientName: e.target.value })}
+                                    disabled={submitting}
+                                />
+                                <TextField
+                                    label="Phone"
+                                    value={newAddress.phone}
+                                    onChange={e => setNewAddress({ ...newAddress, phone: e.target.value })}
+                                    disabled={submitting}
+                                />
+                                <TextField
+                                    label="Address line 1"
+                                    required
+                                    value={newAddress.addressLine1}
+                                    onChange={e => setNewAddress({ ...newAddress, addressLine1: e.target.value })}
+                                    disabled={submitting}
+                                />
+                                <TextField
+                                    label="Address line 2"
+                                    value={newAddress.addressLine2}
+                                    onChange={e => setNewAddress({ ...newAddress, addressLine2: e.target.value })}
+                                    disabled={submitting}
+                                />
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                    <TextField label="City" required fullWidth value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} disabled={submitting} />
+                                    <TextField label="State" fullWidth value={newAddress.state} onChange={e => setNewAddress({ ...newAddress, state: e.target.value })} disabled={submitting} />
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                    <TextField label="Postal code" required fullWidth value={newAddress.postalCode} onChange={e => setNewAddress({ ...newAddress, postalCode: e.target.value })} disabled={submitting} />
+                                    <TextField label="Country" required fullWidth value={newAddress.country} onChange={e => setNewAddress({ ...newAddress, country: e.target.value })} disabled={submitting} />
+                                </Box>
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={saveNewAddress}
+                                            onChange={e => setSaveNewAddress(e.target.checked)}
+                                            disabled={submitting}
+                                        />
+                                    }
+                                    label="Save this address for future orders"
+                                />
+                            </Box>
+                        )}
+
+                        <Divider sx={{ my: 2.5 }} />
+
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Payment method</Typography>
+                            <ToggleButtonGroup
+                                size="small"
+                                exclusive
+                                value={paymentMode}
+                                onChange={(_, value: FulfillmentMode | null) => value && setPaymentMode(value)}
+                                disabled={submitting}
+                            >
+                                <ToggleButton value="saved" disabled={paymentMethods.length === 0}>Saved</ToggleButton>
+                                <ToggleButton value="new">New</ToggleButton>
+                            </ToggleButtonGroup>
+                        </Box>
+
+                        {paymentMode === 'saved' ? (
+                            paymentMethods.length === 0 ? (
+                                <Alert severity="info" sx={{ mb: 1 }}>No saved payment methods yet. Switch to New to pay for this order.</Alert>
+                            ) : (
+                                <TextField
+                                    select
+                                    required
+                                    fullWidth
+                                    margin="dense"
+                                    label="Choose saved payment method"
+                                    value={selectedPaymentId}
+                                    onChange={(e) => setSelectedPaymentId(e.target.value === '' ? '' : Number(e.target.value))}
+                                    disabled={submitting}
+                                >
+                                    {paymentMethods.map(pm => (
+                                        <MenuItem key={pm.id} value={pm.id}>
+                                            {pm.label} — {pm.cardBrand} •••• {pm.cardLastFour}{isDefaultFlag(pm) ? ' (Default)' : ''}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
+                            )
+                        ) : (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1 }}>
+                                {saveNewPayment && (
+                                    <TextField
+                                        label="Label (e.g. Personal Visa)"
+                                        required
+                                        value={newPayment.label}
+                                        onChange={e => setNewPayment({ ...newPayment, label: e.target.value })}
+                                        disabled={submitting}
+                                    />
+                                )}
+                                <TextField
+                                    label="Cardholder name"
+                                    required
+                                    value={newPayment.cardholderName}
+                                    onChange={e => setNewPayment({ ...newPayment, cardholderName: e.target.value })}
+                                    disabled={submitting}
+                                />
+                                <TextField
+                                    select
+                                    label="Card brand"
+                                    required
+                                    value={newPayment.cardBrand}
+                                    onChange={e => setNewPayment({ ...newPayment, cardBrand: e.target.value })}
+                                    disabled={submitting}
+                                >
+                                    {['Visa', 'Mastercard', 'Amex', 'Other'].map(b => (
+                                        <MenuItem key={b} value={b}>{b}</MenuItem>
+                                    ))}
+                                </TextField>
+                                <TextField
+                                    label="Card number"
+                                    required
+                                    value={newPayment.cardNumber}
+                                    onChange={e => setNewPayment({ ...newPayment, cardNumber: e.target.value })}
+                                    helperText="Only the last 4 digits are stored on the order"
+                                    disabled={submitting}
+                                />
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                    <TextField label="Expiry month" type="number" required fullWidth value={newPayment.expiryMonth} onChange={e => setNewPayment({ ...newPayment, expiryMonth: parseInt(e.target.value, 10) || 1 })} disabled={submitting} />
+                                    <TextField label="Expiry year" type="number" required fullWidth value={newPayment.expiryYear} onChange={e => setNewPayment({ ...newPayment, expiryYear: parseInt(e.target.value, 10) || new Date().getFullYear() })} disabled={submitting} />
+                                </Box>
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={saveNewPayment}
+                                            onChange={e => setSaveNewPayment(e.target.checked)}
+                                            disabled={submitting}
+                                        />
+                                    }
+                                    label="Save this payment method for future orders"
+                                />
+                            </Box>
+                        )}
                     </DialogContent>
 
                     <DialogActions sx={{ px: 3, py: 2.5, gap: 1 }}>
-                        <Button 
-                            color="inherit" 
-                            disabled={submitting} 
-                            onClick={() => setOpenCheckoutModal(false)}
-                        >
+                        <Button color="inherit" disabled={submitting} onClick={() => setOpenCheckoutModal(false)}>
                             Cancel
                         </Button>
-                        <Button 
-                            type="submit" 
-                            variant="contained" 
-                            color="primary"
-                            disabled={submitting}
-                            sx={{ fontWeight: 'bold', px: 3 }}
-                        >
+                        <Button type="submit" variant="contained" color="primary" disabled={submitting} sx={{ fontWeight: 'bold', px: 3 }}>
                             {submitting ? <CircularProgress size={24} color="inherit" /> : 'Confirm Checkout'}
                         </Button>
                     </DialogActions>
                 </Box>
             </Dialog>
 
-            <Snackbar 
-                open={snackbar.open} 
-                autoHideDuration={4000} 
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
                 onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             >

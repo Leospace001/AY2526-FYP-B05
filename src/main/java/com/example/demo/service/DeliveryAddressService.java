@@ -45,6 +45,37 @@ public class DeliveryAddressService {
     }
 
     @Transactional
+    public DeliveryAddress resolveForCheckout(User user, Long addressId, DeliveryAddressRequest inline,
+            Boolean saveForLater) {
+        if (addressId != null) {
+            return getForUser(addressId, user);
+        }
+        if (inline != null) {
+            if (Boolean.TRUE.equals(saveForLater)) {
+                return deliveryAddressRepository.findById(create(user, inline).getId())
+                        .orElseThrow(() -> new IllegalArgumentException("Failed to save delivery address."));
+            }
+            return fromRequest(inline);
+        }
+        return resolveForOrder(user, null);
+    }
+
+    public DeliveryAddress fromRequest(DeliveryAddressRequest request) {
+        DeliveryAddressRequest normalized = normalizeRequest(request);
+        validateRequest(normalized);
+        DeliveryAddress address = new DeliveryAddress();
+        applyRequest(address, normalized);
+        return address;
+    }
+
+    private DeliveryAddressRequest normalizeRequest(DeliveryAddressRequest request) {
+        if (!StringUtils.hasText(request.getLabel())) {
+            request.setLabel("One-time delivery");
+        }
+        return request;
+    }
+
+    @Transactional
     public DeliveryAddressDto create(User user, DeliveryAddressRequest request) {
         validateRequest(request);
         DeliveryAddress address = new DeliveryAddress();

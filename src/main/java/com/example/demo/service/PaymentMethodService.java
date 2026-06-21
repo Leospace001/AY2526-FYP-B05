@@ -45,6 +45,37 @@ public class PaymentMethodService {
     }
 
     @Transactional
+    public PaymentMethod resolveForCheckout(User user, Long paymentMethodId, PaymentMethodRequest inline,
+            Boolean saveForLater) {
+        if (paymentMethodId != null) {
+            return getForUser(paymentMethodId, user);
+        }
+        if (inline != null) {
+            if (Boolean.TRUE.equals(saveForLater)) {
+                return paymentMethodRepository.findById(create(user, inline).getId())
+                        .orElseThrow(() -> new IllegalArgumentException("Failed to save payment method."));
+            }
+            return fromRequest(inline);
+        }
+        return resolveForOrder(user, null);
+    }
+
+    public PaymentMethod fromRequest(PaymentMethodRequest request) {
+        PaymentMethodRequest normalized = normalizeRequest(request);
+        validateRequest(normalized);
+        PaymentMethod method = new PaymentMethod();
+        applyRequest(method, normalized);
+        return method;
+    }
+
+    private PaymentMethodRequest normalizeRequest(PaymentMethodRequest request) {
+        if (!StringUtils.hasText(request.getLabel())) {
+            request.setLabel("One-time payment");
+        }
+        return request;
+    }
+
+    @Transactional
     public PaymentMethodDto create(User user, PaymentMethodRequest request) {
         validateRequest(request);
         PaymentMethod method = new PaymentMethod();

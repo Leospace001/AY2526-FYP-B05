@@ -9,4 +9,8 @@ public class OrderRequest {
     private String remarks;
     private Long deliveryAddressId;
     private Long paymentMethodId;
+    private DeliveryAddressRequest deliveryAddress;
+    private PaymentMethodRequest paymentMethod;
+    private Boolean saveDeliveryAddress;
+    private Boolean savePaymentMethod;
 }
