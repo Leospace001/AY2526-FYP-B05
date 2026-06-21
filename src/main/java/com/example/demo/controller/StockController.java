@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import java.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -26,17 +27,27 @@ public class StockController {
     @Autowired
     private StockMapper stockmapper;
 
+    private boolean isAdmin(Authentication authentication) {
+        if (authentication == null) {
+            return false;
+        }
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch("ROLE_ADMIN"::equals);
+    }
+
     @GetMapping("/")
     @Operation(summary = "Get all stocks with pagination and sorting", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<Page<StockResponseDto>> getAllStocks(
-            @RequestParam(required = false) String search, // 🚀 ADDED THIS OPTIONAL SEARCH PARAMETER
+            @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size, 
             @RequestParam(defaultValue = "id") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir) {
+            @RequestParam(defaultValue = "asc") String sortDir,
+            Authentication authentication) {
         
-        // 🚀 Forward the search parameter into the service execution layer
-        Page<StockResponseDto> paginatedStocks = stockService.getPaginatedStocks(search, page, size, sortBy, sortDir);
+        Page<StockResponseDto> paginatedStocks = stockService.getPaginatedStocks(
+                search, page, size, sortBy, sortDir, isAdmin(authentication));
         return ResponseEntity.ok(paginatedStocks);
     }
 
@@ -86,6 +97,19 @@ public class StockController {
             return ResponseEntity.ok(updatedDto); // Returns 200 OK with refreshed object details
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // Returns 500 on system crashes
+        }
+    }
+
+    @PatchMapping("/{id}/availability")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Set whether a product is visible in the catalog", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<StockResponseDto> setAvailability(
+            @PathVariable Long id,
+            @RequestParam boolean active) {
+        try {
+            return ResponseEntity.ok(stockService.setAvailability(id, active));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
 }

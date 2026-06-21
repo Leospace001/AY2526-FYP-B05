@@ -47,6 +47,10 @@ public class CartService {
         Stock stock = stockRepository.findById(request.getStockId())
                 .orElseThrow(() -> new RuntimeException("Stock not found with ID: " + request.getStockId()));
 
+        if (!stock.isActive()) {
+            throw new RuntimeException("This product is currently unavailable.");
+        }
+
         CartItem existingItem = cartItemRepository
                 .findByCart_IdAndStock_Id(cart.getId(), stock.getId())
                 .orElse(null);

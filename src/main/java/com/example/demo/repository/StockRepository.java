@@ -13,4 +13,8 @@ public interface StockRepository extends JpaRepository<Stock, Long>, JpaSpecific
     List<Stock> findByName(String stockName);
 
     Page<Stock> findByNameContainingIgnoreCase(String name, Pageable pageable);
+
+    Page<Stock> findByActiveTrue(Pageable pageable);
+
+    Page<Stock> findByNameContainingIgnoreCaseAndActiveTrue(String name, Pageable pageable);
 }

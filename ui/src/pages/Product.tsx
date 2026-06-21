@@ -4,7 +4,8 @@ import { AuthContext } from '../context/AuthContext';
 import {
     Grid, Card, CardContent, CardActions, Typography,
     Button, CircularProgress, Box, Snackbar, Alert, TextField,
-    Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Divider, CardMedia
+    Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Divider, CardMedia,
+    Select, MenuItem, FormControl, InputLabel, Switch, FormControlLabel, Chip,
 } from '@mui/material';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import EditIcon from '@mui/icons-material/Edit'; 
@@ -18,8 +19,26 @@ interface Stock {
     imagePath?: string;
     name?: string;
     description?: string; 
-    cost?: number;        
+    cost?: number;
+    active?: boolean;
+    isActive?: boolean;
 }
+
+function isProductActive(item: Stock): boolean {
+    const flag = item.active ?? item.isActive;
+    return flag !== false;
+}
+
+type SortOption = 'newest' | 'oldest' | 'name_asc' | 'name_desc' | 'price_asc' | 'price_desc';
+
+const SORT_OPTIONS: { value: SortOption; label: string; sortBy: string; sortDir: string }[] = [
+    { value: 'newest', label: 'Newest first', sortBy: 'createdAt', sortDir: 'desc' },
+    { value: 'oldest', label: 'Oldest first', sortBy: 'createdAt', sortDir: 'asc' },
+    { value: 'name_asc', label: 'Name (A–Z)', sortBy: 'name', sortDir: 'asc' },
+    { value: 'name_desc', label: 'Name (Z–A)', sortBy: 'name', sortDir: 'desc' },
+    { value: 'price_asc', label: 'Price (low to high)', sortBy: 'sellingPrice', sortDir: 'asc' },
+    { value: 'price_desc', label: 'Price (high to low)', sortBy: 'sellingPrice', sortDir: 'desc' },
+];
 
 // --- SECURE IMAGE LOADER COMPONENT ---
 function SecureProductImage({ imagePath, alt }: { imagePath?: string; alt: string }) {
@@ -74,6 +93,8 @@ export default function Products() {
     
     // 🚀 NEW STATE: Search bar string binding
     const [searchQuery, setSearchQuery] = useState<string>('');
+    const [sortOption, setSortOption] = useState<SortOption>('newest');
+    const [togglingAvailabilityId, setTogglingAvailabilityId] = useState<number | null>(null);
 
     const [quantities, setQuantities] = useState<{ [key: number]: number }>({});
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
@@ -88,21 +109,28 @@ export default function Products() {
         sellingPrice: '',
         cost: '',
         quantity: '',
-        minimumLevel: ''
+        minimumLevel: '',
+        active: true,
     });
     const [editImageFile, setEditImageFile] = useState<File | null>(null);
     const [editImagePreview, setEditImagePreview] = useState<string>('');
 
-    // 🚀 Core Fetch Function: Modified to append the active search query param
-    const fetchProductCatalog = async (currentPage: number, search: string, isNewSearch: boolean = false) => {
+  // 🚀 Core Fetch Function: Modified to append the active search query param
+    const fetchProductCatalog = async (
+        currentPage: number,
+        search: string,
+        sort: SortOption,
+        isNewSearch: boolean = false,
+    ) => {
         setLoading(true);
+        const { sortBy, sortDir } = SORT_OPTIONS.find((opt) => opt.value === sort) ?? SORT_OPTIONS[0];
         try {
-            // Passes the search string parameter safely across query strings
-            const response = await api.get(`/api/stock/?search=${search}&page=${currentPage}&size=12&sortBy=id&sortDir=asc`);
+            const response = await api.get(
+                `/api/stock/?search=${encodeURIComponent(search)}&page=${currentPage}&size=12&sortBy=${sortBy}&sortDir=${sortDir}`,
+            );
             const { content, last } = response.data;
 
             setProducts(prev => {
-                // If it is a fresh search query execution, discard old array history completely
                 if (isNewSearch) return content;
 
                 const existingIds = new Set(prev.map(item => item.id));
@@ -119,28 +147,35 @@ export default function Products() {
         }
     };
 
+    const reloadCatalog = (search: string, sort: SortOption) => {
+        setPage(0);
+        setHasMore(true);
+        fetchProductCatalog(0, search, sort, true);
+    };
+
     // 🚀 Handle Search Input Transitions
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const query = e.target.value;
         setSearchQuery(query);
-        setPage(0); // Reset pagination index position instantly
-        setHasMore(true);
-        
-        // Fetch first data slice directly to make UI feel highly responsive
-        fetchProductCatalog(0, query, true); 
+        reloadCatalog(query, sortOption);
+    };
+
+    const handleSortChange = (value: SortOption) => {
+        setSortOption(value);
+        reloadCatalog(searchQuery, value);
     };
 
     // Handle background infinite scroll increments
     useEffect(() => {
         if (page > 0) {
-            fetchProductCatalog(page, searchQuery, false);
+            fetchProductCatalog(page, searchQuery, sortOption, false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page]);
 
     // Initialize data download on page component instantiation
     useEffect(() => {
-        fetchProductCatalog(0, '', true);
+        fetchProductCatalog(0, '', 'newest', true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -183,7 +218,8 @@ export default function Products() {
             sellingPrice: product.sellingPrice?.toString() || '0',
             cost: product.cost?.toString() || '0',
             quantity: product.quantity?.toString() || '0',
-            minimumLevel: product.minimumLevel?.toString() || '0'
+            minimumLevel: product.minimumLevel?.toString() || '0',
+            active: isProductActive(product),
         });
         setEditImageFile(null);
         setEditImagePreview('');
@@ -191,8 +227,34 @@ export default function Products() {
     };
 
     const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setEditFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setEditFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value,
+        }));
+    };
+
+    const handleToggleAvailability = async (product: Stock) => {
+        const nextActive = !isProductActive(product);
+        setTogglingAvailabilityId(product.id);
+        try {
+            const response = await api.patch(`/api/stock/${product.id}/availability`, null, {
+                params: { active: nextActive },
+            });
+            setProducts((prev) => prev.map((item) => (
+                item.id === product.id ? { ...item, ...response.data } : item
+            )));
+            setSnackbar({
+                open: true,
+                message: nextActive ? 'Product is now visible to all users.' : 'Product is now hidden from the catalog.',
+                severity: 'success',
+            });
+        } catch (error) {
+            console.error(error);
+            setSnackbar({ open: true, message: 'Failed to update product availability.', severity: 'error' });
+        } finally {
+            setTogglingAvailabilityId(null);
+        }
     };
 
     const handleEditFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,6 +277,7 @@ export default function Products() {
         multipartPayload.append('cost', editFormData.cost);
         multipartPayload.append('quantity', editFormData.quantity);
         multipartPayload.append('minimumLevel', editFormData.minimumLevel);
+        multipartPayload.append('active', String(editFormData.active));
 
         if (editImageFile) {
             multipartPayload.append('imageFile', editImageFile);
@@ -246,15 +309,31 @@ export default function Products() {
                     Available Material Stock Inventory
                 </Typography>
                 
-                <TextField 
-                    size="small"
-                    label="Search Products..."
-                    variant="outlined"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    placeholder="Type a product name..."
-                    sx={{ width: { xs: '100%', sm: '300px' }, backgroundColor: '#fff' }}
-                />
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+                    <FormControl size="small" sx={{ minWidth: 200, backgroundColor: '#fff' }}>
+                        <InputLabel id="product-sort-label">Sort by</InputLabel>
+                        <Select
+                            labelId="product-sort-label"
+                            label="Sort by"
+                            value={sortOption}
+                            onChange={(e) => handleSortChange(e.target.value as SortOption)}
+                        >
+                            {SORT_OPTIONS.map((opt) => (
+                                <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    <TextField 
+                        size="small"
+                        label="Search Products..."
+                        variant="outlined"
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                        placeholder="Type a product name..."
+                        sx={{ width: { xs: '100%', sm: '300px' }, backgroundColor: '#fff' }}
+                    />
+                </Box>
             </Box>
 
             {products.length === 0 && !loading ? (
@@ -263,11 +342,33 @@ export default function Products() {
                 </Typography>
             ) : (
                 <Grid container spacing={3}>
-                    {products.map((item) => (
-                        // 🚀 FIXED: MUI v6 syntax for grid sizes
+                    {products.map((item) => {
+                        const productActive = isProductActive(item);
+                        const canPurchase = productActive && (item.quantity ?? 0) > 0;
+
+                        return (
                         <Grid key={item.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRadius: 2, boxShadow: 2 }}>
-                                <SecureProductImage imagePath={item.imagePath} alt={item.name || 'Product Stock Item'} />
+                            <Card sx={{
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                borderRadius: 2,
+                                boxShadow: 2,
+                                opacity: productActive ? 1 : 0.72,
+                                border: productActive ? undefined : '1px dashed #e74c3c',
+                            }}>
+                                <Box sx={{ position: 'relative' }}>
+                                    <SecureProductImage imagePath={item.imagePath} alt={item.name || 'Product Stock Item'} />
+                                    {!productActive && (
+                                        <Chip
+                                            label="Unavailable"
+                                            color="error"
+                                            size="small"
+                                            sx={{ position: 'absolute', top: 8, left: 8, fontWeight: 'bold' }}
+                                        />
+                                    )}
+                                </Box>
                                 <CardContent sx={{ flexGrow: 1 }}>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', minHeight: '64px', overflow: 'hidden', flexGrow: 1, pr: 1 }}>
@@ -280,34 +381,53 @@ export default function Products() {
                                         )}
                                     </Box>
 
+                                    {isAdmin && (
+                                        <FormControlLabel
+                                            sx={{ mt: 1, mb: 0.5 }}
+                                            control={
+                                                <Switch
+                                                    size="small"
+                                                    checked={productActive}
+                                                    disabled={togglingAvailabilityId === item.id}
+                                                    onChange={() => handleToggleAvailability(item)}
+                                                />
+                                            }
+                                            label={productActive ? 'Visible to users' : 'Hidden from users'}
+                                        />
+                                    )}
+
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
                                         <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
                                             ${item.sellingPrice.toFixed(2)}
                                         </Typography>
                                         <Typography variant="body2" color={(item.quantity ?? 0) <= (item.minimumLevel ?? 0) ? "error" : "textSecondary"} sx={{ fontWeight: 'medium' }}>
-                                            {(item.quantity ?? 0) <= 0 ? 'Out of Stock' : `Available Qty: ${item.quantity}`}
+                                            {!productActive
+                                                ? 'Not listed'
+                                                : (item.quantity ?? 0) <= 0
+                                                    ? 'Out of Stock'
+                                                    : `Available Qty: ${item.quantity}`}
                                         </Typography>
                                     </Box>
                                 </CardContent>
                                 <CardActions sx={{ p: 2, pt: 0, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                                     <TextField
                                         type="number" size="small" label="Quantity" 
-                                        // 🚀 FIXED: Updated to MUI v6 slotProps syntax
                                         slotProps={{ htmlInput: { min: 1 } }}
                                         value={quantities[item.id] || 1}
                                         onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 1)}
-                                        sx={{ width: '100%' }} disabled={(item.quantity ?? 0) <= 0}
+                                        sx={{ width: '100%' }} disabled={!canPurchase}
                                     />
                                     <Button
                                         variant="contained" color="primary" fullWidth startIcon={<AddShoppingCartIcon />}
-                                        onClick={() => handleAddToCart(item.id)} disabled={(item.quantity ?? 0) <= 0} sx={{ fontWeight: 'bold', py: 1 }}
+                                        onClick={() => handleAddToCart(item.id)} disabled={!canPurchase} sx={{ fontWeight: 'bold', py: 1 }}
                                     >
-                                        {(item.quantity ?? 0) <= 0 ? 'Empty' : 'Add To Cart'}
+                                        {!productActive ? 'Unavailable' : (item.quantity ?? 0) <= 0 ? 'Empty' : 'Add To Cart'}
                                     </Button>
                                 </CardActions>
                             </Card>
                         </Grid>
-                    ))}
+                        );
+                    })}
                 </Grid>
             )}
 
@@ -343,6 +463,19 @@ export default function Products() {
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField required fullWidth type="number" label="Minimum Level Alert" name="minimumLevel" slotProps={{ htmlInput: { min: '0' } }} value={editFormData.minimumLevel} onChange={handleEditFormChange} disabled={isUpdating} />
+                            </Grid>
+                            <Grid size={12}>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            name="active"
+                                            checked={editFormData.active}
+                                            onChange={handleEditFormChange}
+                                            disabled={isUpdating}
+                                        />
+                                    }
+                                    label="Visible in product catalog"
+                                />
                             </Grid>
                             <Grid size={12}><Divider sx={{ my: 1 }} /></Grid>
                             <Grid size={{ xs: 12, sm: 5 }} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>

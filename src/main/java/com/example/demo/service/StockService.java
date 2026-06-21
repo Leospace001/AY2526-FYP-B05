@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Set;
 import com.example.demo.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,8 +15,6 @@ import com.example.demo.repository.StockRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import com.example.demo.dto.StockRequestDto;
@@ -25,6 +24,9 @@ import com.example.demo.model.Stock;
 
 @Service
 public class StockService {
+
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "id", "name", "createdAt", "updatedAt", "sellingPrice", "quantity");
 
     @Autowired
     private StockRepository stockRepository;
@@ -47,26 +49,28 @@ public class StockService {
         return stocks;
     }
 
-    public Page<StockResponseDto> getPaginatedStocks(String search, int page, int size, String sortBy, String sortDir) { // 🚀 Added 'search' parameter
-        // 1. Establish the database sorting rules dynamically
-        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) 
-                    ? Sort.by(sortBy).ascending() 
-                    : Sort.by(sortBy).descending();
-                    
-        // 2. Build the structural page parameters slice
+    public Page<StockResponseDto> getPaginatedStocks(
+            String search, int page, int size, String sortBy, String sortDir, boolean includeInactive) {
+        String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "id";
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name())
+                ? Sort.by(safeSortBy).ascending()
+                : Sort.by(safeSortBy).descending();
+
         Pageable pageable = PageRequest.of(page, size, sort);
-        
-        // 3. 🚀 DYNAMIC SEARCH FILTERING
+        boolean hasSearch = search != null && !search.trim().isEmpty();
+        String trimmedSearch = hasSearch ? search.trim() : "";
+
         Page<Stock> stockPage;
-        if (search != null && !search.trim().isEmpty()) {
-            // Fetch filtered keyword page matches
-            stockPage = stockRepository.findByNameContainingIgnoreCase(search.trim(), pageable);
+        if (includeInactive) {
+            stockPage = hasSearch
+                    ? stockRepository.findByNameContainingIgnoreCase(trimmedSearch, pageable)
+                    : stockRepository.findAll(pageable);
         } else {
-            // Default: Fetch standard global list
-            stockPage = stockRepository.findAll(pageable);
+            stockPage = hasSearch
+                    ? stockRepository.findByNameContainingIgnoreCaseAndActiveTrue(trimmedSearch, pageable)
+                    : stockRepository.findByActiveTrue(pageable);
         }
-        
-        // 4. Transform the inner database models using your mapping rules
+
         return stockPage.map(stock -> stockMapper.StocktoResponseDto(stock));
     }
 
@@ -74,13 +78,18 @@ public class StockService {
         return stockRepository.findByName(name);
     }
 
+    public StockResponseDto setAvailability(Long id, boolean active) {
+        Stock stock = stockRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Stock not found with ID: " + id));
+        stock.setActive(active);
+        return stockMapper.StocktoResponseDto(stockRepository.save(stock));
+    }
+
     public StockResponseDto addStock(StockRequestDto dto, User user) {
         MultipartFile file = dto.getImageFile();
         Stock stock = stockMapper.stockRequestDtoToStock(dto);
 
         try {
-            // Safe Check: Ensure file object itself is not null before checking if it is
-            // empty
             if (file != null && !file.isEmpty()) {
                 String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
                 Path targetPath = Paths.get(uploadDir).resolve(fileName);
@@ -90,6 +99,9 @@ public class StockService {
             }
 
             stock.setCreatedBy(user);
+            if (dto.getActive() != null) {
+                stock.setActive(dto.getActive());
+            }
             Stock savedStock = stockRepository.save(stock);
             return stockMapper.StocktoResponseDto(savedStock);
 
@@ -100,14 +112,11 @@ public class StockService {
     }
 
     public StockResponseDto updateStock(Long id, StockRequestDto dto, User user) {
-        // 1. Fetch the target stock item or throw an exception if invalid
         Stock stock = stockRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Stock not found with ID: " + id));
 
-        // 2. Map updated primitives and text block data onto the managed entity
         stockMapper.updateStockFromDto(dto, stock);
 
-        // 3. Handle optional multipart image updates
         MultipartFile file = dto.getImageFile();
         try {
             if (file != null && !file.isEmpty()) {
@@ -115,10 +124,9 @@ public class StockService {
                 Path targetPath = Paths.get(uploadDir).resolve(fileName);
                 Files.createDirectories(targetPath.getParent());
                 file.transferTo(targetPath.toFile());
-                stock.setImagePath(targetPath.toString()); // Update with new asset path location
+                stock.setImagePath(targetPath.toString());
             }
 
-            // Save changes and map to response DTO format
             Stock updatedStock = stockRepository.save(stock);
             return stockMapper.StocktoResponseDto(updatedStock);
 

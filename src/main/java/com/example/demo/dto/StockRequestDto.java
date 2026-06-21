@@ -28,4 +28,7 @@ public class StockRequestDto {
     @Schema(description = "Image file", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private MultipartFile imageFile;
 
+    @Schema(description = "Whether the product is visible in the catalog", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private Boolean active;
+
 }

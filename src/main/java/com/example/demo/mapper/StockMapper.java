@@ -18,11 +18,11 @@ public interface StockMapper {
     
     Stock stockDtoToStock(StockResponseDto stockDto);
 
-    // 🟢 FIXED: Removed the ignore rule so the path is copied to the response JSON
+    @Mapping(source = "active", target = "active")
     StockResponseDto StocktoResponseDto(Stock stock);
 
-    // Keep this one ignored, because RequestDto uses a MultipartFile, not a String path!
     @Mapping(target = "imagePath", ignore = true)
+    @Mapping(target = "active", ignore = true)
     Stock stockRequestDtoToStock(StockRequestDto stockDto);
 
     @Mapping(target = "imagePath", ignore = true)
