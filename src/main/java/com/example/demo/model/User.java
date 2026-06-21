@@ -47,4 +47,10 @@ public class User extends BaseModel {
 
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean localLoginEnabled = false;
+
+    @Column(nullable = true, length = 512)
+    private String avatarPath;
+
+    @Column(nullable = true, length = 1024)
+    private String avatarUrl;
 }

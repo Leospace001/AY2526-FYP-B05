@@ -22,6 +22,7 @@ import com.example.demo.model.UserRoleAssignment;
 import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.UserIdentityRepository;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.service.AvatarService;
 import com.example.demo.security.CustomUserDetails;
 
 @Service
@@ -38,6 +39,9 @@ public class OAuthUserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AvatarService avatarService;
 
     @Transactional
     public CustomUserDetails resolveOAuthLogin(String provider, OAuth2User oauth2User) {
@@ -58,7 +62,9 @@ public class OAuthUserService {
         Optional<UserIdentity> existingIdentity = userIdentityRepository
                 .findByProviderAndProviderUserIdWithUser(provider, providerUserId);
         if (existingIdentity.isPresent()) {
-            return existingIdentity.get().getUser();
+            User user = existingIdentity.get().getUser();
+            syncOAuthAvatar(user, provider, oauth2User);
+            return user;
         }
 
         if (StringUtils.hasText(email)) {
@@ -66,14 +72,16 @@ public class OAuthUserService {
             if (existingUser.isPresent()) {
                 User linkedUser = existingUser.get();
                 userIdentityRepository.save(new UserIdentity(linkedUser, provider, providerUserId, email));
+                syncOAuthAvatar(linkedUser, provider, oauth2User);
                 return linkedUser;
             }
         }
 
-        return createOAuthUser(provider, providerUserId, email, displayName);
+        return createOAuthUser(provider, providerUserId, email, displayName, oauth2User);
     }
 
-    private User createOAuthUser(String provider, String providerUserId, String email, String displayName) {
+    private User createOAuthUser(String provider, String providerUserId, String email, String displayName,
+            OAuth2User oauth2User) {
         User user = new User();
         user.setFirstname(extractFirstName(displayName));
         user.setLastname(extractLastName(displayName));
@@ -90,7 +98,32 @@ public class OAuthUserService {
 
         User savedUser = userRepository.save(user);
         userIdentityRepository.save(new UserIdentity(savedUser, provider, providerUserId, email));
-        return savedUser;
+        avatarService.applyOAuthAvatar(savedUser, extractAvatarUrl(provider, oauth2User));
+        return userRepository.findById(savedUser.getId()).orElse(savedUser);
+    }
+
+    private void syncOAuthAvatar(User user, String provider, OAuth2User oauth2User) {
+        avatarService.applyOAuthAvatar(user, extractAvatarUrl(provider, oauth2User));
+    }
+
+    private String extractAvatarUrl(String provider, OAuth2User oauth2User) {
+        if (oauth2User instanceof OidcUser oidcUser && StringUtils.hasText(oidcUser.getPicture())) {
+            return oidcUser.getPicture();
+        }
+
+        Map<String, Object> attributes = oauth2User.getAttributes();
+        Object picture = attributes.get("picture");
+        if (picture != null && StringUtils.hasText(picture.toString())) {
+            return picture.toString().trim();
+        }
+
+        if ("github".equals(provider)) {
+            Object avatarUrl = attributes.get("avatar_url");
+            if (avatarUrl != null && StringUtils.hasText(avatarUrl.toString())) {
+                return avatarUrl.toString().trim();
+            }
+        }
+        return null;
     }
 
     private String extractProviderUserId(String provider, OAuth2User oauth2User) {

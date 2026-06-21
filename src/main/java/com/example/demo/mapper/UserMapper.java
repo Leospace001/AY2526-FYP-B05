@@ -24,6 +24,8 @@ public interface UserMapper {
     @Mapping(target = "username", source = "userInfo.username")
     @Mapping(target = "age", source = "userInfo.age")
     @Mapping(target = "phone", source = "userInfo.phone")
+    @Mapping(target = "avatarPath", ignore = true)
+    @Mapping(target = "avatarUrl", ignore = true)
     User updateEntityFromDto(UserInfo userInfo, @MappingTarget User user);
 
     @Mapping(target = "firstname", source = "userRegister.firstname")

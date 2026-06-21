@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { AuthContext } from '../context/AuthContext';
 import SecureImage from '../components/SecureImage';
@@ -7,7 +7,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, IconButton, Button, 
     CircularProgress, Divider, Alert, Snackbar,
-    Dialog, DialogTitle, DialogContent, DialogActions, TextField // 🚀 Added Dialog imports
+    Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Link
 } from '@mui/material';
 // 🟢 Explicitly import Grid2 (or standard Grid depending on MUI subversion configuration)
 import Grid from '@mui/material/Grid'; 
@@ -48,8 +48,12 @@ export default function Cart() {
     const [checkoutForm, setCheckoutForm] = useState({
         name: '',
         description: '',
-        remarks: ''
+        remarks: '',
+        deliveryAddressId: '' as number | '',
+        paymentMethodId: '' as number | '',
     });
+    const [addresses, setAddresses] = useState<Array<{ id: number; label: string; recipientName: string; isDefault?: boolean; default?: boolean }>>([]);
+    const [paymentMethods, setPaymentMethods] = useState<Array<{ id: number; label: string; cardBrand: string; cardLastFour: string; isDefault?: boolean; default?: boolean }>>([]);
 
     const fetchCartData = async () => {
         try {
@@ -124,14 +128,39 @@ export default function Cart() {
     };
 
     // Opens the details entry popup
-    const handleCheckoutOpen = () => {
-        setOpenCheckoutModal(true);
+    const handleCheckoutOpen = async () => {
+        try {
+            const [addrRes, payRes] = await Promise.all([
+                api.get('/api/addresses'),
+                api.get('/api/payment-methods'),
+            ]);
+            const addrList = addrRes.data as Array<{ id: number; label: string; recipientName: string; isDefault?: boolean; default?: boolean }>;
+            const payList = payRes.data as Array<{ id: number; label: string; cardBrand: string; cardLastFour: string; isDefault?: boolean; default?: boolean }>;
+            setAddresses(addrList);
+            setPaymentMethods(payList);
+
+            const defaultAddr = addrList.find(a => a.isDefault || a.default);
+            const defaultPay = payList.find(p => p.isDefault || p.default);
+
+            setCheckoutForm(prev => ({
+                ...prev,
+                deliveryAddressId: defaultAddr?.id ?? '',
+                paymentMethodId: defaultPay?.id ?? '',
+            }));
+            setOpenCheckoutModal(true);
+        } catch {
+            setSnackbar({ open: true, message: 'Could not load checkout options. Add an address and payment method under Orders.', severity: 'error' });
+        }
     };
 
-    // Tracks inline input updates on the modal fields
     const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setCheckoutForm(prev => ({ ...prev, [name]: value }));
+        setCheckoutForm(prev => ({
+            ...prev,
+            [name]: name === 'deliveryAddressId' || name === 'paymentMethodId'
+                ? (value === '' ? '' : Number(value))
+                : value,
+        }));
     };
 
     // 🚀 Executes the final authorized payload transaction to the Spring Boot backend
@@ -139,8 +168,18 @@ export default function Cart() {
         e.preventDefault();
         setSubmitting(true);
         try {
-            // Updated destination target path mapping route to match /api/order/checkout exactly
-            await api.post('/api/order/checkout', checkoutForm);
+            if (!checkoutForm.deliveryAddressId || !checkoutForm.paymentMethodId) {
+                setSnackbar({ open: true, message: 'Please select a delivery address and payment method.', severity: 'error' });
+                setSubmitting(false);
+                return;
+            }
+            await api.post('/api/order/checkout', {
+                name: checkoutForm.name,
+                description: checkoutForm.description,
+                remarks: checkoutForm.remarks,
+                deliveryAddressId: checkoutForm.deliveryAddressId,
+                paymentMethodId: checkoutForm.paymentMethodId,
+            });
             
             setSnackbar({ open: true, message: 'Order submitted successfully!', severity: 'success' });
             setOpenCheckoutModal(false);
@@ -318,23 +357,70 @@ export default function Cart() {
                 sx={{ '& .MuiPaper-root': { borderRadius: 3 } }}
             >
                 <DialogTitle sx={{ fontWeight: 'bold', color: '#2c3e50', pt: 3 }}>
-                    Fulfillment Delivery Details
+                    Checkout
                 </DialogTitle>
                 
                 <Box component="form" onSubmit={handleConfirmCheckout}>
                     <DialogContent dividers sx={{ py: 2 }}>
-                        <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                            Please furnish administrative identifying metrics to attach metadata tracking references to this batch purchase execution.
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                            Choose your delivery address and payment method. Manage saved options on the{' '}
+                            <Link component={RouterLink} to="/orders" underline="hover">Orders page</Link>.
                         </Typography>
+
+                        {addresses.length === 0 || paymentMethods.length === 0 ? (
+                            <Alert severity="warning" sx={{ mb: 2 }}>
+                                {addresses.length === 0 && paymentMethods.length === 0
+                                    ? 'Add a delivery address and payment method on the Orders page before checkout.'
+                                    : addresses.length === 0
+                                        ? 'Add a delivery address on the Orders page before checkout.'
+                                        : 'Add a payment method on the Orders page before checkout.'}
+                            </Alert>
+                        ) : null}
+
+                        <TextField
+                            select
+                            required
+                            fullWidth
+                            margin="normal"
+                            label="Delivery address"
+                            name="deliveryAddressId"
+                            value={checkoutForm.deliveryAddressId}
+                            onChange={handleFormChange}
+                            disabled={submitting}
+                        >
+                            {addresses.map(addr => (
+                                <MenuItem key={addr.id} value={addr.id}>
+                                    {addr.label} — {addr.recipientName}{(addr.isDefault || addr.default) ? ' (Default)' : ''}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+
+                        <TextField
+                            select
+                            required
+                            fullWidth
+                            margin="normal"
+                            label="Payment method"
+                            name="paymentMethodId"
+                            value={checkoutForm.paymentMethodId}
+                            onChange={handleFormChange}
+                            disabled={submitting}
+                        >
+                            {paymentMethods.map(pm => (
+                                <MenuItem key={pm.id} value={pm.id}>
+                                    {pm.label} — {pm.cardBrand} •••• {pm.cardLastFour}{(pm.isDefault || pm.default) ? ' (Default)' : ''}
+                                </MenuItem>
+                            ))}
+                        </TextField>
                         
                         <TextField
                             required
                             fullWidth
                             margin="normal"
-                            label="Order Designation Name"
+                            label="Order name"
                             name="name"
                             variant="outlined"
-                            placeholder="e.g. Fuji Apple Batch Order"
+                            placeholder="e.g. Weekly grocery order"
                             value={checkoutForm.name}
                             onChange={handleFormChange}
                             disabled={submitting}
@@ -343,12 +429,11 @@ export default function Cart() {
                         <TextField
                             fullWidth
                             margin="normal"
-                            label="Order Description"
+                            label="Order description"
                             name="description"
                             variant="outlined"
                             multiline
                             rows={2}
-                            placeholder="Provide summary structural tracking briefs..."
                             value={checkoutForm.description}
                             onChange={handleFormChange}
                             disabled={submitting}
@@ -357,12 +442,11 @@ export default function Cart() {
                         <TextField
                             fullWidth
                             margin="normal"
-                            label="Special Remarks / Notes"
+                            label="Special remarks"
                             name="remarks"
                             variant="outlined"
                             multiline
                             rows={2}
-                            placeholder="e.g. Request immediate ASAP warehouse logistics processing"
                             value={checkoutForm.remarks}
                             onChange={handleFormChange}
                             disabled={submitting}

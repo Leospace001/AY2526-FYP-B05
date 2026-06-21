@@ -1,26 +1,17 @@
 package com.example.demo.service;
 
-import java.nio.file.Files;
-import java.util.*;
-import org.springframework.transaction.annotation.Transactional;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import com.example.demo.model.Cart;
-import com.example.demo.model.Order;
-import com.example.demo.model.OrderItem;
-import com.example.demo.model.Stock;
-import com.example.demo.model.User;
-import org.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-import java.nio.file.*;
-import com.example.demo.repository.OrderItemRepository;
-import com.example.demo.repository.OrderRepository;
-import com.example.demo.repository.StockRepository;
-import com.example.demo.repository.CartRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.dto.OrderItemRequestDto;
 import com.example.demo.dto.OrderRequest;
@@ -28,8 +19,17 @@ import com.example.demo.dto.OrderResponse;
 import com.example.demo.exception.StockNotEnoughException;
 import com.example.demo.mapper.OrderItemMapper;
 import com.example.demo.mapper.OrderMapper;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import com.example.demo.model.Cart;
+import com.example.demo.model.DeliveryAddress;
+import com.example.demo.model.Order;
+import com.example.demo.model.OrderItem;
+import com.example.demo.model.PaymentMethod;
+import com.example.demo.model.Stock;
+import com.example.demo.model.User;
+import com.example.demo.repository.CartRepository;
+import com.example.demo.repository.OrderItemRepository;
+import com.example.demo.repository.OrderRepository;
+import com.example.demo.repository.StockRepository;
 
 @Service
 public class OrderService {
@@ -49,86 +49,95 @@ public class OrderService {
     @Autowired
     private OrderMapper orderMapper;
 
+    @Autowired
+    private OrderItemMapper orderItemMapper;
+
+    @Autowired
+    private DeliveryAddressService deliveryAddressService;
+
+    @Autowired
+    private PaymentMethodService paymentMethodService;
+
     @Value("${file.upload-dir}")
     private String uploadDir;
 
     public Order findById(Long id) {
-        Order order = orderRepository.findById(id).orElseThrow();
-        return order;
+        return orderRepository.findById(id).orElseThrow();
     }
 
-    public Page<OrderResponse> getPaginatedOrders(User user, boolean isAdmin, int page, int size, String sortBy, String sortDir) {
-        // 1. Determine the sort direction dynamically
-        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) 
-                    ? Sort.by(sortBy).ascending() 
-                    : Sort.by(sortBy).descending();
-                    
-        // 2. Pass the dynamic sort object to the Pageable request
+    public Page<OrderResponse> getPaginatedOrders(User user, boolean isAdmin, int page, int size, String sortBy,
+            String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name())
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        
-        // 3. 🚀 SECURE DYNAMIC ACCESS FILTERING
-        Page<Order> orderPage;
-        if (isAdmin) {
-            // Administrators load complete warehouse histories
-            orderPage = orderRepository.findAll(pageable);
-        } else {
-            // Normal authenticated users are restricted strictly to their own rows
-            orderPage = orderRepository.findByCreatedBy(user, pageable);
+
+        Page<Order> orderPage = isAdmin
+                ? orderRepository.findAll(pageable)
+                : orderRepository.findByCreatedBy(user, pageable);
+
+        return orderPage.map(this::toOrderResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderDetail(User user, boolean isAdmin, Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found."));
+        if (!isAdmin && !order.getCreatedBy().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("You do not have access to this order.");
         }
-        
-        return orderPage.map(order -> orderMapper.orderToOrderResponse(order));
+        return toOrderResponse(order);
     }
 
     public OrderResponse createOrder(User user, OrderRequest dto) {
         Order order = orderMapper.orderRequestDtoToOrder(dto);
         order.setCreatedBy(user);
+        if (dto.getDeliveryAddressId() != null || dto.getPaymentMethodId() != null
+                || hasSavedFulfillment(user)) {
+            applyFulfillmentDetails(order, user, dto);
+        }
         orderRepository.save(order);
-        return orderMapper.orderToOrderResponse(order);
+        return toOrderResponse(order);
     }
 
-     public OrderResponse update(User user, Long id, OrderRequest dto) {
+    public OrderResponse update(User user, Long id, OrderRequest dto) {
         Order order = orderRepository.findById(id).orElseThrow();
         orderMapper.updateOrderFromDto(dto, order);
         order.setUpdatedBy(user);
         Order updatedOrder = orderRepository.save(order);
-        return orderMapper.orderToOrderResponse(updatedOrder);
+        return toOrderResponse(updatedOrder);
     }
 
     public OrderItem addStockToExistingOrder(Long orderId, OrderItemRequestDto dto) {
-        // 1. Fetch the Order from the DB
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
 
-        // 2. Fetch the Stock from the DB using the ID from the DTO
         Stock stock = stockRepository.findById(dto.getStockId())
                 .orElseThrow(() -> new RuntimeException("Stock not found with ID: " + dto.getStockId()));
 
-        // 3. Validate stock levels
         if (stock.getQuantity() < dto.getQuantity()) {
             throw new StockNotEnoughException("Not enough stock available. Current stock: " + stock.getQuantity());
         }
 
-        // 4. Create and populate the new OrderItem entity manually
         OrderItem orderItem = new OrderItem();
-        orderItem.setOrder(order);           // Links the Order
-        orderItem.setStock(stock); 
-        orderItem.setRemarks(dto.getRemarks());          // Links the Stock
+        orderItem.setOrder(order);
+        orderItem.setStock(stock);
+        orderItem.setRemarks(dto.getRemarks());
         orderItem.setQuantity(dto.getQuantity());
+        orderItem.setUnitPrice(stock.getSellingPrice());
 
-        // 5. Deduct the stock quantity and save the updated stock
         stock.setQuantity(stock.getQuantity() - dto.getQuantity());
         stockRepository.save(stock);
 
-        // 6. Add the item to the order's transactions list
         order.getTransactions().add(orderItem);
+        order.setOrderTotal(order.getOrderTotal() + (orderItem.getUnitPrice() * orderItem.getQuantity()));
+        orderRepository.save(order);
 
-        // 7. Save and return the OrderItem
         return orderItemRepository.save(orderItem);
     }
 
     @Transactional
     public OrderResponse checkoutCart(User user, OrderRequest dto) {
-        // 1. Fetch the user's active shopping cart
         Cart cart = cartRepository.findWithItemsAndStockByUserId(user.getId())
                 .orElseThrow(() -> new RuntimeException("No active shopping cart found for this user"));
 
@@ -136,42 +145,103 @@ public class OrderService {
             throw new RuntimeException("Cannot checkout an empty shopping cart");
         }
 
-        // 2. Create and initialize the main Order record (Reusing your existing mapper!)
         Order order = orderMapper.orderRequestDtoToOrder(dto);
         order.setCreatedBy(user);
+        applyFulfillmentDetails(order, user, dto);
         Order savedOrder = orderRepository.save(order);
 
-        // 3. Loop through all items in the cart (This is your EXACT old logic, just running in a loop)
+        double total = 0;
         for (com.example.demo.model.CartItem cartItem : cart.getItems()) {
             Stock stock = cartItem.getStock();
 
-            // Validate stock levels using your existing business rule
             if (stock.getQuantity() < cartItem.getQuantity()) {
-                throw new StockNotEnoughException("Not enough stock available for item: " 
+                throw new StockNotEnoughException("Not enough stock available for item: "
                         + stock.getId() + ". Current warehouse stock: " + stock.getQuantity());
             }
 
-            // Create and populate the OrderItem record
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(savedOrder);
             orderItem.setStock(stock);
             orderItem.setQuantity(cartItem.getQuantity());
+            orderItem.setUnitPrice(stock.getSellingPrice());
             orderItem.setRemarks("Purchased via shopping cart");
 
-            // Deduct the stock quantity and save
             stock.setQuantity(stock.getQuantity() - cartItem.getQuantity());
             stockRepository.save(stock);
 
-            // Add item to order transaction log
+            total += orderItem.getUnitPrice() * orderItem.getQuantity();
             orderItemRepository.save(orderItem);
             savedOrder.getTransactions().add(orderItem);
         }
 
-        // 4. Clear the cart contents after a successful checkout
+        savedOrder.setOrderTotal(total);
+        orderRepository.save(savedOrder);
+
         cart.getItems().clear();
         cartRepository.save(cart);
 
-        // 5. Return the clean response DTO
-        return orderMapper.orderToOrderResponse(savedOrder);
+        return toOrderResponse(savedOrder);
+    }
+
+    private void applyFulfillmentDetails(Order order, User user, OrderRequest dto) {
+        DeliveryAddress address = deliveryAddressService.resolveForOrder(user, dto.getDeliveryAddressId());
+        PaymentMethod payment = paymentMethodService.resolveForOrder(user, dto.getPaymentMethodId());
+
+        order.setDeliveryAddressId(address.getId());
+        order.setDeliveryLabel(address.getLabel());
+        order.setDeliveryRecipientName(address.getRecipientName());
+        order.setDeliveryPhone(address.getPhone());
+        order.setDeliveryAddressLine1(address.getAddressLine1());
+        order.setDeliveryAddressLine2(address.getAddressLine2());
+        order.setDeliveryCity(address.getCity());
+        order.setDeliveryState(address.getState());
+        order.setDeliveryPostalCode(address.getPostalCode());
+        order.setDeliveryCountry(address.getCountry());
+
+        order.setPaymentMethodId(payment.getId());
+        order.setPaymentLabel(payment.getLabel());
+        order.setPaymentCardholderName(payment.getCardholderName());
+        order.setPaymentCardBrand(payment.getCardBrand());
+        order.setPaymentCardLastFour(payment.getCardLastFour());
+        order.setPaymentExpiryMonth(payment.getExpiryMonth());
+        order.setPaymentExpiryYear(payment.getExpiryYear());
+    }
+
+    private OrderResponse toOrderResponse(Order order) {
+        OrderResponse response = orderMapper.orderToOrderResponse(order);
+        if (order.getCreatedBy() != null) {
+            response.setCustomerUsername(order.getCreatedBy().getUsername());
+        }
+        response.setOrderTotal(order.getOrderTotal());
+        response.setDeliveryAddressId(order.getDeliveryAddressId());
+        response.setDeliveryLabel(order.getDeliveryLabel());
+        response.setDeliveryRecipientName(order.getDeliveryRecipientName());
+        response.setDeliveryPhone(order.getDeliveryPhone());
+        response.setDeliveryAddressLine1(order.getDeliveryAddressLine1());
+        response.setDeliveryAddressLine2(order.getDeliveryAddressLine2());
+        response.setDeliveryCity(order.getDeliveryCity());
+        response.setDeliveryState(order.getDeliveryState());
+        response.setDeliveryPostalCode(order.getDeliveryPostalCode());
+        response.setDeliveryCountry(order.getDeliveryCountry());
+        response.setPaymentMethodId(order.getPaymentMethodId());
+        response.setPaymentLabel(order.getPaymentLabel());
+        response.setPaymentCardholderName(order.getPaymentCardholderName());
+        response.setPaymentCardBrand(order.getPaymentCardBrand());
+        response.setPaymentCardLastFour(order.getPaymentCardLastFour());
+        response.setPaymentExpiryMonth(order.getPaymentExpiryMonth());
+        response.setPaymentExpiryYear(order.getPaymentExpiryYear());
+
+        List<com.example.demo.dto.OrderItemResponse> items = order.getTransactions() == null
+                ? new ArrayList<>()
+                : order.getTransactions().stream()
+                        .map(orderItemMapper::orderItemToResponse)
+                        .collect(Collectors.toList());
+        response.setItems(items);
+        return response;
+    }
+
+    private boolean hasSavedFulfillment(User user) {
+        return !deliveryAddressService.listForUser(user).isEmpty()
+                && !paymentMethodService.listForUser(user).isEmpty();
     }
 }

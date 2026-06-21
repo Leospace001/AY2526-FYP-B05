@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import java.util.*;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -10,6 +11,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import io.swagger.v3.oas.annotations.*;
 import io.swagger.v3.oas.annotations.media.*;
 import com.example.demo.dto.EmailRequestDto;
@@ -55,12 +57,24 @@ public class AuthController {
     @Value("${DOMAIN}")
     private String domainUrl;
 
-    @PostMapping("/api/register")
+    @PostMapping(value = "/api/register", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Register a new user")
     public ResponseEntity<?> registerUser(@RequestBody UserRegister userRegister) {
+        return registerAndRespond(userRegister, null);
+    }
+
+    @PostMapping(value = "/api/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Register a new user with optional avatar image")
+    public ResponseEntity<?> registerUserWithAvatar(
+            @RequestPart("user") UserRegister userRegister,
+            @RequestPart(value = "avatar", required = false) MultipartFile avatar) {
+        return registerAndRespond(userRegister, avatar);
+    }
+
+    private ResponseEntity<?> registerAndRespond(UserRegister userRegister, MultipartFile avatar) {
         try {
-            User save = userService.registerUser(userRegister);
-            UserInfo updatedUserInfo = userMapper.userToUserInfo(save);
+            User save = userService.registerUser(userRegister, avatar);
+            UserInfo updatedUserInfo = userService.toUserInfo(save);
             return ResponseEntity.ok(updatedUserInfo);
 
         } catch (UserAlreadyExistsException ex) {

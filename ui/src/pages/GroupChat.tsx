@@ -61,6 +61,11 @@ function formatInviteLabel(candidate: InviteCandidate): string {
     return `${candidate.firstname} ${candidate.lastname} (@${candidate.username})`;
 }
 
+function formatGroupDate(value?: string): string {
+    if (!value) return 'Unknown date';
+    return new Date(value).toLocaleString();
+}
+
 export default function GroupChat() {
     const auth = useContext(AuthContext)!;
     const isSystemAdmin = auth.user?.roles?.includes('ROLE_ADMIN') ?? false;
@@ -92,7 +97,9 @@ export default function GroupChat() {
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
     const selectedGroup = groups.find(g => g.id === selectedGroupId) ?? null;
-    const isLeader = selectedGroup?.myRole === 'LEADER';
+    const isLeader =
+        selectedGroup?.myRole === 'LEADER' ||
+        members.some(m => m.username === currentUsername && m.role === 'LEADER');
     const canChat = selectedGroup?.member ?? false;
 
     const showError = (message: string) => setSnackbar({ open: true, message, severity: 'error' });
@@ -130,6 +137,12 @@ export default function GroupChat() {
     useEffect(() => {
         loadGroups();
     }, [loadGroups]);
+
+    useEffect(() => {
+        if (isSystemAdmin) {
+            setShowAllGroups(true);
+        }
+    }, [isSystemAdmin]);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -292,19 +305,29 @@ export default function GroupChat() {
         }
     };
 
-    const handleToggleLeader = async (member: ChatGroupMember) => {
+    const handlePromoteLeader = async (member: ChatGroupMember) => {
         if (!selectedGroupId) return;
         try {
-            if (member.role === 'LEADER') {
-                await api.delete(`/api/groups/${selectedGroupId}/leaders/${member.username}`);
-            } else {
-                await api.post(`/api/groups/${selectedGroupId}/leaders`, { username: member.username });
-            }
+            await api.post(`/api/groups/${selectedGroupId}/leaders`, { username: member.username });
             await loadGroupDetails(selectedGroupId);
-            showSuccess('Leader role updated');
+            await loadGroups();
+            showSuccess(`${member.username} is now a group leader`);
         } catch (error: unknown) {
             const err = error as { response?: { data?: { message?: string } } };
-            showError(err.response?.data?.message || 'Failed to update leader role');
+            showError(err.response?.data?.message || 'Failed to promote member');
+        }
+    };
+
+    const handleDemoteLeader = async (member: ChatGroupMember) => {
+        if (!selectedGroupId) return;
+        try {
+            await api.delete(`/api/groups/${selectedGroupId}/leaders/${member.username}`);
+            await loadGroupDetails(selectedGroupId);
+            await loadGroups();
+            showSuccess(`${member.username} is no longer a group leader`);
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } } };
+            showError(err.response?.data?.message || 'Failed to demote leader');
         }
     };
 
@@ -348,9 +371,14 @@ export default function GroupChat() {
             </Box>
 
             <Box sx={{ display: 'flex', gap: 2, height: 'calc(100vh - 180px)', minHeight: 500 }}>
-                <Paper sx={{ width: 280, overflow: 'auto', borderRadius: 2 }}>
+                <Paper sx={{ width: isSystemAdmin && showAllGroups ? 320 : 280, overflow: 'auto', borderRadius: 2 }}>
                     <Box sx={{ p: 2, bgcolor: '#f5f6fa' }}>
                         <Typography sx={{ fontWeight: 'bold' }}>Groups</Typography>
+                        {isSystemAdmin && showAllGroups && (
+                            <Typography variant="caption" color="text.secondary">
+                                Showing creation date for all groups
+                            </Typography>
+                        )}
                     </Box>
                     <List dense>
                         {groups.map(group => (
@@ -361,7 +389,11 @@ export default function GroupChat() {
                                 >
                                     <ListItemText
                                         primary={group.name}
-                                        secondary={`${group.memberCount} members${group.myRole === 'LEADER' ? ' · Leader' : ''}`}
+                                        secondary={
+                                            isSystemAdmin && showAllGroups
+                                                ? `Created ${formatGroupDate(group.createdAt)} · by ${group.createdByUsername} · ${group.memberCount} members`
+                                                : `${group.memberCount} members${group.myRole === 'LEADER' ? ' · You are leader' : ''}`
+                                        }
                                     />
                                 </ListItemButton>
                             </ListItem>
@@ -382,6 +414,14 @@ export default function GroupChat() {
                                     <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{selectedGroup.name}</Typography>
                                     {selectedGroup.description && (
                                         <Typography variant="body2" color="text.secondary">{selectedGroup.description}</Typography>
+                                    )}
+                                    {isSystemAdmin && showAllGroups && (
+                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                            Created {formatGroupDate(selectedGroup.createdAt)} by {selectedGroup.createdByUsername}
+                                        </Typography>
+                                    )}
+                                    {isLeader && (
+                                        <Chip label="You are a group leader" size="small" color="warning" sx={{ mt: 1 }} />
                                     )}
                                 </Box>
                                 {canChat && (
@@ -449,7 +489,7 @@ export default function GroupChat() {
                     )}
                 </Paper>
 
-                <Paper sx={{ width: 300, display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
+                <Paper sx={{ width: 360, display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
                     <Box sx={{ p: 2, bgcolor: '#f5f6fa' }}>
                         <Typography sx={{ fontWeight: 'bold' }}>Members</Typography>
                         {isSystemAdmin && selectedGroup && !selectedGroup.member && (
@@ -458,85 +498,124 @@ export default function GroupChat() {
                     </Box>
 
                     {isLeader && selectedGroup && (
-                        <Box sx={{ p: 2, display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-                            <Autocomplete
+                        <Box sx={{ p: 2, borderBottom: '1px solid #eee', bgcolor: '#fffde7' }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                Leader controls
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                                Invite new members or promote existing members to group leader.
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>Invite member</Typography>
+                            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mb: 1 }}>
+                                <Autocomplete
+                                    size="small"
+                                    sx={{ flex: 1 }}
+                                    options={inviteCandidates}
+                                    value={selectedInvite}
+                                    inputValue={inviteInput}
+                                    loading={inviteSearchLoading}
+                                    filterOptions={(options) => options}
+                                    getOptionLabel={(option) => formatInviteLabel(option)}
+                                    isOptionEqualToValue={(option, value) => option.userId === value.userId}
+                                    noOptionsText={inviteInput.trim() ? 'No users found' : 'Type to search users'}
+                                    onInputChange={(_, value) => {
+                                        setInviteInput(value);
+                                        if (!value) {
+                                            setSelectedInvite(null);
+                                        }
+                                    }}
+                                    onChange={(_, value) => setSelectedInvite(value)}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            placeholder="Search by name, username, or email"
+                                        />
+                                    )}
+                                    renderOption={(props, option) => (
+                                        <li {...props} key={option.userId}>
+                                            <Box>
+                                                <Typography variant="body2">{option.firstname} {option.lastname}</Typography>
+                                                <Typography variant="caption" color="text.secondary">
+                                                    @{option.username} · {option.email}
+                                                </Typography>
+                                            </Box>
+                                        </li>
+                                    )}
+                                />
+                            </Box>
+                            <Button
+                                fullWidth
+                                variant="contained"
                                 size="small"
-                                sx={{ flex: 1 }}
-                                options={inviteCandidates}
-                                value={selectedInvite}
-                                inputValue={inviteInput}
-                                loading={inviteSearchLoading}
-                                filterOptions={(options) => options}
-                                getOptionLabel={(option) => formatInviteLabel(option)}
-                                isOptionEqualToValue={(option, value) => option.userId === value.userId}
-                                noOptionsText={inviteInput.trim() ? 'No users found' : 'Type to search users'}
-                                onInputChange={(_, value) => {
-                                    setInviteInput(value);
-                                    if (!value) {
-                                        setSelectedInvite(null);
-                                    }
-                                }}
-                                onChange={(_, value) => {
-                                    setSelectedInvite(value);
-                                    if (value) {
-                                        handleInvite(value);
-                                    }
-                                }}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        placeholder="Search by name, username, or email"
-                                    />
-                                )}
-                                renderOption={(props, option) => (
-                                    <li {...props} key={option.userId}>
-                                        <Box>
-                                            <Typography variant="body2">{option.firstname} {option.lastname}</Typography>
-                                            <Typography variant="caption" color="text.secondary">
-                                                @{option.username} · {option.email}
-                                            </Typography>
-                                        </Box>
-                                    </li>
-                                )}
-                            />
-                            <IconButton color="primary" onClick={() => handleInvite()} disabled={!selectedInvite}>
-                                <PersonAddIcon />
-                            </IconButton>
+                                startIcon={<PersonAddIcon />}
+                                onClick={() => handleInvite()}
+                                disabled={!selectedInvite}
+                            >
+                                Add to group
+                            </Button>
                         </Box>
                     )}
 
-                    <List dense sx={{ overflow: 'auto', flex: 1 }}>
+                    <List dense sx={{ overflow: 'auto', flex: 1, p: 1 }}>
                         {members.map(member => (
                             <ListItem
                                 key={member.userId}
-                                secondaryAction={
-                                    isLeader && member.username !== currentUsername ? (
-                                        <Box>
-                                            <IconButton
-                                                size="small"
-                                                title={member.role === 'LEADER' ? 'Demote to member' : 'Promote to leader'}
-                                                onClick={() => handleToggleLeader(member)}
-                                            >
-                                                {member.role === 'LEADER' ? <StarIcon color="warning" fontSize="small" /> : <StarBorderIcon fontSize="small" />}
-                                            </IconButton>
-                                            {member.role === 'MEMBER' && (
-                                                <IconButton size="small" color="error" onClick={() => handleKick(member.username)}>
-                                                    <PersonRemoveIcon fontSize="small" />
-                                                </IconButton>
-                                            )}
-                                        </Box>
-                                    ) : null
-                                }
+                                sx={{
+                                    flexDirection: 'column',
+                                    alignItems: 'stretch',
+                                    border: '1px solid #eee',
+                                    borderRadius: 1,
+                                    mb: 1,
+                                    bgcolor: 'white',
+                                }}
                             >
-                                <ListItemText
-                                    primary={
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                            <span>{member.firstname} {member.lastname}</span>
-                                            {member.role === 'LEADER' && <Chip label="Leader" size="small" color="warning" />}
-                                        </Box>
-                                    }
-                                    secondary={`@${member.username}`}
-                                />
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+                                    <ListItemText
+                                        primary={
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                                                <span>{member.firstname} {member.lastname}</span>
+                                                {member.role === 'LEADER' && <Chip label="Leader" size="small" color="warning" />}
+                                                {member.username === currentUsername && <Chip label="You" size="small" />}
+                                            </Box>
+                                        }
+                                        secondary={`@${member.username}`}
+                                    />
+                                </Box>
+                                {isLeader && member.username !== currentUsername && (
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                                        {member.role === 'MEMBER' ? (
+                                            <>
+                                                <Button
+                                                    size="small"
+                                                    variant="contained"
+                                                    color="warning"
+                                                    startIcon={<StarIcon />}
+                                                    onClick={() => handlePromoteLeader(member)}
+                                                >
+                                                    Make Leader
+                                                </Button>
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    color="error"
+                                                    startIcon={<PersonRemoveIcon />}
+                                                    onClick={() => handleKick(member.username)}
+                                                >
+                                                    Remove
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                startIcon={<StarBorderIcon />}
+                                                onClick={() => handleDemoteLeader(member)}
+                                            >
+                                                Demote to Member
+                                            </Button>
+                                        )}
+                                    </Box>
+                                )}
                             </ListItem>
                         ))}
                     </List>

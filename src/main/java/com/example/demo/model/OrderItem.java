@@ -31,6 +31,9 @@ public class OrderItem {
     @Column(nullable = false)
     private int quantity;
 
+    @Column(nullable = false, columnDefinition = "double precision default 0")
+    private double unitPrice = 0;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "approved_by")
     private User approvedBy;

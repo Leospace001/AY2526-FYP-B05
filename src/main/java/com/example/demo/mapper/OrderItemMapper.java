@@ -19,6 +19,8 @@ public interface OrderItemMapper {
     @Mapping(source = "order.id", target = "orderId")
     @Mapping(source = "stock.id", target = "stockId")
     @Mapping(source = "stock.name", target = "stockName")
+    @Mapping(source = "stock.imagePath", target = "imagePath")
+    @Mapping(target = "lineTotal", expression = "java(item.getUnitPrice() * item.getQuantity())")
     OrderItemResponse orderItemToResponse(OrderItem item);
     
 }

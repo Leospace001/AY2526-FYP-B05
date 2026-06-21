@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collections;
 
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import com.example.demo.service.UserService;
 import com.example.demo.model.User;
@@ -82,6 +84,19 @@ public class UserController {
         UserInfo updatedUserInfo = userService.toUserInfo(user);
         
         return ResponseEntity.ok(updatedUserInfo);
+    }
+
+    @PostMapping(value = "/{username}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("#username == authentication.principal.username or hasRole('ADMIN')")
+    @Operation(summary = "Upload or replace user avatar", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<UserInfo> uploadAvatar(
+            @PathVariable String username,
+            @RequestParam("avatar") MultipartFile avatar,
+            Authentication authentication) {
+        CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        return ResponseEntity.ok(userService.uploadAvatar(username, avatar, principal.getUsername(), isAdmin));
     }
 
     @PostMapping("/{username}/roles/admin")

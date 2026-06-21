@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -46,8 +47,15 @@ public class UserService {
 
     @Autowired
     private RoleAssignmentService roleAssignmentService;
+
+    @Autowired
+    private AvatarService avatarService;
     
     public User registerUser(UserRegister userRegister) {
+        return registerUser(userRegister, null);
+    }
+
+    public User registerUser(UserRegister userRegister, MultipartFile avatar) {
         User newUser = new User();
         userMapper.userRegisterDto(userRegister, newUser);
         String username = newUser.getUsername();
@@ -67,7 +75,20 @@ public class UserService {
         newUser.getRoleAssignments().add(defaultAssignment);
         userRepository.save(newUser);
 
-        return newUser;
+        if (avatar != null && !avatar.isEmpty()) {
+            avatarService.storeUploadedAvatar(newUser, avatar);
+        }
+
+        return userRepository.findById(newUser.getId()).orElse(newUser);
+    }
+
+    public UserInfo uploadAvatar(String username, MultipartFile avatar, String actingUsername, boolean isAdmin) {
+        if (!isAdmin && !username.equals(actingUsername)) {
+            throw new IllegalArgumentException("You can only update your own avatar.");
+        }
+        User user = getUserByUsername(username);
+        avatarService.storeUploadedAvatar(user, avatar);
+        return toUserInfo(getUserByUsername(username));
     }
 
     public Page<UserInfo> getPaginatedUsers(int page, int size, String sortBy, String sortDir) {

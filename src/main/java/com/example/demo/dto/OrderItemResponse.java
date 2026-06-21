@@ -4,12 +4,14 @@ import lombok.Data;
 
 @Data
 public class OrderItemResponse {
-    
-    private Long id;          // The OrderItem ID
-    private Long orderId;     // The ID of the Order it belongs to
-    private Long stockId;     // The ID of the Stock added
-    private String stockName; // The name of the Stock
+
+    private Long id;
+    private Long orderId;
+    private Long stockId;
+    private String stockName;
     private int quantity;
+    private double unitPrice;
+    private double lineTotal;
+    private String imagePath;
     private String remarks;
-    
 }

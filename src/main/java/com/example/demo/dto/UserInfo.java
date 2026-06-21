@@ -29,5 +29,8 @@ public class UserInfo {
 
     /** Login methods linked to this account, e.g. password, google, github */
     private List<String> authMethods = new ArrayList<>();
+
+    private String avatarPath;
+    private String avatarUrl;
     
 }

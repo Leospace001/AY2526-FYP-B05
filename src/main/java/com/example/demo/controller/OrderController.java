@@ -60,6 +60,18 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getPaginatedOrders(user, isAdmin, page, size, sortBy, sortDir));
     }
 
+    @GetMapping("/{orderId}")
+    @Operation(summary = "Get order details with line items", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<OrderResponse> getOrderDetail(
+            @PathVariable Long orderId,
+            Authentication authentication) {
+        CustomUserDetails userPrincipal = (CustomUserDetails) authentication.getPrincipal();
+        User user = userPrincipal.getUser();
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        return ResponseEntity.ok(orderService.getOrderDetail(user, isAdmin, orderId));
+    }
+
     @PostMapping("/checkout")
     @Operation(summary = "checkout the shopping cart", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<OrderResponse> checkoutCart(
