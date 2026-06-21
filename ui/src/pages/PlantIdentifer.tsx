@@ -12,22 +12,34 @@ import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
 
 // 參考 OllamaChat.tsx 匯入 Axios 設定
 import api from '../api/axiosConfig';
-
-interface PlantDetails {
-    medicine_properties: string;
-    feng_shui_layout: string;
-    festive_meaning: string;
-}
+import {
+    getPlantIdentifierCache,
+    updatePlantIdentifierCache,
+    type PlantDetails,
+} from './plantIdentifierCache';
 
 export default function PlantIdentifier() {
-    const [selectedImage, setSelectedImage] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(
+        () => getPlantIdentifierCache().previewDataUrl
+    );
 
     const [loading, setLoading] = useState(false);
     const [geminiLoading, setGeminiLoading] = useState(false); 
-    const [plantName, setPlantName] = useState<string | null>(null);
-    const [plantDetails, setPlantDetails] = useState<PlantDetails | null>(null); 
+    const [plantName, setPlantName] = useState<string | null>(
+        () => getPlantIdentifierCache().plantName
+    );
+    const [plantDetails, setPlantDetails] = useState<PlantDetails | null>(
+        () => getPlantIdentifierCache().plantDetails
+    ); 
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        updatePlantIdentifierCache({
+            previewDataUrl: previewUrl,
+            plantName,
+            plantDetails,
+        });
+    }, [previewUrl, plantName, plantDetails]);
 
     const handleFetchFengShuiDetails = async () => {
         if (!plantName || plantName === 'Unknown Plant') return;
@@ -35,7 +47,6 @@ export default function PlantIdentifier() {
         setError('');
         await fetchGeminiDetails(plantName);
     };
-
 
     // --- 1. HANDLE FILE SELECTION & RESTRICTION ---
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,22 +59,18 @@ export default function PlantIdentifier() {
                 return;
             }
 
-            setSelectedImage(file);
-            setPreviewUrl(URL.createObjectURL(file));
-            setPlantName(null); 
-            setPlantDetails(null); 
-            setError('');
-        }
-    };
-
-    // --- 2. BASE64 CONVERSION HELPER ---
-    const convertFileToBase64 = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = (error) => reject(error);
-        });
+            reader.onload = () => {
+                setPreviewUrl(reader.result as string);
+                setPlantName(null);
+                setPlantDetails(null);
+                setError('');
+            };
+            reader.onerror = () => {
+                setError('Failed to read the image. Please try again.');
+            };
+        }
     };
 
     // --- 向 Backend Proxy 索取 Gemini 詳細分析 ---
@@ -98,7 +105,7 @@ export default function PlantIdentifier() {
 
     // --- 3. SUBMIT TO ENDPOINT ---
     const handleIdentifyPlant = async () => {
-        if (!selectedImage) return;
+        if (!previewUrl) return;
 
         setLoading(true);
         setError('');
@@ -106,8 +113,6 @@ export default function PlantIdentifier() {
         setPlantDetails(null);
 
         try {
-            const fullBase64String = await convertFileToBase64(selectedImage);
-
             const response = await fetch('https://api.plant.id/v3/identification', {
                 method: 'POST',
                 headers: {
@@ -115,7 +120,7 @@ export default function PlantIdentifier() {
                     'Api-Key': "GiCgOhgptbTTwql1LwNIPdSqieD8KSGQMXwbo6G81d7BQBcEyv" 
                 },
                 body: JSON.stringify({
-                    images: [fullBase64String], 
+                    images: [previewUrl], 
                     latitude: 49.207,
                     longitude: 16.608,
                     similar_images: true
@@ -138,12 +143,6 @@ export default function PlantIdentifier() {
             setLoading(false);
         }
     };
-
-    useEffect(() => {
-        return () => {
-            if (previewUrl) URL.revokeObjectURL(previewUrl);
-        };
-    }, [previewUrl]);
 
     return (
         <Box sx={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3, bgcolor: '#f9f9f9' }}>
@@ -168,7 +167,7 @@ export default function PlantIdentifier() {
                             startIcon={<CloudUploadIcon />}
                             sx={{ borderStyle: 'dashed', borderWidth: 2, py: 1.5, mb: 3, width: '100%' }}
                         >
-                            {selectedImage ? "Choose a Different Image" : "Select Plant Image"}
+                            {previewUrl ? "Choose a Different Image" : "Select Plant Image"}
                             <input type="file" hidden accept=".jpg, .jpeg, .png, image/jpeg, image/png" onChange={handleFileChange} />
                         </Button>
 
@@ -183,7 +182,7 @@ export default function PlantIdentifier() {
                             color="primary"
                             fullWidth
                             size="large"
-                            disabled={!selectedImage || loading}
+                            disabled={!previewUrl || loading}
                             onClick={handleIdentifyPlant}
                             endIcon={!loading &&  <SearchIcon />}
                             sx={{ py: 1.5, fontWeight: 'bold', fontSize: '1.05rem', mb: 2 }}
