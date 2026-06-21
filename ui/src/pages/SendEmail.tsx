@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import EmailHtmlEditor from '../components/EmailHtmlEditor';
+import { htmlContainsBrokenEmbeddedImages } from '../utils/emailImageEmbed';
 import {
     Box, Typography, Paper, TextField, Button, Grid,
     CircularProgress, Snackbar, Alert, Divider, IconButton, List, ListItem, ListItemText,
@@ -54,6 +55,16 @@ export default function SendEmail() {
         const trimmedBody = htmlBody.trim();
         if (!trimmedBody || trimmedBody === EMPTY_BODY || trimmedBody === '<p></p>') {
             setSnackbar({ open: true, message: 'Please compose an email body.', severity: 'error' });
+            setSubmitting(false);
+            return;
+        }
+
+        if (htmlContainsBrokenEmbeddedImages(htmlBody)) {
+            setSnackbar({
+                open: true,
+                message: 'An embedded image is not ready. Re-insert the image using the toolbar before sending.',
+                severity: 'error',
+            });
             setSubmitting(false);
             return;
         }

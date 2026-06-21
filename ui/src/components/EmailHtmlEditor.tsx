@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -24,6 +24,12 @@ import ImageIcon from '@mui/icons-material/Image';
 import CodeIcon from '@mui/icons-material/Code';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
+import { fileToEmbeddedDataUrl } from '../utils/emailImageEmbed';
+
+const EMAIL_IMAGE = Image.configure({
+    inline: true,
+    allowBase64: true,
+});
 
 const HEADING_OPTIONS = [
     { label: 'Paragraph', value: 'paragraph' },
@@ -50,6 +56,21 @@ function getActiveHeading(editor: NonNullable<ReturnType<typeof useEditor>>): st
 
 export default function EmailHtmlEditor({ html, onChange, isCodeView, onToggleCodeView }: EmailHtmlEditorProps) {
     const imageInputRef = useRef<HTMLInputElement>(null);
+    const skipExternalSyncRef = useRef(false);
+    const editorRef = useRef<ReturnType<typeof useEditor>>(null);
+
+    const insertEmbeddedImage = useCallback(async (file: File) => {
+        const editorInstance = editorRef.current;
+        if (!editorInstance || !file.type.startsWith('image/')) {
+            return;
+        }
+
+        const src = await fileToEmbeddedDataUrl(file);
+        editorInstance.chain().focus().setImage({ src }).run();
+        skipExternalSyncRef.current = true;
+        onChange(editorInstance.getHTML());
+    }, [onChange]);
+
     const editor = useEditor({
         extensions: [
             StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
@@ -58,17 +79,60 @@ export default function EmailHtmlEditor({ html, onChange, isCodeView, onToggleCo
             TextAlign.configure({ types: ['heading', 'paragraph'] }),
             TextStyle,
             Color,
-            Image.configure({ allowBase64: true }),
+            EMAIL_IMAGE,
             Placeholder.configure({ placeholder: 'Compose your email message…' }),
         ],
         content: html || '<p></p>',
         onUpdate: ({ editor: ed }) => {
+            skipExternalSyncRef.current = true;
             onChange(ed.getHTML());
+        },
+        editorProps: {
+            handlePaste: (_view, event) => {
+                const items = event.clipboardData?.items;
+                if (!items) {
+                    return false;
+                }
+
+                for (const item of items) {
+                    if (item.type.startsWith('image/')) {
+                        event.preventDefault();
+                        const file = item.getAsFile();
+                        if (file) {
+                            void insertEmbeddedImage(file);
+                        }
+                        return true;
+                    }
+                }
+
+                return false;
+            },
+            handleDrop: (_view, event) => {
+                const imageFile = Array.from(event.dataTransfer?.files ?? [])
+                    .find((file) => file.type.startsWith('image/'));
+                if (!imageFile) {
+                    return false;
+                }
+
+                event.preventDefault();
+                void insertEmbeddedImage(imageFile);
+                return true;
+            },
         },
     });
 
     useEffect(() => {
+        editorRef.current = editor;
+    }, [editor]);
+
+    useEffect(() => {
         if (!editor || isCodeView) return;
+
+        if (skipExternalSyncRef.current) {
+            skipExternalSyncRef.current = false;
+            return;
+        }
+
         const current = editor.getHTML();
         if (html !== current) {
             editor.commands.setContent(html || '<p></p>', false);
@@ -98,13 +162,7 @@ export default function EmailHtmlEditor({ html, onChange, isCodeView, onToggleCo
     };
 
     const handleInsertImage = (file: File) => {
-        if (!editor) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-            const src = reader.result as string;
-            editor.chain().focus().setImage({ src }).run();
-        };
-        reader.readAsDataURL(file);
+        void insertEmbeddedImage(file);
     };
 
     if (!editor) {

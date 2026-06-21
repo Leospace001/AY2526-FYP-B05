@@ -18,8 +18,7 @@ import jakarta.mail.MessagingException;
 public final class EmailInlineImageProcessor {
 
     private static final Pattern INLINE_IMAGE_PATTERN = Pattern.compile(
-            "src=(\"|\')(data:image/([a-zA-Z0-9+.-]+);base64,([^\"']+))\\1",
-            Pattern.CASE_INSENSITIVE);
+            "(?i)src\\s*=\\s*([\"'])(data:image/([a-zA-Z0-9+.-]+);base64,([^\"']+))\\1");
 
     private EmailInlineImageProcessor() {
     }
@@ -64,7 +63,27 @@ public final class EmailInlineImageProcessor {
 
         for (Map.Entry<String, InlineImage> entry : inlineImages.entrySet()) {
             InlineImage image = entry.getValue();
-            helper.addInline(entry.getKey(), new ByteArrayResource(image.data()), image.contentType());
+            String contentId = entry.getKey();
+            String extension = mimeSubTypeToExtension(image.contentType());
+            String fileName = contentId + extension;
+            helper.addInline(contentId, new ByteArrayResource(image.data()) {
+                @Override
+                public String getFilename() {
+                    return fileName;
+                }
+            }, image.contentType());
         }
+    }
+
+    private static String mimeSubTypeToExtension(String contentType) {
+        String subType = contentType.substring(contentType.indexOf('/') + 1).toLowerCase();
+        return switch (subType) {
+            case "jpeg", "jpg" -> ".jpg";
+            case "png" -> ".png";
+            case "gif" -> ".gif";
+            case "webp" -> ".webp";
+            case "svg+xml" -> ".svg";
+            default -> ".img";
+        };
     }
 }

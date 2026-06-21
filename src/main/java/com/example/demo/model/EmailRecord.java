@@ -22,6 +22,7 @@ public class EmailRecord {
 
     private String subject;
 
+    @Lob
     @Column(columnDefinition = "TEXT")
     private String body;
 
