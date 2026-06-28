@@ -24,31 +24,65 @@ function isProductActive(item: Stock): boolean {
     return flag !== false;
 }
 
+function shuffleProducts<T>(items: T[]): T[] {
+    const shuffled = [...items];
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
 interface ProductCatalogGridProps {
     searchQuery: string;
     title?: string;
+    /** When true, show random catalog products if the search returns no matches. */
+    fallbackToRandom?: boolean;
+    randomProductCount?: number;
 }
 
-export default function ProductCatalogGrid({ searchQuery, title }: ProductCatalogGridProps) {
+export default function ProductCatalogGrid({
+    searchQuery,
+    title,
+    fallbackToRandom = true,
+    randomProductCount = 8,
+}: ProductCatalogGridProps) {
     const [products, setProducts] = useState<Stock[]>([]);
+    const [usingRandomFallback, setUsingRandomFallback] = useState(false);
     const [loading, setLoading] = useState(false);
     const [quantities, setQuantities] = useState<{ [key: number]: number }>({});
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
     useEffect(() => {
         const trimmed = searchQuery.trim();
-        if (!trimmed) {
-            setProducts([]);
-            return;
-        }
 
         const fetchProducts = async () => {
             setLoading(true);
+            setUsingRandomFallback(false);
             try {
-                const response = await api.get(
-                    `/api/stock/?search=${encodeURIComponent(trimmed)}&page=0&size=12&sortBy=createdAt&sortDir=desc`,
+                if (trimmed) {
+                    const response = await api.get(
+                        `/api/stock/?search=${encodeURIComponent(trimmed)}&page=0&size=12&sortBy=createdAt&sortDir=desc`,
+                    );
+                    const matchedProducts: Stock[] = response.data.content ?? [];
+                    if (matchedProducts.length > 0 || !fallbackToRandom) {
+                        setProducts(matchedProducts);
+                        return;
+                    }
+                }
+
+                if (!fallbackToRandom) {
+                    setProducts([]);
+                    return;
+                }
+
+                const fallbackResponse = await api.get(
+                    `/api/stock/?page=0&size=24&sortBy=createdAt&sortDir=desc`,
                 );
-                setProducts(response.data.content ?? []);
+                const randomProducts = shuffleProducts<Stock>(fallbackResponse.data.content ?? [])
+                    .slice(0, randomProductCount);
+                setProducts(randomProducts);
+                setUsingRandomFallback(true);
             } catch (error) {
                 console.error('Failed to load related products:', error);
                 setProducts([]);
@@ -58,7 +92,7 @@ export default function ProductCatalogGrid({ searchQuery, title }: ProductCatalo
         };
 
         fetchProducts();
-    }, [searchQuery]);
+    }, [searchQuery, fallbackToRandom, randomProductCount]);
 
     const handleQuantityChange = (stockId: number, value: number) => {
         const safeValue = value < 1 ? 1 : value;
@@ -80,8 +114,13 @@ export default function ProductCatalogGrid({ searchQuery, title }: ProductCatalo
     return (
         <Box sx={{ width: '100%' }}>
             {title && (
-                <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#2c3e50', mb: 3 }}>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#2c3e50', mb: usingRandomFallback ? 1 : 3 }}>
                     {title}
+                </Typography>
+            )}
+            {usingRandomFallback && (
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                    No exact matches found — here are some products you might like.
                 </Typography>
             )}
 
