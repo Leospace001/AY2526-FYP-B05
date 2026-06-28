@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,9 @@ public class EmailTemplateService {
 
     @Autowired
     private EmailTemplateRepository emailTemplateRepository;
+
+    @Value("${DOMAIN:http://localhost}")
+    private String domainUrl;
 
     private SpringTemplateEngine stringTemplateEngine;
 
@@ -111,6 +115,38 @@ public class EmailTemplateService {
 
     public String getSubject(String templateKey) {
         return getRequiredTemplate(templateKey).getSubject();
+    }
+
+    public String previewHtml(String templateKey, String htmlContent) {
+        if (!DEFAULTS.containsKey(templateKey)) {
+            throw new IllegalArgumentException("Unknown email template: " + templateKey);
+        }
+        if (htmlContent == null || htmlContent.isBlank()) {
+            throw new IllegalArgumentException("HTML content is required.");
+        }
+        try {
+            return stringTemplateEngine.process(htmlContent, buildPreviewContext(templateKey));
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Template preview failed: " + ex.getMessage());
+        }
+    }
+
+    private Context buildPreviewContext(String templateKey) {
+        Context context = new Context();
+        String baseUrl = domainUrl.endsWith("/") ? domainUrl.substring(0, domainUrl.length() - 1) : domainUrl;
+
+        if (EmailTemplate.FORGOT_PASSWORD.equals(templateKey)) {
+            context.setVariable("name", "Demo User");
+            context.setVariable("token", "sample-reset-token");
+            context.setVariable("domainUrl", baseUrl);
+            context.setVariable("tokenUrl", baseUrl + "/reset?token=sample-reset-token");
+        } else if (EmailTemplate.WELCOME_REGISTRATION.equals(templateKey)) {
+            context.setVariable("name", "Demo");
+            context.setVariable("username", "demo_user");
+            context.setVariable("domainUrl", baseUrl);
+            context.setVariable("loginUrl", baseUrl + "/login");
+        }
+        return context;
     }
 
     private EmailTemplate getRequiredTemplate(String templateKey) {

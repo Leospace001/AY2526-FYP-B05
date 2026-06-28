@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
     Box, Typography, Paper, TextField, Button, CircularProgress,
-    Snackbar, Alert, Tabs, Tab, Chip, Stack, Divider,
+    Snackbar, Alert, Tabs, Tab, Chip, Stack, Divider, Grid,
 } from '@mui/material';
 import EmailIcon from '@mui/icons-material/Email';
 import RestoreIcon from '@mui/icons-material/Restore';
 import SaveIcon from '@mui/icons-material/Save';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import api from '../api/axiosConfig';
 
 interface EmailTemplate {
@@ -16,11 +17,16 @@ interface EmailTemplate {
     availableVariables: string[];
 }
 
+const PREVIEW_DEBOUNCE_MS = 400;
+
 export default function AdminEmailTemplates() {
     const [templates, setTemplates] = useState<EmailTemplate[]>([]);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [subject, setSubject] = useState('');
     const [htmlContent, setHtmlContent] = useState('');
+    const [previewHtml, setPreviewHtml] = useState('');
+    const [previewError, setPreviewError] = useState('');
+    const [previewLoading, setPreviewLoading] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [snackbar, setSnackbar] = useState({
@@ -57,6 +63,31 @@ export default function AdminEmailTemplates() {
         }
     }, [loadTemplateIntoForm, selectedIndex]);
 
+    const refreshPreview = useCallback(async (templateKey: string, content: string) => {
+        if (!content.trim()) {
+            setPreviewHtml('');
+            setPreviewError('Enter HTML content to see a preview.');
+            return;
+        }
+
+        setPreviewLoading(true);
+        try {
+            const response = await api.post<{ renderedHtml: string }>(
+                `/api/admin/email-templates/${templateKey}/preview`,
+                { htmlContent: content },
+            );
+            setPreviewHtml(response.data.renderedHtml);
+            setPreviewError('');
+        } catch (error) {
+            console.error('Failed to preview template:', error);
+            const apiErr = error as { response?: { data?: { message?: string } } };
+            setPreviewHtml('');
+            setPreviewError(apiErr.response?.data?.message ?? 'Could not render preview.');
+        } finally {
+            setPreviewLoading(false);
+        }
+    }, []);
+
     useEffect(() => {
         fetchTemplates();
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -66,6 +97,18 @@ export default function AdminEmailTemplates() {
             loadTemplateIntoForm(selectedTemplate);
         }
     }, [selectedTemplate, loadTemplateIntoForm]);
+
+    useEffect(() => {
+        if (!selectedTemplate) {
+            return undefined;
+        }
+
+        const timer = window.setTimeout(() => {
+            refreshPreview(selectedTemplate.templateKey, htmlContent);
+        }, PREVIEW_DEBOUNCE_MS);
+
+        return () => window.clearTimeout(timer);
+    }, [selectedTemplate, htmlContent, refreshPreview]);
 
     const handleTabChange = (_: React.SyntheticEvent, newIndex: number) => {
         setSelectedIndex(newIndex);
@@ -148,7 +191,7 @@ export default function AdminEmailTemplates() {
     }
 
     return (
-        <Box sx={{ maxWidth: 960, mx: 'auto' }}>
+        <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                 <EmailIcon sx={{ fontSize: 32, color: '#3498db' }} />
                 <Box>
@@ -156,7 +199,7 @@ export default function AdminEmailTemplates() {
                         Email Templates
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        Edit the HTML content used for system emails. Thymeleaf variables are supported.
+                        Edit HTML on the left and see a live preview on the right with sample data.
                     </Typography>
                 </Box>
             </Box>
@@ -174,7 +217,7 @@ export default function AdminEmailTemplates() {
 
                 <Box sx={{ p: 3 }}>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                        Available variables
+                        Available variables (sample values used in preview)
                     </Typography>
                     <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
                         {(selectedTemplate?.availableVariables ?? []).map((variable) => (
@@ -192,22 +235,76 @@ export default function AdminEmailTemplates() {
                         label="Email subject"
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
-                        sx={{ mb: 2 }}
+                        sx={{ mb: 3 }}
                     />
 
-                    <TextField
-                        fullWidth
-                        multiline
-                        minRows={16}
-                        label="HTML content"
-                        value={htmlContent}
-                        onChange={(e) => setHtmlContent(e.target.value)}
-                        slotProps={{
-                            input: {
-                                sx: { fontFamily: 'monospace', fontSize: '0.85rem' },
-                            },
-                        }}
-                    />
+                    <Grid container spacing={3}>
+                        <Grid size={{ xs: 12, lg: 6 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                HTML source
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                multiline
+                                minRows={22}
+                                label="HTML content"
+                                value={htmlContent}
+                                onChange={(e) => setHtmlContent(e.target.value)}
+                                slotProps={{
+                                    input: {
+                                        sx: { fontFamily: 'monospace', fontSize: '0.85rem' },
+                                    },
+                                }}
+                            />
+                        </Grid>
+
+                        <Grid size={{ xs: 12, lg: 6 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <VisibilityIcon fontSize="small" color="action" />
+                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                    Live preview
+                                </Typography>
+                                {previewLoading && <CircularProgress size={16} sx={{ ml: 1 }} />}
+                            </Box>
+
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                Subject: {subject || '(empty)'}
+                            </Typography>
+
+                            <Paper
+                                variant="outlined"
+                                sx={{
+                                    minHeight: 520,
+                                    borderRadius: 2,
+                                    overflow: 'hidden',
+                                    bgcolor: '#fafafa',
+                                }}
+                            >
+                                {previewError ? (
+                                    <Alert severity="warning" sx={{ m: 2 }}>
+                                        {previewError}
+                                    </Alert>
+                                ) : previewHtml ? (
+                                    <Box
+                                        component="iframe"
+                                        title="Email template preview"
+                                        srcDoc={previewHtml}
+                                        sandbox=""
+                                        sx={{
+                                            width: '100%',
+                                            minHeight: 520,
+                                            border: 0,
+                                            bgcolor: '#fff',
+                                        }}
+                                    />
+                                ) : (
+                                    <Box sx={{ p: 3, color: 'text.secondary' }}>
+                                        Preview will appear here as you type.
+                                    </Box>
+                                )}
+                            </Paper>
+                        </Grid>
+                    </Grid>
 
                     <Divider sx={{ my: 3 }} />
 

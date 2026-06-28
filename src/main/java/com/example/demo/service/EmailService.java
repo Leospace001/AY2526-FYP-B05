@@ -44,7 +44,7 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String senderEmailAddress;
 
-    @Value("${spring.mail.host}")
+    @Value("${spring.mail.imap.host:${spring.mail.host}}")
     private String imapHost;
 
     @Value("${spring.mail.password}")

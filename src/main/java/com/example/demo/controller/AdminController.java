@@ -16,6 +16,8 @@ import com.example.demo.dto.RegistrationEmailSettingDto;
 import com.example.demo.dto.LogEventDto;
 import com.example.demo.dto.EmailTemplateDto;
 import com.example.demo.dto.UpdateEmailTemplateDto;
+import com.example.demo.dto.PreviewEmailTemplateDto;
+import com.example.demo.dto.EmailTemplatePreviewResultDto;
 import com.example.demo.service.*;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
@@ -113,6 +115,16 @@ public class AdminController {
     @Operation(summary = "Reset an email template to its default content", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<EmailTemplateDto> resetEmailTemplate(@PathVariable String templateKey) {
         return ResponseEntity.ok(emailTemplateService.resetTemplate(templateKey));
+    }
+
+    @PostMapping("/email-templates/{templateKey}/preview")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Preview email template HTML with sample data", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<EmailTemplatePreviewResultDto> previewEmailTemplate(
+            @PathVariable String templateKey,
+            @RequestBody PreviewEmailTemplateDto preview) {
+        String renderedHtml = emailTemplateService.previewHtml(templateKey, preview.getHtmlContent());
+        return ResponseEntity.ok(new EmailTemplatePreviewResultDto(renderedHtml));
     }
     
     // Accessible by anyone authenticated
