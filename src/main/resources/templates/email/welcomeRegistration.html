@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Welcome</title>
+</head>
+<body>
+    <h1 style="text-align: center;"><span style="color: #008000;">Welcome!</span></h1>
+    <p class="intro">Dear <span th:text="${name}"></span>,</p>
+    <p class="intro">
+        Thank you for registering. Your account has been created successfully.
+    </p>
+    <p class="intro">
+        Username: <strong th:text="${username}"></strong>
+    </p>
+    <p class="intro">
+        You can sign in here:
+        <a th:href="${loginUrl}" th:text="${loginUrl}"></a>
+    </p>
+    <p class="intro">We look forward to seeing you on the platform.</p>
+    <p><span style="color: #008000;"><strong>Leo Yuen</strong></span></p>
+    <p><strong>ITP4915M AY2526</strong></p>
+</body>
+</html>

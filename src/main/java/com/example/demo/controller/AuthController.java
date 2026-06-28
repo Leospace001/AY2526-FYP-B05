@@ -25,6 +25,7 @@ import com.example.demo.model.User;
 import com.example.demo.security.JwtUtil;
 import com.example.demo.service.UserService;
 import com.example.demo.service.EmailProducer;
+import com.example.demo.service.RegistrationEmailService;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.context.Context;
@@ -47,6 +48,9 @@ public class AuthController {
 
     @Autowired
     private EmailProducer emailProducer;
+
+    @Autowired
+    private RegistrationEmailService registrationEmailService;
 
     @Autowired
     private SpringTemplateEngine templateEngine;
@@ -74,6 +78,7 @@ public class AuthController {
     private ResponseEntity<?> registerAndRespond(UserRegister userRegister, MultipartFile avatar) {
         try {
             User save = userService.registerUser(userRegister, avatar);
+            registrationEmailService.sendWelcomeEmailIfEnabled(save);
             UserInfo updatedUserInfo = userService.toUserInfo(save);
             return ResponseEntity.ok(updatedUserInfo);
 

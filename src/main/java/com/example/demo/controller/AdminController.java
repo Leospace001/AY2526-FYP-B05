@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import com.example.demo.dto.RegistrationEmailSettingDto;
 import com.example.demo.service.*;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,9 @@ public class AdminController {
 
     @Autowired
     private RabbitMQProducer rabbitMQProducer;
+
+    @Autowired
+    private AppSettingService appSettingService;
 
     @Value("${file.upload-dir}")
     private String uploadsDir;
@@ -43,6 +47,22 @@ public class AdminController {
     @Operation(summary = "Admin user dashboard", security = @SecurityRequirement(name = "bearerAuth"))
     public String getAdminDashboard() {
         return "Welcome to the Admin Dashboard! Access Granted.";
+    }
+
+    @GetMapping("/settings/registration-email")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Get registration welcome email setting", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<RegistrationEmailSettingDto> getRegistrationEmailSetting() {
+        return ResponseEntity.ok(new RegistrationEmailSettingDto(appSettingService.isRegistrationEmailEnabled()));
+    }
+
+    @PatchMapping("/settings/registration-email")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Enable or disable registration welcome email", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<RegistrationEmailSettingDto> setRegistrationEmailSetting(
+            @RequestBody RegistrationEmailSettingDto setting) {
+        boolean enabled = appSettingService.setRegistrationEmailEnabled(setting.isEnabled());
+        return ResponseEntity.ok(new RegistrationEmailSettingDto(enabled));
     }
     
     // Accessible by anyone authenticated

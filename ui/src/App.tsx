@@ -13,6 +13,7 @@ import SendEmail from './pages/SendEmail';
 import OllamaChat from './pages/OllamaChat';
 import MyProfile from './pages/MyProfile';
 import UserManagement from './pages/UserManagement';
+import AdminPanel from './pages/AdminPanel';
 import Register from './pages/Register';
 import ResetPassword from './pages/ResetPassword';
 import ForgotPassword from './pages/ForgotPassword';
@@ -103,8 +104,7 @@ function AppRoutes() {
                             <Route path="/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
                             <Route path="/admin" element={
                                 <ProtectedRoute requireAdmin={true}>
-                                    <h2>Admin Configuration</h2>
-                                    <p>Admin Only Content Goes Here</p>
+                                    <AdminPanel />
                                 </ProtectedRoute>
                             } />
                         </Routes>
