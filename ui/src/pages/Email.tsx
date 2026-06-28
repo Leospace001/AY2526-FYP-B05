@@ -145,6 +145,14 @@ export default function EmailInbox() {
                 </Typography>
                 <Button
                     component={RouterLink}
+                    to="/emails/outbox"
+                    variant="outlined"
+                    sx={{ mr: 1 }}
+                >
+                    Sent / Scheduled
+                </Button>
+                <Button
+                    component={RouterLink}
                     to="/emails/send"
                     variant="contained"
                     startIcon={<EditIcon />}

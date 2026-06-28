@@ -69,16 +69,20 @@ public class EmailService {
 
         EmailRecord record = optionalRecord.get();
 
-        // 2. Logic for delivery timing
+        if (record.isSent()) {
+            userActivityLogger.info("Email record {} already sent, skipping.", record.getId());
+            return;
+        }
+
         if (record.getScheduledSendTime() != null
                 && record.getScheduledSendTime().isAfter(java.time.LocalDateTime.now())) {
-            userActivityLogger.info(
-                    "Email is scheduled for future delivery. (Note: Standard RabbitMQ requires a delayed-message plugin for this).");
-            // You will need a way to handle delays here, otherwise it sends immediately.
-            sendEmailImmediately(record);
-        } else {
-            sendEmailImmediately(record);
+            userActivityLogger.info("Email record {} is not due yet, skipping.", record.getId());
+            record.setDispatched(false);
+            emailRecordRepository.save(record);
+            return;
         }
+
+        sendEmailImmediately(record);
     }
 
     private void sendEmailImmediately(EmailRecord record) {

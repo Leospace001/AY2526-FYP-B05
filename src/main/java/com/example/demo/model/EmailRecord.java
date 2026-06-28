@@ -44,5 +44,8 @@ public class EmailRecord {
     @Column(nullable = true, columnDefinition = "boolean default false")
     private boolean sent;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean dispatched;
+
     // Getters and Setters
 }

@@ -81,9 +81,11 @@ export default function SendEmail() {
         attachments.forEach((file) => multipartPayload.append('attachments', file));
 
         try {
-            // Do NOT set Content-Type manually — axios must add the multipart boundary
-            await api.post('/api/emails/send', multipartPayload);
-            setSnackbar({ open: true, message: 'HTML email sent successfully!', severity: 'success' });
+            const response = await api.post('/api/emails/send', multipartPayload);
+            const message = response.data?.includes?.('scheduled')
+                ? 'Email scheduled successfully!'
+                : 'HTML email sent successfully!';
+            setSnackbar({ open: true, message, severity: 'success' });
             setRecipientString('');
             setSubject('');
             setSendTime('');
@@ -202,7 +204,7 @@ export default function SendEmail() {
                             disabled={submitting}
                             sx={{ px: 4, fontWeight: 'bold' }}
                         >
-                            {submitting ? <CircularProgress size={24} color="inherit" /> : 'Send Email'}
+                            {submitting ? <CircularProgress size={24} color="inherit" /> : (sendTime ? 'Schedule Email' : 'Send Email')}
                         </Button>
                     </Grid>
                 </Grid>

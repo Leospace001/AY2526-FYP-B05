@@ -16,6 +16,8 @@ import com.example.demo.dto.EmailRequestDto;
 public interface EmailRecordMapper {
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "attachmentPaths", ignore = true)
+    @Mapping(target = "dispatched", ignore = true)
+    @Mapping(target = "sent", ignore = true)
     EmailRecord emailRequestDtoToEmailRecord(EmailRequestDto emailRequestDto);
 
     EmailRequestDto emailRecordToEmailRequestDto(EmailRecord emailRecord);

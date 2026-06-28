@@ -1,25 +1,21 @@
 package com.example.demo.service;
 
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-
-import com.example.demo.dto.EmailRequestDto;
-import com.example.demo.dto.EmailMessageDto;
-import com.example.demo.repository.EmailRecordRepository;
-import com.example.demo.model.EmailRecord;
-import com.example.demo.mapper.EmailRecordMapper;
-import com.example.demo.model.User;
-
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.Path;
-import java.util.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import com.example.demo.dto.EmailRequestDto;
+import com.example.demo.mapper.EmailRecordMapper;
+import com.example.demo.model.EmailRecord;
+import com.example.demo.model.User;
+import com.example.demo.repository.EmailRecordRepository;
 
 @Service
 public class EmailProducer {
@@ -27,19 +23,13 @@ public class EmailProducer {
     private static final Logger logger = LoggerFactory.getLogger(EmailProducer.class);
 
     @Autowired
-    private RabbitTemplate rabbitTemplate;
-
-    @Autowired
     private EmailRecordMapper emailRecordMapper;
 
     @Autowired
     private EmailRecordRepository emailRecordRepository;
 
-    @Value("${rabbitmq.exchange.name}")
-    private String exchange;
-
-    @Value("${rabbitmq.routing.key}")
-    private String routingKey;
+    @Autowired
+    private EmailDispatchService emailDispatchService;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -52,6 +42,7 @@ public class EmailProducer {
         record.setScheduledSendTime(emailDto.getSendTime());
         record.setCreatedBy(user);
         record.setSent(false);
+        record.setDispatched(false);
 
         try {
             if (emailDto.getAttachments() != null && !emailDto.getAttachments().isEmpty()) {
@@ -69,10 +60,8 @@ public class EmailProducer {
             }
 
             record = emailRecordRepository.save(record);
-
-            EmailMessageDto messageDto = new EmailMessageDto(record.getId());
-            rabbitTemplate.convertAndSend(exchange, routingKey, messageDto);
-            logger.info("Successfully queued email record ID: {}", record.getId());
+            emailDispatchService.dispatchIfDue(record);
+            logger.info("Successfully saved email record ID: {}", record.getId());
 
         } catch (Exception e) {
             logger.error("Failed to process and queue email request", e);
@@ -92,6 +81,9 @@ public class EmailProducer {
         }
         if (emailDto.getBody() == null || emailDto.getBody().isBlank()) {
             throw new IllegalArgumentException("Email body is required.");
+        }
+        if (emailDto.getSendTime() != null && !emailDto.getSendTime().isAfter(java.time.LocalDateTime.now())) {
+            throw new IllegalArgumentException("Scheduled send time must be in the future.");
         }
     }
 }

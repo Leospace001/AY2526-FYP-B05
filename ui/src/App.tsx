@@ -10,6 +10,8 @@ import Products from './pages/Product';
 import CreateProduct from './pages/CreateProduct';
 import Cart from './pages/Cart';
 import SendEmail from './pages/SendEmail';
+import EmailOutbox from './pages/EmailOutbox';
+import EditScheduledEmail from './pages/EditScheduledEmail';
 import OllamaChat from './pages/OllamaChat';
 import MyProfile from './pages/MyProfile';
 import UserManagement from './pages/UserManagement';
@@ -100,6 +102,16 @@ function AppRoutes() {
                             <Route path="/emails/send" element={
                                 <ProtectedRoute>
                                     <SendEmail />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/emails/outbox" element={
+                                <ProtectedRoute>
+                                    <EmailOutbox />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/emails/scheduled/:id/edit" element={
+                                <ProtectedRoute>
+                                    <EditScheduledEmail />
                                 </ProtectedRoute>
                             } />
                             <Route path="/profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
