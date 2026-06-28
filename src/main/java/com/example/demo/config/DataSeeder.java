@@ -17,6 +17,7 @@ import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.UserIdentityRepository;
 import com.example.demo.service.UserService;
 import com.example.demo.service.AppSettingService;
+import com.example.demo.service.EmailTemplateService;
 
 @Configuration
 public class DataSeeder implements CommandLineRunner {
@@ -42,9 +43,13 @@ public class DataSeeder implements CommandLineRunner {
     @Autowired
     private AppSettingService appSettingService;
 
+    @Autowired
+    private EmailTemplateService emailTemplateService;
+
     @Override
     public void run(String... args) {
         appSettingService.ensureSetting(AppSettingService.REGISTRATION_EMAIL_ENABLED, "false");
+        emailTemplateService.seedDefaultsIfMissing();
 
         Role adminRole = ensureRole(ERole.ROLE_ADMIN, "administrator");
         Role userRole = ensureRole(ERole.ROLE_USER, "normal user");

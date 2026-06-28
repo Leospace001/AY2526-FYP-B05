@@ -5,9 +5,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
-import java.time.Instant;
-import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,30 +14,31 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "log_events")
+@Table(name = "email_templates")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LogEvent {
+public class EmailTemplate {
+
+    public static final String FORGOT_PASSWORD = "forgot_password";
+    public static final String WELCOME_REGISTRATION = "welcome_registration";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String username;
+    @Column(nullable = false, unique = true)
+    private String templateKey;
 
     @Column(nullable = false)
-    private String path;
+    private String displayName;
 
     @Column(nullable = false)
-    private String httpMethod;
+    private String subject;
 
-    @Column(nullable = false)
-    private LocalDateTime loggedInAt;
-
-    @Column(nullable = true)
-    private Instant duration;
+    @Lob
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String htmlContent;
 }

@@ -8,8 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
-import org.thymeleaf.spring6.SpringTemplateEngine;
 import com.example.demo.dto.EmailRequestDto;
+import com.example.demo.model.EmailTemplate;
 import com.example.demo.model.User;
 
 @Service
@@ -24,7 +24,7 @@ public class RegistrationEmailService {
     private EmailProducer emailProducer;
 
     @Autowired
-    private SpringTemplateEngine templateEngine;
+    private EmailTemplateService emailTemplateService;
 
     @Value("${DOMAIN}")
     private String domainUrl;
@@ -49,13 +49,13 @@ public class RegistrationEmailService {
             context.setVariable("domainUrl", domainUrl);
             context.setVariable("loginUrl", loginUrl);
 
-            String htmlContent = templateEngine.process("email/welcomeRegistration", context);
+            String htmlContent = emailTemplateService.renderTemplate(EmailTemplate.WELCOME_REGISTRATION, context);
             List<String> recipients = new ArrayList<>();
             recipients.add(user.getEmail());
 
             EmailRequestDto request = new EmailRequestDto(
                     recipients,
-                    "Welcome to our platform",
+                    emailTemplateService.getSubject(EmailTemplate.WELCOME_REGISTRATION),
                     htmlContent,
                     null,
                     null

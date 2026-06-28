@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import  { useCallback, useEffect, useState } from 'react';
 import {
     Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, TablePagination, TextField, Button, CircularProgress,
@@ -47,9 +47,11 @@ export default function UserActivityLog() {
     const [usernameFilter, setUsernameFilter] = useState('');
     const [appliedFilter, setAppliedFilter] = useState('');
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
 
     const fetchLogs = useCallback(async () => {
         setLoading(true);
+        setLoadError('');
         try {
             const params = new URLSearchParams({
                 page: String(page),
@@ -63,6 +65,8 @@ export default function UserActivityLog() {
             setTotalElements(response.data.totalElements ?? 0);
         } catch (error) {
             console.error('Failed to load activity logs:', error);
+            const apiErr = error as { response?: { data?: { message?: string } } };
+            setLoadError(apiErr.response?.data?.message ?? 'Could not load activity logs.');
             setEvents([]);
             setTotalElements(0);
         } finally {
@@ -101,12 +105,14 @@ export default function UserActivityLog() {
                         value={usernameFilter}
                         onChange={(e) => setUsernameFilter(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon fontSize="small" />
-                                </InputAdornment>
-                            ),
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon fontSize="small" />
+                                    </InputAdornment>
+                                ),
+                            },
                         }}
                         sx={{ minWidth: 240 }}
                     />
@@ -118,6 +124,12 @@ export default function UserActivityLog() {
                     </Button>
                 </Box>
             </Paper>
+
+            {loadError && (
+                <Typography color="error" sx={{ mb: 2 }}>
+                    {loadError}
+                </Typography>
+            )}
 
             <Paper sx={{ borderRadius: 2, boxShadow: 2, overflow: 'hidden' }}>
                 <TableContainer>

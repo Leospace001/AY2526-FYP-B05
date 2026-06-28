@@ -56,11 +56,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             return;
         }
 
-        if ("GET".equalsIgnoreCase(method) && "/api/cart".equals(path)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         if (path.startsWith("/oauth2/") || path.startsWith("/login/oauth2/")) {
             filterChain.doFilter(request, response);
             return;
@@ -82,16 +77,25 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                             authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                             SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                            try {
-                                long duration = System.currentTimeMillis() - startTime;
-                                Instant instant = Instant.ofEpochMilli(duration);
-                                LogEvent logEvent = new LogEvent(username, path, method, currentTime, instant);
-                                logEventService.createLogEvent(logEvent);
-                                userActivityLogger.info(
-                                        "User {} authenticated successfully and accessed {} with method {} in {} ms",
-                                        username, path, method, duration);
-                            } catch (Exception logError) {
-                                userActivityLogger.warn("Authenticated {} but failed to persist log event", username, logError);
+                            boolean skipActivityLog = "GET".equalsIgnoreCase(method) && "/api/cart".equals(path);
+                            if (!skipActivityLog) {
+                                try {
+                                    long duration = System.currentTimeMillis() - startTime;
+                                    Instant instant = Instant.ofEpochMilli(duration);
+                                    LogEvent logEvent = LogEvent.builder()
+                                            .username(username)
+                                            .path(path)
+                                            .httpMethod(method)
+                                            .loggedInAt(currentTime)
+                                            .duration(instant)
+                                            .build();
+                                    logEventService.createLogEvent(logEvent);
+                                    userActivityLogger.info(
+                                            "User {} authenticated successfully and accessed {} with method {} in {} ms",
+                                            username, path, method, duration);
+                                } catch (Exception logError) {
+                                    userActivityLogger.warn("Authenticated {} but failed to persist log event", username, logError);
+                                }
                             }
                         }
                     }

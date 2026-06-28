@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import com.example.demo.dto.RegistrationEmailSettingDto;
 import com.example.demo.dto.LogEventDto;
+import com.example.demo.dto.EmailTemplateDto;
+import com.example.demo.dto.UpdateEmailTemplateDto;
 import com.example.demo.service.*;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
@@ -32,6 +34,9 @@ public class AdminController {
 
     @Autowired
     private LogEventService logEventService;
+
+    @Autowired
+    private EmailTemplateService emailTemplateService;
 
     @Value("${file.upload-dir}")
     private String uploadsDir;
@@ -78,6 +83,36 @@ public class AdminController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String username) {
         return ResponseEntity.ok(logEventService.getPaginatedLogEvents(page, size, username));
+    }
+
+    @GetMapping("/email-templates")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "List editable email templates", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<List<EmailTemplateDto>> listEmailTemplates() {
+        return ResponseEntity.ok(emailTemplateService.listTemplates());
+    }
+
+    @GetMapping("/email-templates/{templateKey}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Get an email template", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<EmailTemplateDto> getEmailTemplate(@PathVariable String templateKey) {
+        return ResponseEntity.ok(emailTemplateService.getTemplate(templateKey));
+    }
+
+    @PutMapping("/email-templates/{templateKey}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Update an email template", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<EmailTemplateDto> updateEmailTemplate(
+            @PathVariable String templateKey,
+            @RequestBody UpdateEmailTemplateDto update) {
+        return ResponseEntity.ok(emailTemplateService.updateTemplate(templateKey, update));
+    }
+
+    @PostMapping("/email-templates/{templateKey}/reset")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Reset an email template to its default content", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<EmailTemplateDto> resetEmailTemplate(@PathVariable String templateKey) {
+        return ResponseEntity.ok(emailTemplateService.resetTemplate(templateKey));
     }
     
     // Accessible by anyone authenticated

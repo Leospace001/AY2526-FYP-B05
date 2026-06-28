@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Box, Typography, Paper, Switch, FormControlLabel, CircularProgress,
     Snackbar, Alert, Divider, Button,
@@ -6,6 +6,7 @@ import {
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import EmailIcon from '@mui/icons-material/Email';
 import HistoryIcon from '@mui/icons-material/History';
+import ArticleIcon from '@mui/icons-material/Article';
 import { Link as RouterLink } from 'react-router-dom';
 import api from '../api/axiosConfig';
 
@@ -114,6 +115,30 @@ export default function AdminPanel() {
                     }
                     sx={{ alignItems: 'flex-start', ml: 0 }}
                 />
+            </Paper>
+
+            <Paper sx={{ p: 3, mt: 3, borderRadius: 2, boxShadow: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <ArticleIcon sx={{ color: '#3498db' }} />
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                        Email Templates
+                    </Typography>
+                </Box>
+
+                <Divider sx={{ mb: 2 }} />
+
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Customize the forgot-password and registration welcome email HTML and subject lines.
+                </Typography>
+
+                <Button
+                    component={RouterLink}
+                    to="/admin/email-templates"
+                    variant="outlined"
+                    startIcon={<ArticleIcon />}
+                >
+                    Edit Email Templates
+                </Button>
             </Paper>
 
             <Paper sx={{ p: 3, mt: 3, borderRadius: 2, boxShadow: 2 }}>

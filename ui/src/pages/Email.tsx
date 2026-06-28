@@ -122,6 +122,11 @@ export default function EmailInbox() {
                 </Avatar>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2c3e50', flexGrow: 1 }}>
                     System Inbox
+                    {emails.length > 0 && (
+                        <Typography component="span" variant="body2" sx={{ ml: 1, color: 'text.secondary', fontWeight: 'normal' }}>
+                            ({emails.length} {emails.length === 1 ? 'message' : 'messages'})
+                        </Typography>
+                    )}
                 </Typography>
                 <Button
                     component={RouterLink}

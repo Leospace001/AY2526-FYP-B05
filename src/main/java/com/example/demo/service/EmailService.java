@@ -132,7 +132,13 @@ public class EmailService {
             inbox.open(Folder.READ_ONLY);
 
             int totalMessages = inbox.getMessageCount();
-            int start = Math.max(1, totalMessages - limit + 1);
+            if (totalMessages == 0) {
+                return emailList;
+            }
+
+            int start = limit > 0
+                    ? Math.max(1, totalMessages - limit + 1)
+                    : 1;
             Message[] messages = inbox.getMessages(start, totalMessages);
 
             for (int i = messages.length - 1; i >= 0; i--) { // Read newest first

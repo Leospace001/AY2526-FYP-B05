@@ -19,6 +19,7 @@ import com.example.demo.dto.UserInfo;
 import com.example.demo.dto.UserRegister;
 import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.mapper.UserMapper;
+import com.example.demo.model.EmailTemplate;
 import com.example.demo.model.JwtRequest;
 import com.example.demo.model.JwtResponse;
 import com.example.demo.model.User;
@@ -26,8 +27,8 @@ import com.example.demo.security.JwtUtil;
 import com.example.demo.service.UserService;
 import com.example.demo.service.EmailProducer;
 import com.example.demo.service.RegistrationEmailService;
+import com.example.demo.service.EmailTemplateService;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.context.Context;
 
 @RestController
@@ -53,7 +54,7 @@ public class AuthController {
     private RegistrationEmailService registrationEmailService;
 
     @Autowired
-    private SpringTemplateEngine templateEngine;
+    private EmailTemplateService emailTemplateService;
 
     @Autowired
     private ClientRegistrationRepository clientRegistrationRepository;
@@ -158,12 +159,12 @@ public class AuthController {
             context.setVariable("token", token);
             context.setVariable("domainUrl", domainUrl);
             context.setVariable("tokenUrl", tokenUrl);
-            String htmlContent = templateEngine.process("email/forgotPassword", context);
+            String htmlContent = emailTemplateService.renderTemplate(EmailTemplate.FORGOT_PASSWORD, context);
             List<String> recipients = new ArrayList();
             recipients.add(email);
             EmailRequestDto request = new EmailRequestDto(
                 recipients,
-                "Reset password Email",
+                emailTemplateService.getSubject(EmailTemplate.FORGOT_PASSWORD),
                 htmlContent,
                 null,
                 null
