@@ -57,8 +57,22 @@ export default function Navbar() {
             display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box',
             position: 'sticky', top: 0
         }}>
-            <h2 style={{ color: '#ecf0f1', marginBottom: '30px', textAlign: 'center', fontWeight: 'bold' }}>
-                Warehouse System
+            <h2 style={{
+                color: '#ecf0f1',
+                marginBottom: '30px',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
+                fontSize: '1.25rem',
+            }}>
+                <img
+                    src="/plant.jpeg"
+                    alt="Plant"
+                    style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
+                />
+                Plant AI Analysis
             </h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -82,23 +96,7 @@ export default function Navbar() {
 
                  <Link to="/email" style={getLinkStyle(location.pathname === '/email', '#3498db')}>Email</Link>
 
-                <Link
-                    to="/plant"
-                    style={{
-                        ...getLinkStyle(location.pathname === '/plant', '#3498db'),
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '6px',
-                    }}
-                >
-                    <span>Plant AI Analysis</span>
-                    <img
-                        src="/plant.jpeg"
-                        alt="Plant"
-                        style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: '4px' }}
-                    />
-                </Link>
+                <Link to="/plant" style={getLinkStyle(location.pathname === '/plant', '#3498db')}>Plant Identification</Link>
 
 
                 <Link to="/emails/send" style={getLinkStyle(location.pathname === '/emails/send', '#3498db')}>Send Email</Link>
