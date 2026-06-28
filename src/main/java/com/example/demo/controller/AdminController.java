@@ -13,7 +13,9 @@ import java.nio.file.Paths;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import com.example.demo.dto.RegistrationEmailSettingDto;
+import com.example.demo.dto.LogEventDto;
 import com.example.demo.service.*;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import java.util.*;
@@ -27,6 +29,9 @@ public class AdminController {
 
     @Autowired
     private AppSettingService appSettingService;
+
+    @Autowired
+    private LogEventService logEventService;
 
     @Value("${file.upload-dir}")
     private String uploadsDir;
@@ -63,6 +68,16 @@ public class AdminController {
             @RequestBody RegistrationEmailSettingDto setting) {
         boolean enabled = appSettingService.setRegistrationEmailEnabled(setting.isEnabled());
         return ResponseEntity.ok(new RegistrationEmailSettingDto(enabled));
+    }
+
+    @GetMapping("/log-events")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "List user activity log events", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<Page<LogEventDto>> getLogEvents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String username) {
+        return ResponseEntity.ok(logEventService.getPaginatedLogEvents(page, size, username));
     }
     
     // Accessible by anyone authenticated

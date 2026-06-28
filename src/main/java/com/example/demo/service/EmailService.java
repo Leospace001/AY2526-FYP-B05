@@ -126,7 +126,7 @@ public class EmailService {
         try {
             store = session.getStore("imaps");
             store.connect(imapHost,senderEmailAddress,password);
-            userActivityLogger.info("imapHost={}; senderEmailAddress={}; password={}",imapHost, senderEmailAddress, password);
+            userActivityLogger.info("Connected to IMAP inbox at {}", imapHost);
 
             inbox = store.getFolder("INBOX");
             inbox.open(Folder.READ_ONLY);

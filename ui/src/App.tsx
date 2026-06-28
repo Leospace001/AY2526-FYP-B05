@@ -14,6 +14,7 @@ import OllamaChat from './pages/OllamaChat';
 import MyProfile from './pages/MyProfile';
 import UserManagement from './pages/UserManagement';
 import AdminPanel from './pages/AdminPanel';
+import UserActivityLog from './pages/UserActivityLog';
 import Register from './pages/Register';
 import ResetPassword from './pages/ResetPassword';
 import ForgotPassword from './pages/ForgotPassword';
@@ -105,6 +106,11 @@ function AppRoutes() {
                             <Route path="/admin" element={
                                 <ProtectedRoute requireAdmin={true}>
                                     <AdminPanel />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/admin/activity" element={
+                                <ProtectedRoute requireAdmin={true}>
+                                    <UserActivityLog />
                                 </ProtectedRoute>
                             } />
                         </Routes>

@@ -51,6 +51,16 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             return;
         }
 
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        if ("GET".equalsIgnoreCase(method) && "/api/cart".equals(path)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         if (path.startsWith("/oauth2/") || path.startsWith("/login/oauth2/")) {
             filterChain.doFilter(request, response);
             return;

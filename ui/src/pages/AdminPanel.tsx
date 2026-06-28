@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
     Box, Typography, Paper, Switch, FormControlLabel, CircularProgress,
-    Snackbar, Alert, Divider,
+    Snackbar, Alert, Divider, Button,
 } from '@mui/material';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import EmailIcon from '@mui/icons-material/Email';
+import HistoryIcon from '@mui/icons-material/History';
+import { Link as RouterLink } from 'react-router-dom';
 import api from '../api/axiosConfig';
 
 export default function AdminPanel() {
@@ -112,6 +114,30 @@ export default function AdminPanel() {
                     }
                     sx={{ alignItems: 'flex-start', ml: 0 }}
                 />
+            </Paper>
+
+            <Paper sx={{ p: 3, mt: 3, borderRadius: 2, boxShadow: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <HistoryIcon sx={{ color: '#3498db' }} />
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                        User Activity
+                    </Typography>
+                </Box>
+
+                <Divider sx={{ mb: 2 }} />
+
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    View authenticated API requests recorded for each user — useful for auditing sign-ins, purchases, and admin actions.
+                </Typography>
+
+                <Button
+                    component={RouterLink}
+                    to="/admin/activity"
+                    variant="outlined"
+                    startIcon={<HistoryIcon />}
+                >
+                    Open Activity Log
+                </Button>
             </Paper>
 
             <Snackbar

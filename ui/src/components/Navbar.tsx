@@ -119,6 +119,12 @@ export default function Navbar() {
                         Admin Panel
                     </Link>
                 )}
+
+                {isAdmin && (
+                    <Link to="/admin/activity" style={getLinkStyle(location.pathname === '/admin/activity', '#3498db')}>
+                        Activity Log
+                    </Link>
+                )}
             </div>
 
             <div style={{ marginTop: 'auto', borderTop: '1px solid #34495e', paddingTop: '15px' }}>
