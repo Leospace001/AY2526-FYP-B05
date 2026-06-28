@@ -45,7 +45,7 @@ export default function ProductCatalogGrid({
     searchQuery,
     title,
     fallbackToRandom = true,
-    randomProductCount = 8,
+    randomProductCount = 5,
 }: ProductCatalogGridProps) {
     const [products, setProducts] = useState<Stock[]>([]);
     const [usingRandomFallback, setUsingRandomFallback] = useState(false);

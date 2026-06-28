@@ -270,6 +270,7 @@ export default function PlantIdentifier() {
                     <ProductCatalogGrid
                         searchQuery={plantName}
                         title={`Related Products for ${plantName}`}
+                        randomProductCount={5}
                     />
                 </Paper>
             )}
