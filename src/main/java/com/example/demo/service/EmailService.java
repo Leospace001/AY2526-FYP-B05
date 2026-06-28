@@ -48,6 +48,10 @@ public class EmailService {
     private String imapHost;
 
     @Value("${spring.mail.password}")
+    public void setPassword(String rawPassword) {
+        this.password = rawPassword != null ? rawPassword.replace(" ", "").trim() : "";
+    }
+
     private String password;
 
     // Single listener taking the lightweight DTO
@@ -108,9 +112,9 @@ public class EmailService {
             userActivityLogger.info("Email sent successfully for Record ID: {}", record.getId());
 
         } catch (MailException e) {
-            userActivityLogger.error("Failed to send email for Record ID: {}", record.getId(), e);
+            userActivityLogger.error("Failed to send email for Record ID: {} - {}", record.getId(), e.getMessage(), e);
         } catch (Exception e) {
-            userActivityLogger.error("Failed to send email for Record ID: {}", record.getId(), e);
+            userActivityLogger.error("Failed to send email for Record ID: {} - {}", record.getId(), e.getMessage(), e);
         }
     }
 
@@ -155,11 +159,12 @@ public class EmailService {
                 emailList.add(dto);
             }
         } catch (AuthenticationFailedException e) {
-            userActivityLogger.error("Login failed: {}", e.getMessage());
-        }
-
-        catch (Exception e) {
-            userActivityLogger.error("Failed to read emails: {}", e.getMessage());
+            userActivityLogger.error("IMAP login failed for {} at {}: {}", senderEmailAddress, imapHost, e.getMessage());
+            throw new IllegalStateException(
+                    "Could not sign in to the mailbox. Check SPRING_MAIL_USERNAME, App Password, and that IMAP is enabled in Gmail settings.");
+        } catch (Exception e) {
+            userActivityLogger.error("Failed to read emails: {}", e.getMessage(), e);
+            throw new IllegalStateException("Failed to read inbox: " + e.getMessage());
         } finally {
             try {
                 if (inbox != null && inbox.isOpen())

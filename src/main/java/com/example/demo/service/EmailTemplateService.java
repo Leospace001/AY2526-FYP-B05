@@ -48,6 +48,8 @@ public class EmailTemplateService {
     void initStringTemplateEngine() {
         StringTemplateResolver resolver = new StringTemplateResolver();
         resolver.setTemplateMode(TemplateMode.HTML);
+        resolver.setCacheable(false);
+        resolver.setCheckExistence(false);
         stringTemplateEngine = new SpringTemplateEngine();
         stringTemplateEngine.setTemplateResolver(resolver);
     }

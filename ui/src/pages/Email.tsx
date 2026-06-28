@@ -37,9 +37,10 @@ export default function EmailInbox() {
                 // Update this URL to match your exact Spring Boot endpoint!
                 const response = await api.get('/api/emails/inbox');
                 setEmails(response.data);
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Failed to fetch emails:", err);
-                setError('Could not connect to the mail server. Check your backend logs.');
+                const apiErr = err as { response?: { data?: { message?: string } } };
+                setError(apiErr.response?.data?.message ?? 'Could not connect to the mail server. Check your backend logs.');
             } finally {
                 setLoading(false);
             }

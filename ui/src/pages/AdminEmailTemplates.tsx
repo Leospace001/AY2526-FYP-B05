@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     Box, Typography, Paper, TextField, Button, CircularProgress,
     Snackbar, Alert, Tabs, Tab, Chip, Stack, Divider, Grid,
@@ -8,6 +8,7 @@ import RestoreIcon from '@mui/icons-material/Restore';
 import SaveIcon from '@mui/icons-material/Save';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import api from '../api/axiosConfig';
+import { renderClientEmailPreview } from '../utils/emailTemplatePreview';
 
 interface EmailTemplate {
     templateKey: string;
@@ -17,16 +18,12 @@ interface EmailTemplate {
     availableVariables: string[];
 }
 
-const PREVIEW_DEBOUNCE_MS = 400;
-
 export default function AdminEmailTemplates() {
     const [templates, setTemplates] = useState<EmailTemplate[]>([]);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [subject, setSubject] = useState('');
     const [htmlContent, setHtmlContent] = useState('');
-    const [previewHtml, setPreviewHtml] = useState('');
-    const [previewError, setPreviewError] = useState('');
-    const [previewLoading, setPreviewLoading] = useState(false);
+    const [serverPreviewError, setServerPreviewError] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [snackbar, setSnackbar] = useState({
@@ -37,9 +34,17 @@ export default function AdminEmailTemplates() {
 
     const selectedTemplate = templates[selectedIndex] ?? null;
 
+    const clientPreviewHtml = useMemo(() => {
+        if (!selectedTemplate || !htmlContent.trim()) {
+            return '';
+        }
+        return renderClientEmailPreview(selectedTemplate.templateKey, htmlContent);
+    }, [selectedTemplate, htmlContent]);
+
     const loadTemplateIntoForm = useCallback((template: EmailTemplate) => {
         setSubject(template.subject);
         setHtmlContent(template.htmlContent);
+        setServerPreviewError('');
     }, []);
 
     const fetchTemplates = useCallback(async () => {
@@ -49,7 +54,7 @@ export default function AdminEmailTemplates() {
             const items = response.data ?? [];
             setTemplates(items);
             if (items.length > 0) {
-                loadTemplateIntoForm(items[selectedIndex] ?? items[0]);
+                loadTemplateIntoForm(items[0]);
             }
         } catch (error) {
             console.error('Failed to load email templates:', error);
@@ -61,54 +66,11 @@ export default function AdminEmailTemplates() {
         } finally {
             setLoading(false);
         }
-    }, [loadTemplateIntoForm, selectedIndex]);
-
-    const refreshPreview = useCallback(async (templateKey: string, content: string) => {
-        if (!content.trim()) {
-            setPreviewHtml('');
-            setPreviewError('Enter HTML content to see a preview.');
-            return;
-        }
-
-        setPreviewLoading(true);
-        try {
-            const response = await api.post<{ renderedHtml: string }>(
-                `/api/admin/email-templates/${templateKey}/preview`,
-                { htmlContent: content },
-            );
-            setPreviewHtml(response.data.renderedHtml);
-            setPreviewError('');
-        } catch (error) {
-            console.error('Failed to preview template:', error);
-            const apiErr = error as { response?: { data?: { message?: string } } };
-            setPreviewHtml('');
-            setPreviewError(apiErr.response?.data?.message ?? 'Could not render preview.');
-        } finally {
-            setPreviewLoading(false);
-        }
-    }, []);
+    }, [loadTemplateIntoForm]);
 
     useEffect(() => {
         fetchTemplates();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    useEffect(() => {
-        if (selectedTemplate) {
-            loadTemplateIntoForm(selectedTemplate);
-        }
-    }, [selectedTemplate, loadTemplateIntoForm]);
-
-    useEffect(() => {
-        if (!selectedTemplate) {
-            return undefined;
-        }
-
-        const timer = window.setTimeout(() => {
-            refreshPreview(selectedTemplate.templateKey, htmlContent);
-        }, PREVIEW_DEBOUNCE_MS);
-
-        return () => window.clearTimeout(timer);
-    }, [selectedTemplate, htmlContent, refreshPreview]);
+    }, [fetchTemplates]);
 
     const handleTabChange = (_: React.SyntheticEvent, newIndex: number) => {
         setSelectedIndex(newIndex);
@@ -174,6 +136,29 @@ export default function AdminEmailTemplates() {
         }
     };
 
+    const validateWithServer = async () => {
+        if (!selectedTemplate || !htmlContent.trim()) {
+            setServerPreviewError('Enter HTML content to validate.');
+            return;
+        }
+
+        try {
+            await api.post(
+                `/api/admin/email-templates/${selectedTemplate.templateKey}/preview`,
+                { htmlContent },
+            );
+            setServerPreviewError('');
+            setSnackbar({
+                open: true,
+                message: 'Template validated successfully with the server renderer.',
+                severity: 'success',
+            });
+        } catch (error) {
+            const apiErr = error as { response?: { data?: { message?: string } } };
+            setServerPreviewError(apiErr.response?.data?.message ?? 'Server could not render this template.');
+        }
+    };
+
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -199,7 +184,7 @@ export default function AdminEmailTemplates() {
                         Email Templates
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        Edit HTML on the left and see a live preview on the right with sample data.
+                        Edit HTML on the left — the preview updates instantly on the right.
                     </Typography>
                 </Box>
             </Box>
@@ -264,38 +249,36 @@ export default function AdminEmailTemplates() {
                                 <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
                                     Live preview
                                 </Typography>
-                                {previewLoading && <CircularProgress size={16} sx={{ ml: 1 }} />}
                             </Box>
 
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                                 Subject: {subject || '(empty)'}
                             </Typography>
 
+                            {serverPreviewError && (
+                                <Alert severity="warning" sx={{ mb: 1 }}>
+                                    {serverPreviewError}
+                                </Alert>
+                            )}
+
                             <Paper
                                 variant="outlined"
                                 sx={{
                                     minHeight: 520,
                                     borderRadius: 2,
-                                    overflow: 'hidden',
-                                    bgcolor: '#fafafa',
+                                    overflow: 'auto',
+                                    bgcolor: '#fff',
                                 }}
                             >
-                                {previewError ? (
-                                    <Alert severity="warning" sx={{ m: 2 }}>
-                                        {previewError}
-                                    </Alert>
-                                ) : previewHtml ? (
+                                {clientPreviewHtml ? (
                                     <Box
-                                        component="iframe"
-                                        title="Email template preview"
-                                        srcDoc={previewHtml}
-                                        sandbox=""
+                                        key={clientPreviewHtml.length}
                                         sx={{
-                                            width: '100%',
+                                            p: 2,
                                             minHeight: 520,
-                                            border: 0,
-                                            bgcolor: '#fff',
+                                            '& img': { maxWidth: '100%', height: 'auto' },
                                         }}
+                                        dangerouslySetInnerHTML={{ __html: clientPreviewHtml }}
                                     />
                                 ) : (
                                     <Box sx={{ p: 3, color: 'text.secondary' }}>
@@ -303,6 +286,15 @@ export default function AdminEmailTemplates() {
                                     </Box>
                                 )}
                             </Paper>
+
+                            <Button
+                                variant="text"
+                                size="small"
+                                sx={{ mt: 1 }}
+                                onClick={validateWithServer}
+                            >
+                                Validate with server renderer
+                            </Button>
                         </Grid>
                     </Grid>
 
