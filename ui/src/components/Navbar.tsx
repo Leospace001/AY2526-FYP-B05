@@ -70,7 +70,7 @@ export default function Navbar() {
                 <img
                     src="/plant.jpeg"
                     alt="Plant"
-                    style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
+                    style={{ width: 45, height: 45, objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
                 />
                 Plant AI Analysis
             </h2>
