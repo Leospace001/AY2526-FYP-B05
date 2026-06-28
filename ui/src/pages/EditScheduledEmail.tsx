@@ -5,7 +5,7 @@ import EmailHtmlEditor from '../components/EmailHtmlEditor';
 import { htmlContainsBrokenEmbeddedImages } from '../utils/emailImageEmbed';
 import type { EmailRecordSummary } from './EmailOutbox';
 import {
-    Alert, Box, Button, CircularProgress, Divider, Grid, IconButton,
+    Alert, Box, Button, CircularProgress, Divider, Grid,
     Paper, Snackbar, TextField, Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';

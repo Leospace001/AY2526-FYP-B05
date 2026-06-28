@@ -94,12 +94,16 @@ export default function Navbar() {
                 <Link to="/chat" style={getLinkStyle(location.pathname === '/chat', '#3498db')}>AI Chat</Link>
                 <Link to="/groups" style={getLinkStyle(location.pathname === '/groups', '#9b59b6')}>Group Chat</Link>
 
-                 <Link to="/email" style={getLinkStyle(location.pathname === '/email', '#3498db')}>Email</Link>
+                 <Link to="/email" style={getLinkStyle(location.pathname === '/email', '#3498db')}>Inbox</Link>
+                <Link
+                    to="/emails/outbox"
+                    style={getLinkStyle(location.pathname.startsWith('/emails/outbox') || location.pathname.startsWith('/emails/scheduled'), '#3498db')}
+                >
+                    Sent / Scheduled
+                </Link>
+                <Link to="/emails/send" style={getLinkStyle(location.pathname === '/emails/send', '#3498db')}>Compose Email</Link>
 
                 <Link to="/plant" style={getLinkStyle(location.pathname === '/plant', '#3498db')}>Plant Identification</Link>
-
-
-                <Link to="/emails/send" style={getLinkStyle(location.pathname === '/emails/send', '#3498db')}>Send Email</Link>
 
                 <Link to="/profile" style={getLinkStyle(location.pathname === '/profile', '#3498db')}>My Profile</Link>
 
