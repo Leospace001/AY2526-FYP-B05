@@ -17,6 +17,7 @@ import {
     updatePlantIdentifierCache,
     type PlantDetails,
 } from './plantIdentifierCache';
+import ProductCatalogGrid from '../components/ProductCatalogGrid';
 
 export default function PlantIdentifier() {
     const [previewUrl, setPreviewUrl] = useState<string | null>(
@@ -145,7 +146,7 @@ export default function PlantIdentifier() {
     };
 
     return (
-        <Box sx={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3, bgcolor: '#f9f9f9' }}>
+        <Box sx={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 3, bgcolor: '#f9f9f9' }}>
             <Paper sx={{ p: 4, maxWidth: plantDetails ? '1000px' : '500px', width: '100%', borderRadius: 3, boxShadow: 4, transition: 'max-width 0.4s ease' }}>
                 
                 <Grid container spacing={4}>
@@ -263,6 +264,15 @@ export default function PlantIdentifier() {
                     <Alert severity="error" variant="filled" onClose={() => setError('')}>{error}</Alert>
                 </Snackbar>
             </Paper>
+
+            {plantName && (
+                <Paper sx={{ p: 4, mt: 3, maxWidth: '1200px', width: '100%', borderRadius: 3, boxShadow: 4 }}>
+                    <ProductCatalogGrid
+                        searchQuery={plantName}
+                        title={`Related Products for ${plantName}`}
+                    />
+                </Paper>
+            )}
         </Box>
     );
 }
