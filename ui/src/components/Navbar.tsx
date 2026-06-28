@@ -82,7 +82,23 @@ export default function Navbar() {
 
                  <Link to="/email" style={getLinkStyle(location.pathname === '/email', '#3498db')}>Email</Link>
 
-                <Link to="/plant" style={getLinkStyle(location.pathname === '/plant', '#3498db')}>Plant Identification</Link>
+                <Link
+                    to="/plant"
+                    style={{
+                        ...getLinkStyle(location.pathname === '/plant', '#3498db'),
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '6px',
+                    }}
+                >
+                    <span>Plant AI Analysis</span>
+                    <img
+                        src="/plant.jpeg"
+                        alt="Plant"
+                        style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: '4px' }}
+                    />
+                </Link>
 
 
                 <Link to="/emails/send" style={getLinkStyle(location.pathname === '/emails/send', '#3498db')}>Send Email</Link>
