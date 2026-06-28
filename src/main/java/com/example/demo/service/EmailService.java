@@ -123,13 +123,19 @@ public class EmailService {
         Folder inbox = null;
         Store store = null;
         Properties props = new Properties();
+        props.put("mail.imap.host", imapHost);
+        props.put("mail.imap.port", "993");
         props.put("mail.imap.ssl.enable", "true");
+        props.put("mail.imap.ssl.trust", imapHost);
+        props.put("mail.imap.auth.plain.disable", "false");
+        props.put("mail.imap.auth.login.disable", "false");
+        props.put("mail.imap.connectiontimeout", "15000");
+        props.put("mail.imap.timeout", "30000");
         Session session = Session.getDefaultInstance(props, null);
-        
 
         try {
             store = session.getStore("imaps");
-            store.connect(imapHost,senderEmailAddress,password);
+            store.connect(imapHost, 993, senderEmailAddress, password);
             userActivityLogger.info("Connected to IMAP inbox at {}", imapHost);
 
             inbox = store.getFolder("INBOX");
@@ -155,16 +161,23 @@ public class EmailService {
                 dto.setCc(extractAddressList(msg.getRecipients(Message.RecipientType.CC)));
                 dto.setBcc(extractAddressList(msg.getRecipients(Message.RecipientType.BCC)));
 
-                parseMessageContent(msg, dto);
+                parseMessageContent(msg, dto, true);
                 emailList.add(dto);
             }
         } catch (AuthenticationFailedException e) {
             userActivityLogger.error("IMAP login failed for {} at {}: {}", senderEmailAddress, imapHost, e.getMessage());
-            throw new IllegalStateException(
-                    "Could not sign in to the mailbox. Check SPRING_MAIL_USERNAME, App Password, and that IMAP is enabled in Gmail settings.");
+            String hint = senderEmailAddress.contains("@gmail.com") || senderEmailAddress.contains("@googlemail.com")
+                    ? "Use a Google App Password for this exact account (not your normal Gmail password), and enable IMAP under Gmail Settings → Forwarding and POP/IMAP."
+                    : "When using smtp.gmail.com / imap.gmail.com, SPRING_MAIL_USERNAME must be a Google-hosted mailbox (@gmail.com or a Google Workspace address). The App Password must be created while signed into that same Google account.";
+            throw new IllegalStateException("Could not sign in to the mailbox. " + hint);
         } catch (Exception e) {
             userActivityLogger.error("Failed to read emails: {}", e.getMessage(), e);
-            throw new IllegalStateException("Failed to read inbox: " + e.getMessage());
+            String detail = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            if (detail.toLowerCase().contains("timeout") || detail.toLowerCase().contains("timed out")) {
+                throw new IllegalStateException(
+                        "Timed out connecting to IMAP. Check AWS outbound port 993 and try a smaller inbox limit.");
+            }
+            throw new IllegalStateException("Failed to read inbox: " + detail);
         } finally {
             try {
                 if (inbox != null && inbox.isOpen())
@@ -196,6 +209,10 @@ public class EmailService {
     }
 
     private void parseMessageContent(Part part, MailBoxDto dto) throws Exception {
+        parseMessageContent(part, dto, false);
+    }
+
+    private void parseMessageContent(Part part, MailBoxDto dto, boolean skipAttachments) throws Exception {
         String contentType = part.getContentType().toLowerCase();
         String disposition = part.getDisposition();
 
@@ -203,9 +220,15 @@ public class EmailService {
         if (part.isMimeType("multipart/*")) {
             MimeMultipart multipart = (MimeMultipart) part.getContent();
             for (int i = 0; i < multipart.getCount(); i++) {
-                parseMessageContent(multipart.getBodyPart(i), dto);
+                parseMessageContent(multipart.getBodyPart(i), dto, skipAttachments);
             }
-            return; // We've parsed the children, stop processing this container
+            return;
+        }
+
+        if (skipAttachments && (Part.ATTACHMENT.equalsIgnoreCase(disposition)
+                || Part.INLINE.equalsIgnoreCase(disposition)
+                || part.getFileName() != null)) {
+            return;
         }
 
         // 2. Handle Attachments and Inline Images

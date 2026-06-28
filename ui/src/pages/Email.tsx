@@ -35,12 +35,26 @@ export default function EmailInbox() {
             try {
                 setLoading(true);
                 // Update this URL to match your exact Spring Boot endpoint!
-                const response = await api.get('/api/emails/inbox');
+                const response = await api.get('/api/emails/inbox?limit=50');
                 setEmails(response.data);
             } catch (err: unknown) {
                 console.error("Failed to fetch emails:", err);
-                const apiErr = err as { response?: { data?: { message?: string } } };
-                setError(apiErr.response?.data?.message ?? 'Could not connect to the mail server. Check your backend logs.');
+                const apiErr = err as {
+                    message?: string;
+                    response?: { status?: number; data?: { message?: string; error?: string } };
+                };
+                if (apiErr.response?.status === 401) {
+                    setError('Your session expired. Please log in again.');
+                } else if (apiErr.response?.status === 504) {
+                    setError('Server timed out while reading the inbox. Try again in a moment.');
+                } else {
+                    setError(
+                        apiErr.response?.data?.message
+                        ?? apiErr.response?.data?.error
+                        ?? apiErr.message
+                        ?? 'Could not connect to the mail server. Check your backend logs.',
+                    );
+                }
             } finally {
                 setLoading(false);
             }

@@ -12,6 +12,15 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     // 🟢 Intercept UserAlreadyExistsException and build a clean 409 Conflict layout
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException ex) {
+        Map<String, Object> errorBody = new HashMap<>();
+        errorBody.put("error", "Service Unavailable");
+        errorBody.put("message", ex.getMessage());
+        errorBody.put("status", HttpStatus.SERVICE_UNAVAILABLE.value());
+        return new ResponseEntity<>(errorBody, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
         Map<String, Object> errorBody = new HashMap<>();

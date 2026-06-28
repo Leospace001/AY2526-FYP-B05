@@ -33,7 +33,7 @@ public class EmailController {
     @GetMapping("/inbox")
     @Operation(summary = "Email service", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<List<MailBoxDto>> getInbox(
-            @RequestParam(defaultValue = "0") int limit) {
+            @RequestParam(defaultValue = "50") int limit) {
         
         List<MailBoxDto> emails = emailService.readInbox(limit);
         return ResponseEntity.ok(emails);
