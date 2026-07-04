@@ -3,13 +3,15 @@ import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-d
 import api from '../api/axiosConfig';
 import { formatHongKongDateTime } from '../utils/hongKongTime';
 import { htmlToPlainPreview, looksLikeOidBody } from '../utils/emailTextPreview';
+import { toComposeDraft } from '../utils/emailCompose';
 import {
-    Alert, Avatar, Box, Button, Chip, CircularProgress, Divider,
+    Alert, Avatar, Box, Button, Chip, CircularProgress,
     IconButton, Paper, Tab, Table, TableBody, TableCell, TableContainer,
     TableHead, TablePagination, TableRow, TableSortLabel, Tabs, Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import EditIcon from '@mui/icons-material/Edit';
 import OutboxIcon from '@mui/icons-material/Outbox';
 import ScheduleIcon from '@mui/icons-material/Schedule';
@@ -115,6 +117,15 @@ export default function EmailOutbox() {
         setSearchParams(value === 'scheduled' ? { tab: 'scheduled' } : {});
     };
 
+    const handleCopyAsNewEmail = (email: EmailRecordSummary) => {
+        navigate('/emails/send', {
+            state: {
+                draft: toComposeDraft(email),
+                copySourceLabel: `Copied from "${email.subject || 'sent email'}". Edit recipients, subject, body, and attachments before sending.`,
+            },
+        });
+    };
+
     const handleSort = (field: SortField) => {
         if (sortField === field) {
             setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
@@ -180,6 +191,15 @@ export default function EmailOutbox() {
                             onClick={() => navigate(`/emails/scheduled/${selectedEmail.id}/edit`)}
                         >
                             Edit
+                        </Button>
+                    )}
+                    {tab === 'sent' && (
+                        <Button
+                            variant="contained"
+                            startIcon={<ContentCopyIcon />}
+                            onClick={() => handleCopyAsNewEmail(selectedEmail)}
+                        >
+                            Copy as new email
                         </Button>
                     )}
                 </Box>
@@ -377,23 +397,36 @@ export default function EmailOutbox() {
                                                 )}
                                             </TableCell>
                                             <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                                                {email.editable ? (
-                                                    <Button
-                                                        size="small"
-                                                        startIcon={<EditIcon />}
-                                                        onClick={() => navigate(`/emails/scheduled/${email.id}/edit`)}
-                                                    >
-                                                        Edit
-                                                    </Button>
-                                                ) : (
-                                                    <Button
-                                                        size="small"
-                                                        startIcon={<VisibilityIcon />}
-                                                        onClick={() => setSelectedEmail(email)}
-                                                    >
-                                                        View
-                                                    </Button>
-                                                )}
+                                                <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                                                    {email.editable ? (
+                                                        <Button
+                                                            size="small"
+                                                            startIcon={<EditIcon />}
+                                                            onClick={() => navigate(`/emails/scheduled/${email.id}/edit`)}
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                    ) : (
+                                                        <>
+                                                            {tab === 'sent' && (
+                                                                <Button
+                                                                    size="small"
+                                                                    startIcon={<ContentCopyIcon />}
+                                                                    onClick={() => handleCopyAsNewEmail(email)}
+                                                                >
+                                                                    Copy
+                                                                </Button>
+                                                            )}
+                                                            <Button
+                                                                size="small"
+                                                                startIcon={<VisibilityIcon />}
+                                                                onClick={() => setSelectedEmail(email)}
+                                                            >
+                                                                View
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </Box>
                                             </TableCell>
                                         </TableRow>
                                     );

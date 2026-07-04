@@ -46,6 +46,7 @@ public class EmailProducer {
                     }
                 }
             }
+            addValidatedReuseAttachmentPaths(emailDto.getReuseAttachmentPaths(), attachmentPaths);
 
             Long recordId = emailRecordJdbcRepository.insertEmail(
                     user.getId(),
@@ -80,6 +81,28 @@ public class EmailProducer {
         if (emailDto.getSendTime() != null && !emailDto.getSendTime().isAfter(AppTimeZone.now())) {
             throw new IllegalArgumentException(
                     "Scheduled send time must be in the future (" + AppTimeZone.LABEL + ").");
+        }
+    }
+
+    private void addValidatedReuseAttachmentPaths(List<String> reusePaths, List<String> attachmentPaths) {
+        if (reusePaths == null || reusePaths.isEmpty()) {
+            return;
+        }
+        Path uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
+        for (String reusePath : reusePaths) {
+            if (reusePath == null || reusePath.isBlank()) {
+                continue;
+            }
+            Path resolved = Paths.get(reusePath).toAbsolutePath().normalize();
+            if (!resolved.startsWith(uploadRoot)) {
+                throw new IllegalArgumentException("Invalid attachment path.");
+            }
+            if (!Files.exists(resolved)) {
+                throw new IllegalArgumentException("An attachment from the copied email is no longer available on the server.");
+            }
+            if (!attachmentPaths.contains(resolved.toString())) {
+                attachmentPaths.add(resolved.toString());
+            }
         }
     }
 }

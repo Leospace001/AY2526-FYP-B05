@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import EmailHtmlEditor from '../components/EmailHtmlEditor';
 import { htmlContainsBrokenEmbeddedImages } from '../utils/emailImageEmbed';
+import { attachmentFileName, type EmailComposeDraft } from '../utils/emailCompose';
 import { APP_TIME_ZONE_LABEL, toHongKongApiDateTime } from '../utils/hongKongTime';
+import type { EmailRecordSummary } from './EmailOutbox';
 import {
     Box, Typography, Paper, TextField, Button, Grid,
     CircularProgress, Snackbar, Alert, Divider, IconButton, List, ListItem, ListItemText,
@@ -15,8 +17,25 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const EMPTY_BODY = '<p></p>';
 
+function applyComposeDraft(
+    draft: EmailComposeDraft,
+    setRecipientString: (value: string) => void,
+    setSubject: (value: string) => void,
+    setHtmlBody: (value: string) => void,
+    setReusedAttachmentPaths: (value: string[]) => void,
+    setSendTime: (value: string) => void,
+) {
+    setRecipientString(draft.recipients.join(', '));
+    setSubject(draft.subject);
+    setHtmlBody(draft.body?.trim() || EMPTY_BODY);
+    setReusedAttachmentPaths(draft.attachmentPaths ?? []);
+    setSendTime('');
+}
+
 export default function SendEmail() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
 
     const [recipientString, setRecipientString] = useState('');
     const [subject, setSubject] = useState('');
@@ -24,6 +43,9 @@ export default function SendEmail() {
     const [htmlBody, setHtmlBody] = useState(EMPTY_BODY);
     const [isCodeView, setIsCodeView] = useState(false);
     const [attachments, setAttachments] = useState<File[]>([]);
+    const [reusedAttachmentPaths, setReusedAttachmentPaths] = useState<string[]>([]);
+    const [copySourceLabel, setCopySourceLabel] = useState('');
+    const [loadingDraft, setLoadingDraft] = useState(false);
 
     const [submitting, setSubmitting] = useState(false);
     const [snackbar, setSnackbar] = useState({
@@ -31,6 +53,61 @@ export default function SendEmail() {
         message: '',
         severity: 'success' as 'success' | 'error',
     });
+
+    useEffect(() => {
+        const draft = location.state?.draft as EmailComposeDraft | undefined;
+        if (draft) {
+            applyComposeDraft(
+                draft,
+                setRecipientString,
+                setSubject,
+                setHtmlBody,
+                setReusedAttachmentPaths,
+                setSendTime,
+            );
+            setCopySourceLabel(location.state?.copySourceLabel ?? 'Copied from a sent email. Edit anything before sending.');
+            return;
+        }
+
+        const copyFromId = searchParams.get('copyFrom');
+        if (!copyFromId) {
+            return;
+        }
+
+        const loadCopiedEmail = async () => {
+            setLoadingDraft(true);
+            try {
+                const response = await api.get<EmailRecordSummary>(`/api/emails/outbox/${copyFromId}`);
+                const email = response.data;
+                applyComposeDraft(
+                    {
+                        recipients: email.recipients ?? [],
+                        subject: email.subject ?? '',
+                        body: email.body ?? '',
+                        attachmentPaths: email.attachmentPaths ?? [],
+                    },
+                    setRecipientString,
+                    setSubject,
+                    setHtmlBody,
+                    setReusedAttachmentPaths,
+                    setSendTime,
+                );
+                setCopySourceLabel(`Copied from "${email.subject || 'sent email'}". Edit anything before sending.`);
+            } catch (err: unknown) {
+                console.error(err);
+                const apiErr = err as { response?: { data?: { message?: string } }; message?: string };
+                setSnackbar({
+                    open: true,
+                    message: apiErr.response?.data?.message ?? apiErr.message ?? 'Could not load the email to copy.',
+                    severity: 'error',
+                });
+            } finally {
+                setLoadingDraft(false);
+            }
+        };
+
+        loadCopiedEmail();
+    }, [location.state, searchParams]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -40,6 +117,10 @@ export default function SendEmail() {
 
     const removeAttachment = (indexToRemove: number) => {
         setAttachments((prev) => prev.filter((_, index) => index !== indexToRemove));
+    };
+
+    const removeReusedAttachment = (pathToRemove: string) => {
+        setReusedAttachmentPaths((prev) => prev.filter((path) => path !== pathToRemove));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -79,6 +160,7 @@ export default function SendEmail() {
             multipartPayload.append('sendTime', toHongKongApiDateTime(sendTime));
         }
         attachments.forEach((file) => multipartPayload.append('attachments', file));
+        reusedAttachmentPaths.forEach((path) => multipartPayload.append('reuseAttachmentPaths', path));
 
         try {
             const response = await api.post('/api/emails/send', multipartPayload);
@@ -90,8 +172,10 @@ export default function SendEmail() {
             setSubject('');
             setSendTime('');
             setAttachments([]);
+            setReusedAttachmentPaths([]);
             setHtmlBody(EMPTY_BODY);
             setIsCodeView(false);
+            setCopySourceLabel('');
         } catch (error: unknown) {
             console.error(error);
             const err = error as { response?: { data?: { message?: string } }; message?: string };
@@ -101,6 +185,14 @@ export default function SendEmail() {
             setSubmitting(false);
         }
     };
+
+    if (loadingDraft) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{ p: 3, maxWidth: '1100px', margin: '0 auto' }}>
@@ -112,6 +204,12 @@ export default function SendEmail() {
                     Compose Email
                 </Typography>
             </Box>
+
+            {copySourceLabel && (
+                <Alert severity="info" sx={{ mb: 3 }}>
+                    {copySourceLabel}
+                </Alert>
+            )}
 
             <Paper component="form" onSubmit={handleSubmit} sx={{ p: 4, borderRadius: 3, boxShadow: 3 }}>
                 <Grid container spacing={3}>
@@ -166,10 +264,37 @@ export default function SendEmail() {
                         </Button>
                     </Grid>
 
+                    {reusedAttachmentPaths.length > 0 && (
+                        <Grid size={{ xs: 12 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                Attachments from copied email ({reusedAttachmentPaths.length})
+                            </Typography>
+                            <Paper variant="outlined" sx={{ bgcolor: '#fafafa', borderRadius: 2, maxHeight: 150, overflowY: 'auto' }}>
+                                <List dense>
+                                    {reusedAttachmentPaths.map((path) => (
+                                        <ListItem
+                                            key={path}
+                                            secondaryAction={
+                                                <IconButton edge="end" color="error" onClick={() => removeReusedAttachment(path)}>
+                                                    <DeleteIcon />
+                                                </IconButton>
+                                            }
+                                        >
+                                            <ListItemText
+                                                primary={attachmentFileName(path)}
+                                                secondary="Reused from the original sent email"
+                                            />
+                                        </ListItem>
+                                    ))}
+                                </List>
+                            </Paper>
+                        </Grid>
+                    )}
+
                     {attachments.length > 0 && (
                         <Grid size={{ xs: 12 }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                                Attachments ({attachments.length})
+                                New attachments ({attachments.length})
                             </Typography>
                             <Paper variant="outlined" sx={{ bgcolor: '#fafafa', borderRadius: 2, maxHeight: 150, overflowY: 'auto' }}>
                                 <List dense>

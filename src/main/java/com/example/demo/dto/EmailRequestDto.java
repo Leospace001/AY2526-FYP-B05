@@ -31,6 +31,9 @@ public class EmailRequestDto {
     @Schema(description = "Email attachment(s)", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private List<MultipartFile> attachments = new ArrayList<>();
 
+    @Schema(description = "Existing attachment paths to reuse from a copied sent email")
+    private List<String> reuseAttachmentPaths = new ArrayList<>();
+
     @Schema(
         description = "Scheduled send time in Hong Kong Time (HKT, UTC+8). Leave blank to send immediately.",
         requiredMode = Schema.RequiredMode.NOT_REQUIRED,
