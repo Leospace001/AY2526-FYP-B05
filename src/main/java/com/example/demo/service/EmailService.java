@@ -162,6 +162,14 @@ public class EmailService {
                 dto.setCc(extractAddressList(msg.getRecipients(Message.RecipientType.CC)));
                 dto.setBcc(extractAddressList(msg.getRecipients(Message.RecipientType.BCC)));
 
+                java.util.Date received = msg.getReceivedDate();
+                if (received == null) {
+                    received = msg.getSentDate();
+                }
+                if (received != null) {
+                    dto.setReceivedAt(received.toInstant());
+                }
+
                 parseMessageContent(msg, dto, true);
                 emailList.add(dto);
             }

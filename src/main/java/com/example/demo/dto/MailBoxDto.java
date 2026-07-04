@@ -1,5 +1,6 @@
 package com.example.demo.dto;
 
+import java.time.Instant;
 import java.util.*;
 import lombok.*;
 
@@ -11,6 +12,6 @@ public class MailBoxDto {
     private List<String> bcc = new ArrayList<>();
     private String subject;
     private String body;
+    private Instant receivedAt;
     private List<EmailAttachmentDto> attachments = new ArrayList<>();
-    
 }

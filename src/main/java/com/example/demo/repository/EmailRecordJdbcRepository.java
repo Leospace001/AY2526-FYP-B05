@@ -5,20 +5,15 @@ import com.example.demo.dto.EmailRecordSummaryDto;
 import com.example.demo.dto.EmailSendDetails;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
-import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -55,32 +50,24 @@ public class EmailRecordJdbcRepository {
             String body,
             List<String> attachmentPaths,
             LocalDateTime scheduledSendTime) {
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(
-                    """
-                            INSERT INTO email_records
-                              (recipients, subject, body, attachment_paths, created_by, scheduled_send_time, sent, dispatched)
-                            VALUES (?::jsonb, ?, ?, ?::jsonb, ?, ?, false, false)
-                            """,
-                    Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, toJson(recipients));
-            ps.setString(2, subject);
-            ps.setString(3, body);
-            ps.setString(4, toJson(attachmentPaths != null ? attachmentPaths : List.of()));
-            ps.setLong(5, userId);
-            if (scheduledSendTime != null) {
-                ps.setTimestamp(6, Timestamp.valueOf(scheduledSendTime));
-            } else {
-                ps.setNull(6, Types.TIMESTAMP);
-            }
-            return ps;
-        }, keyHolder);
-        Number key = keyHolder.getKey();
-        if (key == null) {
+        Long id = jdbcTemplate.queryForObject(
+                """
+                        INSERT INTO email_records
+                          (recipients, subject, body, attachment_paths, created_by, scheduled_send_time, sent, dispatched)
+                        VALUES (?::jsonb, ?, ?, ?::jsonb, ?, ?, false, false)
+                        RETURNING id
+                        """,
+                Long.class,
+                toJson(recipients),
+                subject,
+                body,
+                toJson(attachmentPaths != null ? attachmentPaths : List.of()),
+                userId,
+                scheduledSendTime != null ? Timestamp.valueOf(scheduledSendTime) : null);
+        if (id == null) {
             throw new IllegalStateException("Could not save email record.");
         }
-        return key.longValue();
+        return id;
     }
 
     public List<EmailRecordSummaryDto> findSentByUser(Long userId) {
