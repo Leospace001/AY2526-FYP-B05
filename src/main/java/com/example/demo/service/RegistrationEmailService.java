@@ -59,7 +59,8 @@ public class RegistrationEmailService {
                     htmlContent,
                     null,
                     null,
-                    null
+                    null,
+                    EmailTemplate.WELCOME_REGISTRATION
             );
             emailProducer.sendEmailToQueue(request, user);
         } catch (Exception ex) {

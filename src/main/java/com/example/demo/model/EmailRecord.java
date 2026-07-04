@@ -50,4 +50,13 @@ public class EmailRecord {
 
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean dispatched;
+
+    @Column(name = "template_key")
+    private String templateKey;
+
+    @Column(name = "sender_name")
+    private String senderName;
+
+    @Column(name = "created_by_username")
+    private String createdByUsername;
 }

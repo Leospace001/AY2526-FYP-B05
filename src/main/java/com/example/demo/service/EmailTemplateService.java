@@ -119,6 +119,15 @@ public class EmailTemplateService {
         return getRequiredTemplate(templateKey).getSubject();
     }
 
+    public String resolveDisplayName(String templateKey) {
+        if (templateKey == null || templateKey.isBlank()) {
+            return null;
+        }
+        return emailTemplateRepository.findByTemplateKey(templateKey)
+                .map(EmailTemplate::getDisplayName)
+                .orElse(templateKey);
+    }
+
     public String previewHtml(String templateKey, String htmlContent) {
         if (!DEFAULTS.containsKey(templateKey)) {
             throw new IllegalArgumentException("Unknown email template: " + templateKey);

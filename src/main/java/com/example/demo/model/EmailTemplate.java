@@ -24,6 +24,7 @@ public class EmailTemplate {
 
     public static final String FORGOT_PASSWORD = "forgot_password";
     public static final String WELCOME_REGISTRATION = "welcome_registration";
+    public static final String SYSTEM_SENDER = "SYSTEM";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import com.example.demo.config.AppTimeZone;
 import com.example.demo.dto.EmailRequestDto;
+import com.example.demo.model.EmailTemplate;
 import com.example.demo.model.User;
 import com.example.demo.repository.EmailRecordJdbcRepository;
 
@@ -48,13 +49,21 @@ public class EmailProducer {
             }
             addValidatedReuseAttachmentPaths(emailDto.getReuseAttachmentPaths(), attachmentPaths);
 
+            String templateKey = normalizeOptional(emailDto.getTemplateKey());
+            String senderName = templateKey != null
+                    ? EmailTemplate.SYSTEM_SENDER
+                    : user.getUsername();
+
             Long recordId = emailRecordJdbcRepository.insertEmail(
                     user.getId(),
                     new ArrayList<>(emailDto.getRecipients()),
                     emailDto.getSubject(),
                     emailDto.getBody(),
                     attachmentPaths,
-                    emailDto.getSendTime());
+                    emailDto.getSendTime(),
+                    templateKey,
+                    senderName,
+                    user.getUsername());
 
             emailDispatchService.dispatchIfDue(recordId, emailDto.getSendTime());
             logger.info("Successfully saved email record ID: {}", recordId);
@@ -104,5 +113,12 @@ public class EmailProducer {
                 attachmentPaths.add(resolved.toString());
             }
         }
+    }
+
+    private static String normalizeOptional(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 }

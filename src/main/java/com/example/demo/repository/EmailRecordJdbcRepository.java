@@ -32,7 +32,10 @@ public class EmailRecordJdbcRepository {
                    created_at,
                    updated_at,
                    sent,
-                   dispatched
+                   dispatched,
+                   template_key,
+                   sender_name,
+                   created_by_username
             FROM email_records
             """;
 
@@ -49,13 +52,16 @@ public class EmailRecordJdbcRepository {
             String subject,
             String body,
             List<String> attachmentPaths,
-            LocalDateTime scheduledSendTime) {
+            LocalDateTime scheduledSendTime,
+            String templateKey,
+            String senderName,
+            String createdByUsername) {
         Long id = jdbcTemplate.queryForObject(
                 """
                         INSERT INTO email_records
                           (recipients, subject, body, attachment_paths, created_by, scheduled_send_time,
-                           sent, dispatched, created_at, updated_at)
-                        VALUES (?::jsonb, ?, ?, ?::jsonb, ?, ?, false, false, ?, ?)
+                           sent, dispatched, created_at, updated_at, template_key, sender_name, created_by_username)
+                        VALUES (?::jsonb, ?, ?, ?::jsonb, ?, ?, false, false, ?, ?, ?, ?, ?)
                         RETURNING id
                         """,
                 Long.class,
@@ -66,7 +72,10 @@ public class EmailRecordJdbcRepository {
                 userId,
                 scheduledSendTime != null ? Timestamp.valueOf(scheduledSendTime) : null,
                 Timestamp.valueOf(AppTimeZone.now()),
-                Timestamp.valueOf(AppTimeZone.now()));
+                Timestamp.valueOf(AppTimeZone.now()),
+                templateKey,
+                senderName,
+                createdByUsername);
         if (id == null) {
             throw new IllegalStateException("Could not save email record.");
         }
@@ -237,6 +246,10 @@ public class EmailRecordJdbcRepository {
                 dispatched,
                 isEditable(scheduledSendTime, sent, dispatched),
                 parseRecipients(rs.getString("attachment_paths_json")),
+                rs.getString("sender_name"),
+                rs.getString("created_by_username"),
+                rs.getString("template_key"),
+                null,
                 AppTimeZone.ID);
     }
 

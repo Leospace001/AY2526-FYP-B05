@@ -21,25 +21,29 @@ public class EmailRecordService {
     @Autowired
     private EmailDispatchService emailDispatchService;
 
+    @Autowired
+    private EmailTemplateService emailTemplateService;
+
     @Transactional(readOnly = true)
     public List<EmailRecordSummaryDto> listSentByUser(User user) {
-        return emailRecordJdbcRepository.findSentByUser(user.getId());
+        return enrichSummaries(emailRecordJdbcRepository.findSentByUser(user.getId()));
     }
 
     @Transactional(readOnly = true)
     public List<EmailRecordSummaryDto> listScheduledByUser(User user) {
-        return emailRecordJdbcRepository.findScheduledByUser(user.getId(), AppTimeZone.now());
+        return enrichSummaries(emailRecordJdbcRepository.findScheduledByUser(user.getId(), AppTimeZone.now()));
     }
 
     @Transactional(readOnly = true)
     public List<EmailRecordSummaryDto> listOutboxByUser(User user) {
-        return emailRecordJdbcRepository.findOutboxByUser(user.getId());
+        return enrichSummaries(emailRecordJdbcRepository.findOutboxByUser(user.getId()));
     }
 
     @Transactional(readOnly = true)
     public EmailRecordSummaryDto getOutboxItem(User user, Long id) {
-        return emailRecordJdbcRepository.findSummaryByIdAndUser(id, user.getId())
+        EmailRecordSummaryDto summary = emailRecordJdbcRepository.findSummaryByIdAndUser(id, user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Email not found."));
+        return enrichSummary(summary);
     }
 
     @Transactional
@@ -87,5 +91,17 @@ public class EmailRecordService {
         for (Long recordId : emailRecordJdbcRepository.findDueRecordIds(AppTimeZone.now())) {
             emailDispatchService.dispatchToQueue(recordId);
         }
+    }
+
+    private List<EmailRecordSummaryDto> enrichSummaries(List<EmailRecordSummaryDto> summaries) {
+        summaries.forEach(this::enrichSummary);
+        return summaries;
+    }
+
+    private EmailRecordSummaryDto enrichSummary(EmailRecordSummaryDto summary) {
+        if (summary.getTemplateKey() != null && !summary.getTemplateKey().isBlank()) {
+            summary.setTemplateDisplayName(emailTemplateService.resolveDisplayName(summary.getTemplateKey()));
+        }
+        return summary;
     }
 }

@@ -30,6 +30,10 @@ export interface EmailRecordSummary {
     dispatched: boolean;
     editable: boolean;
     attachmentPaths?: string[];
+    senderName?: string | null;
+    createdByUsername?: string | null;
+    templateKey?: string | null;
+    templateDisplayName?: string | null;
     timeZone?: string;
 }
 
@@ -46,6 +50,10 @@ function formatRecipients(values: string[] | undefined): string {
         return '—';
     }
     return values.join(', ');
+}
+
+function formatSender(name: string | null | undefined): string {
+    return name && name.trim() ? name : '—';
 }
 
 function compareStrings(a: string, b: string): number {
@@ -206,8 +214,19 @@ export default function EmailOutbox() {
 
                 <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 3, mb: 3 }}>
                     <Typography variant="body1" sx={{ mb: 1 }}>
+                        <strong>From:</strong> {formatSender(selectedEmail.senderName)}
+                    </Typography>
+                    <Typography variant="body1" sx={{ mb: 1 }}>
+                        <strong>Created by:</strong> {formatSender(selectedEmail.createdByUsername)}
+                    </Typography>
+                    <Typography variant="body1" sx={{ mb: 1 }}>
                         <strong>To:</strong> {formatRecipients(selectedEmail.recipients)}
                     </Typography>
+                    {selectedEmail.templateDisplayName && (
+                        <Typography variant="body1" sx={{ mb: 1 }}>
+                            <strong>Template:</strong> {selectedEmail.templateDisplayName}
+                        </Typography>
+                    )}
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                         <strong>Created:</strong> {formatHongKongDateTime(selectedEmail.createdAt)}
                     </Typography>
@@ -309,6 +328,8 @@ export default function EmailOutbox() {
                                         {dateColumnLabel}
                                     </TableSortLabel>
                                 </TableCell>
+                                <TableCell>From</TableCell>
+                                <TableCell>Created by</TableCell>
                                 <TableCell sortDirection={sortField === 'to' ? sortDirection : false}>
                                     <TableSortLabel
                                         active={sortField === 'to'}
@@ -327,6 +348,7 @@ export default function EmailOutbox() {
                                         Subject
                                     </TableSortLabel>
                                 </TableCell>
+                                <TableCell>Template</TableCell>
                                 <TableCell sortDirection={sortField === 'status' ? sortDirection : false}>
                                     <TableSortLabel
                                         active={sortField === 'status'}
@@ -342,13 +364,13 @@ export default function EmailOutbox() {
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
                                         <CircularProgress size={32} />
                                     </TableCell>
                                 </TableRow>
                             ) : paginatedEmails.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} align="center" sx={{ py: 5, color: '#7f8c8d' }}>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 5, color: '#7f8c8d' }}>
                                         {emptyMessage}
                                     </TableCell>
                                 </TableRow>
@@ -367,6 +389,12 @@ export default function EmailOutbox() {
                                             <TableCell sx={{ whiteSpace: 'nowrap' }}>
                                                 {formatHongKongDateTime(rowDateTime(email, tab))}
                                             </TableCell>
+                                            <TableCell sx={{ maxWidth: 120, wordBreak: 'break-word' }}>
+                                                {formatSender(email.senderName)}
+                                            </TableCell>
+                                            <TableCell sx={{ maxWidth: 120, wordBreak: 'break-word' }}>
+                                                {formatSender(email.createdByUsername)}
+                                            </TableCell>
                                             <TableCell sx={{ maxWidth: 220, wordBreak: 'break-word' }}>
                                                 {formatRecipients(email.recipients)}
                                             </TableCell>
@@ -383,6 +411,13 @@ export default function EmailOutbox() {
                                                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                                                         {attachmentCount} attachment{attachmentCount === 1 ? '' : 's'}
                                                     </Typography>
+                                                )}
+                                            </TableCell>
+                                            <TableCell sx={{ maxWidth: 160, wordBreak: 'break-word' }}>
+                                                {email.templateDisplayName ? (
+                                                    <Chip size="small" label={email.templateDisplayName} variant="outlined" />
+                                                ) : (
+                                                    '—'
                                                 )}
                                             </TableCell>
                                             <TableCell>

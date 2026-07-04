@@ -62,6 +62,10 @@ public class EmailRecordSchemaMigration implements ApplicationRunner {
 
         dropLegacyCollectionTables();
         backfillMissingTimestamps();
+        ensureOptionalTextColumn("template_key");
+        ensureOptionalTextColumn("sender_name");
+        ensureOptionalTextColumn("created_by_username");
+        backfillCreatedByUsername();
         log.info("EmailRecord schema uses jsonb columns on email_records (legacy collection tables removed if present).");
     }
 
@@ -78,6 +82,32 @@ public class EmailRecordSchemaMigration implements ApplicationRunner {
                         SET updated_at = COALESCE(updated_at, created_at, scheduled_send_time, NOW())
                         WHERE sent = true AND updated_at IS NULL
                         """);
+    }
+
+    private void ensureOptionalTextColumn(String columnName) {
+        if (!columnExists("email_records", columnName)) {
+            jdbcTemplate.execute("ALTER TABLE email_records ADD COLUMN " + columnName + " TEXT");
+            log.info("Added email_records.{} column", columnName);
+        }
+    }
+
+    private void backfillCreatedByUsername() {
+        if (!columnExists("email_records", "created_by_username")
+                || !columnExists("email_records", "created_by")
+                || !tableExists("users")) {
+            return;
+        }
+        int updated = jdbcTemplate.update(
+                """
+                        UPDATE email_records er
+                        SET created_by_username = u.username
+                        FROM users u
+                        WHERE er.created_by = u.id
+                          AND (er.created_by_username IS NULL OR btrim(er.created_by_username) = '')
+                        """);
+        if (updated > 0) {
+            log.info("Backfilled created_by_username for {} email record(s)", updated);
+        }
     }
 
     private void ensureBodyTextColumn() {

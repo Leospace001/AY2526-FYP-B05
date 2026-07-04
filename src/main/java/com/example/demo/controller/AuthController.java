@@ -168,7 +168,8 @@ public class AuthController {
                 htmlContent,
                 null,
                 null,
-                null
+                null,
+                EmailTemplate.FORGOT_PASSWORD
             );
             userService.createPasswordResetTokenForUser(user, token);
             emailProducer.sendEmailToQueue(request, user);

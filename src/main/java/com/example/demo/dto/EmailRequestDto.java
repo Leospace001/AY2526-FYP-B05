@@ -40,6 +40,9 @@ public class EmailRequestDto {
         defaultValue = "2026-12-27T10:15:30")
     private LocalDateTime sendTime;
 
+    @Schema(description = "Email template key when sent from a system template", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String templateKey;
+
     /** Accepts datetime-local values and ISO strings from the frontend. */
     public void setSendTime(String sendTime) {
         if (sendTime == null || sendTime.isBlank()) {
