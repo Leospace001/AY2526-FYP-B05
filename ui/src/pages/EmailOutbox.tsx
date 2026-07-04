@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axiosConfig';
+import { formatHongKongDateTime } from '../utils/hongKongTime';
 import {
     Alert, Avatar, Box, Button, Chip, CircularProgress, Divider,
     IconButton, List, ListItem, ListItemButton, ListItemText, Paper, Tab, Tabs, Typography,
@@ -22,16 +23,10 @@ export interface EmailRecordSummary {
     sent: boolean;
     dispatched: boolean;
     editable: boolean;
+    timeZone?: string;
 }
 
 type OutboxTab = 'sent' | 'scheduled';
-
-function formatDateTime(value: string | null): string {
-    if (!value) return '—';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleString();
-}
 
 export default function EmailOutbox() {
     const navigate = useNavigate();
@@ -163,8 +158,8 @@ export default function EmailOutbox() {
                                                         </Typography>
                                                         <Typography component="span" variant="body2" sx={{ display: 'block', color: 'text.secondary', mt: 0.5 }}>
                                                             {tab === 'scheduled'
-                                                                ? `Scheduled: ${formatDateTime(email.scheduledSendTime)}`
-                                                                : `Sent: ${formatDateTime(email.updatedAt)}`}
+                                                                ? `Scheduled: ${formatHongKongDateTime(email.scheduledSendTime)}`
+                                                                : `Sent: ${formatHongKongDateTime(email.updatedAt)}`}
                                                         </Typography>
                                                     </>
                                                 }

@@ -2,7 +2,8 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -17,8 +18,8 @@ public class EmailRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ElementCollection
-    private List<String> recipients;
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Set<String> recipients = new LinkedHashSet<>();
 
     private String subject;
 
@@ -26,8 +27,8 @@ public class EmailRecord {
     @Column(columnDefinition = "TEXT")
     private String body;
 
-    @ElementCollection
-    private List<String> attachmentPaths;
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Set<String> attachmentPaths = new LinkedHashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")

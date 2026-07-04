@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import com.example.demo.config.AppTimeZone;
 import com.example.demo.dto.EmailRequestDto;
 import com.example.demo.mapper.EmailRecordMapper;
 import com.example.demo.model.EmailRecord;
@@ -38,7 +40,7 @@ public class EmailProducer {
         validateEmailRequest(emailDto);
 
         EmailRecord record = emailRecordMapper.emailRequestDtoToEmailRecord(emailDto);
-        record.setRecipients(emailDto.getRecipients());
+        record.setRecipients(new LinkedHashSet<>(emailDto.getRecipients()));
         record.setScheduledSendTime(emailDto.getSendTime());
         record.setCreatedBy(user);
         record.setSent(false);
@@ -56,7 +58,7 @@ public class EmailProducer {
                         attachmentPaths.add(targetPath.toString());
                     }
                 }
-                record.setAttachmentPaths(attachmentPaths);
+                record.setAttachmentPaths(new LinkedHashSet<>(attachmentPaths));
             }
 
             record = emailRecordRepository.save(record);
@@ -82,8 +84,9 @@ public class EmailProducer {
         if (emailDto.getBody() == null || emailDto.getBody().isBlank()) {
             throw new IllegalArgumentException("Email body is required.");
         }
-        if (emailDto.getSendTime() != null && !emailDto.getSendTime().isAfter(java.time.LocalDateTime.now())) {
-            throw new IllegalArgumentException("Scheduled send time must be in the future.");
+        if (emailDto.getSendTime() != null && !emailDto.getSendTime().isAfter(AppTimeZone.now())) {
+            throw new IllegalArgumentException(
+                    "Scheduled send time must be in the future (" + AppTimeZone.LABEL + ").");
         }
     }
 }

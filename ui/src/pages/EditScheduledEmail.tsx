@@ -5,6 +5,11 @@ import EmailHtmlEditor from '../components/EmailHtmlEditor';
 import { htmlContainsBrokenEmbeddedImages } from '../utils/emailImageEmbed';
 import type { EmailRecordSummary } from './EmailOutbox';
 import {
+    APP_TIME_ZONE_LABEL,
+    toHongKongApiDateTime,
+    toHongKongDatetimeLocalValue,
+} from '../utils/hongKongTime';
+import {
     Alert, Box, Button, CircularProgress, Divider, Grid,
     Paper, Snackbar, TextField, Typography,
 } from '@mui/material';
@@ -13,15 +18,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
 
 const EMPTY_BODY = '<p></p>';
-
-function toDatetimeLocalValue(value: string | null): string {
-    if (!value) return '';
-    return value.slice(0, 16);
-}
-
-function toApiSendTime(value: string): string {
-    return value.length === 16 ? `${value}:00` : value;
-}
 
 export default function EditScheduledEmail() {
     const { id } = useParams<{ id: string }>();
@@ -55,7 +51,7 @@ export default function EditScheduledEmail() {
                 }
                 setRecipientString(email.recipients?.join(', ') ?? '');
                 setSubject(email.subject ?? '');
-                setSendTime(toDatetimeLocalValue(email.scheduledSendTime));
+                setSendTime(toHongKongDatetimeLocalValue(email.scheduledSendTime));
                 setHtmlBody(email.body?.trim() || EMPTY_BODY);
             } catch (err: unknown) {
                 console.error(err);
@@ -109,7 +105,7 @@ export default function EditScheduledEmail() {
                 recipients: recipientsArray,
                 subject,
                 body: htmlBody,
-                sendTime: toApiSendTime(sendTime),
+                sendTime: toHongKongApiDateTime(sendTime),
             });
             setSnackbar({ open: true, message: 'Scheduled email updated.', severity: 'success' });
             setTimeout(() => navigate('/emails/outbox?tab=scheduled'), 800);
@@ -223,10 +219,11 @@ export default function EditScheduledEmail() {
                             required
                             fullWidth
                             type="datetime-local"
-                            label="Scheduled send time"
+                            label={`Scheduled send time (${APP_TIME_ZONE_LABEL})`}
                             value={sendTime}
                             onChange={(e) => setSendTime(e.target.value)}
                             slotProps={{ inputLabel: { shrink: true } }}
+                            helperText={`The email will be sent at this time in ${APP_TIME_ZONE_LABEL}.`}
                         />
                     </Grid>
 

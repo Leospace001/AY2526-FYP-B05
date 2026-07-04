@@ -1,11 +1,13 @@
 package com.example.demo.service;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.demo.config.AppTimeZone;
 import com.example.demo.dto.EmailRecordSummaryDto;
 import com.example.demo.dto.UpdateScheduledEmailDto;
 import com.example.demo.model.EmailRecord;
@@ -33,7 +35,7 @@ public class EmailRecordService {
     public List<EmailRecordSummaryDto> listScheduledByUser(User user) {
         return emailRecordRepository
                 .findByCreatedBy_IdAndSentFalseAndScheduledSendTimeNotNullAndScheduledSendTimeAfterOrderByScheduledSendTimeAsc(
-                        user.getId(), LocalDateTime.now())
+                        user.getId(), AppTimeZone.now())
                 .stream()
                 .map(this::toSummaryDto)
                 .toList();
@@ -68,11 +70,12 @@ public class EmailRecordService {
         if (update.getBody() == null || update.getBody().isBlank()) {
             throw new IllegalArgumentException("Email body is required.");
         }
-        if (update.getSendTime() == null || !update.getSendTime().isAfter(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Scheduled send time must be in the future.");
+        if (update.getSendTime() == null || !update.getSendTime().isAfter(AppTimeZone.now())) {
+            throw new IllegalArgumentException(
+                    "Scheduled send time must be in the future (" + AppTimeZone.LABEL + ").");
         }
 
-        record.setRecipients(update.getRecipients());
+        record.setRecipients(new LinkedHashSet<>(update.getRecipients()));
         record.setSubject(update.getSubject().trim());
         record.setBody(update.getBody());
         record.setScheduledSendTime(update.getSendTime());
@@ -92,7 +95,7 @@ public class EmailRecordService {
     @Transactional
     public void dispatchDueScheduledEmails() {
         List<EmailRecord> dueRecords = emailRecordRepository
-                .findBySentFalseAndDispatchedFalseAndScheduledSendTimeLessThanEqual(LocalDateTime.now());
+                .findBySentFalseAndDispatchedFalseAndScheduledSendTimeLessThanEqual(AppTimeZone.now());
         for (EmailRecord record : dueRecords) {
             emailDispatchService.dispatchToQueue(record);
         }
@@ -107,13 +110,13 @@ public class EmailRecordService {
         return !record.isSent()
                 && !record.isDispatched()
                 && record.getScheduledSendTime() != null
-                && record.getScheduledSendTime().isAfter(LocalDateTime.now());
+                && record.getScheduledSendTime().isAfter(AppTimeZone.now());
     }
 
     private EmailRecordSummaryDto toSummaryDto(EmailRecord record) {
         return new EmailRecordSummaryDto(
                 record.getId(),
-                record.getRecipients(),
+                new ArrayList<>(record.getRecipients()),
                 record.getSubject(),
                 record.getBody(),
                 record.getScheduledSendTime(),
@@ -121,6 +124,7 @@ public class EmailRecordService {
                 record.getUpdatedAt(),
                 record.isSent(),
                 record.isDispatched(),
-                isEditable(record));
+                isEditable(record),
+                AppTimeZone.ID);
     }
 }

@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.demo.config.AppTimeZone;
 import com.example.demo.dto.EmailAttachmentDto;
 import com.example.demo.dto.EmailMessageDto;
 import com.example.demo.dto.MailBoxDto;
@@ -75,7 +76,7 @@ public class EmailService {
         }
 
         if (record.getScheduledSendTime() != null
-                && record.getScheduledSendTime().isAfter(java.time.LocalDateTime.now())) {
+                && record.getScheduledSendTime().isAfter(AppTimeZone.now())) {
             userActivityLogger.info("Email record {} is not due yet, skipping.", record.getId());
             record.setDispatched(false);
             emailRecordRepository.save(record);

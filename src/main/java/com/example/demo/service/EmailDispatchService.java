@@ -1,13 +1,6 @@
 package com.example.demo.service;
 
-import java.time.LocalDateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.example.demo.config.AppTimeZone;
 import com.example.demo.dto.EmailMessageDto;
 import com.example.demo.model.EmailRecord;
 import com.example.demo.repository.EmailRecordRepository;
@@ -34,7 +27,7 @@ public class EmailDispatchService {
         if (record.isSent() || record.isDispatched()) {
             return;
         }
-        if (record.getScheduledSendTime() != null && record.getScheduledSendTime().isAfter(LocalDateTime.now())) {
+        if (record.getScheduledSendTime() != null && record.getScheduledSendTime().isAfter(AppTimeZone.now())) {
             return;
         }
         dispatchToQueue(record);

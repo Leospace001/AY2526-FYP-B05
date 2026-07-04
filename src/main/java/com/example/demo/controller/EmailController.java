@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import com.example.demo.config.AppTimeZone;
 import com.example.demo.dto.EmailRecordSummaryDto;
 import com.example.demo.dto.EmailRequestDto;
 import com.example.demo.dto.MailBoxDto;
@@ -101,7 +102,7 @@ public class EmailController {
         emailProducer.sendEmailToQueue(request, user);
 
         if (request.getSendTime() != null) {
-            return ResponseEntity.ok("Email scheduled successfully");
+            return ResponseEntity.ok("Email scheduled successfully (" + AppTimeZone.LABEL + ")");
         }
         return ResponseEntity.ok("Email queued successfully");
     }

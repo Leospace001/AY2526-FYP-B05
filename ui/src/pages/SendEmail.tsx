@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import EmailHtmlEditor from '../components/EmailHtmlEditor';
 import { htmlContainsBrokenEmbeddedImages } from '../utils/emailImageEmbed';
+import { APP_TIME_ZONE_LABEL, toHongKongApiDateTime } from '../utils/hongKongTime';
 import {
     Box, Typography, Paper, TextField, Button, Grid,
     CircularProgress, Snackbar, Alert, Divider, IconButton, List, ListItem, ListItemText,
@@ -75,8 +76,7 @@ export default function SendEmail() {
         multipartPayload.append('body', htmlBody);
 
         if (sendTime) {
-            // datetime-local value — keep as local time; do not convert to UTC ISO
-            multipartPayload.append('sendTime', sendTime.length === 16 ? `${sendTime}:00` : sendTime);
+            multipartPayload.append('sendTime', toHongKongApiDateTime(sendTime));
         }
         attachments.forEach((file) => multipartPayload.append('attachments', file));
 
@@ -152,11 +152,11 @@ export default function SendEmail() {
                         <TextField
                             fullWidth
                             type="datetime-local"
-                            label="Schedule send (optional)"
+                            label={`Schedule send (${APP_TIME_ZONE_LABEL})`}
                             value={sendTime}
                             onChange={(e) => setSendTime(e.target.value)}
                             slotProps={{ inputLabel: { shrink: true } }}
-                            helperText="Leave empty to send immediately"
+                            helperText={`Optional. Enter the date and time in ${APP_TIME_ZONE_LABEL}. Leave empty to send immediately.`}
                         />
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>

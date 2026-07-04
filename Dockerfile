@@ -16,5 +16,6 @@ FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
+ENV TZ=Asia/Hong_Kong
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Duser.timezone=Asia/Hong_Kong", "-jar", "app.jar"]

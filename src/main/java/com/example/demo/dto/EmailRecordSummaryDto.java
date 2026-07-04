@@ -1,5 +1,6 @@
 package com.example.demo.dto;
 
+import com.example.demo.config.AppTimeZone;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -22,4 +23,5 @@ public class EmailRecordSummaryDto {
     private boolean sent;
     private boolean dispatched;
     private boolean editable;
+    private String timeZone = AppTimeZone.ID;
 }
