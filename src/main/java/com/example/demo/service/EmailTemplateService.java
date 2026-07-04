@@ -57,13 +57,21 @@ public class EmailTemplateService {
     @Transactional
     public void seedDefaultsIfMissing() {
         DEFAULTS.forEach((key, defaults) -> {
-            if (emailTemplateRepository.findByTemplateKey(key).isEmpty()) {
+            var existing = emailTemplateRepository.findByTemplateKey(key);
+            if (existing.isEmpty()) {
                 emailTemplateRepository.save(EmailTemplate.builder()
                         .templateKey(key)
                         .displayName(defaults.displayName())
                         .subject(defaults.subject())
                         .htmlContent(readClasspathTemplate(defaults.classpathLocation()))
                         .build());
+                return;
+            }
+
+            EmailTemplate template = existing.get();
+            if (looksLikeBrokenHtmlContent(template.getHtmlContent())) {
+                template.setHtmlContent(readClasspathTemplate(defaults.classpathLocation()));
+                emailTemplateRepository.save(template);
             }
         });
     }
@@ -182,6 +190,14 @@ public class EmailTemplateService {
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to load default template: " + classpathLocation, ex);
         }
+    }
+
+    private static boolean looksLikeBrokenHtmlContent(String content) {
+        if (content == null || content.isBlank()) {
+            return true;
+        }
+        String trimmed = content.trim();
+        return trimmed.matches("\\d+") || !trimmed.contains("<");
     }
 
     private record TemplateDefaults(

@@ -27,6 +27,9 @@ import com.example.demo.model.UserIdentity;
 @Getter
 public class UserService {
 
+    private static final Set<String> ALLOWED_USER_SORT_FIELDS = Set.of(
+            "username", "firstname", "lastname", "email", "createdAt", "updatedAt", "active");
+
     @Autowired
     private UserRepository userRepository;
 
@@ -92,9 +95,10 @@ public class UserService {
     }
 
     public Page<UserInfo> getPaginatedUsers(int page, int size, String sortBy, String sortDir) {
-        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) 
-                    ? Sort.by(sortBy).ascending() 
-                    : Sort.by(sortBy).descending();
+        String sortField = ALLOWED_USER_SORT_FIELDS.contains(sortBy) ? sortBy : "username";
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name())
+                    ? Sort.by(sortField).ascending()
+                    : Sort.by(sortField).descending();
                     
         Pageable pageable = PageRequest.of(page, size, sort);
         Page<User> userPage = userRepository.findAll(pageable);

@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -39,7 +38,6 @@ public class EmailTemplate {
     @Column(nullable = false)
     private String subject;
 
-    @Lob
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(name = "html_content", nullable = false, columnDefinition = "TEXT")
     private String htmlContent;
 }

@@ -1,6 +1,7 @@
 package com.example.demo.dto;
 
 import lombok.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,5 +33,8 @@ public class UserInfo {
 
     private String avatarPath;
     private String avatarUrl;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     
 }
