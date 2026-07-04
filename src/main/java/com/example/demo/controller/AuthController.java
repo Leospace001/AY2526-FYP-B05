@@ -167,6 +167,7 @@ public class AuthController {
                 emailTemplateService.getSubject(EmailTemplate.FORGOT_PASSWORD),
                 htmlContent,
                 null,
+                null,
                 null
             );
             userService.createPasswordResetTokenForUser(user, token);

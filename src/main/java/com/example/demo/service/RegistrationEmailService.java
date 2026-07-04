@@ -58,6 +58,7 @@ public class RegistrationEmailService {
                     emailTemplateService.getSubject(EmailTemplate.WELCOME_REGISTRATION),
                     htmlContent,
                     null,
+                    null,
                     null
             );
             emailProducer.sendEmailToQueue(request, user);
