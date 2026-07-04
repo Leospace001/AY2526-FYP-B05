@@ -51,6 +51,7 @@ public class EmailRecordSchemaMigration implements ApplicationRunner {
 
         ensureJsonbColumn("recipients");
         ensureJsonbColumn("attachment_paths");
+        ensureBodyTextColumn();
 
         for (LegacyTable source : RECIPIENT_SOURCES) {
             migrateCollectionTable(source, "recipients");
@@ -61,6 +62,38 @@ public class EmailRecordSchemaMigration implements ApplicationRunner {
 
         dropLegacyCollectionTables();
         log.info("EmailRecord schema uses jsonb columns on email_records (legacy collection tables removed if present).");
+    }
+
+    private void ensureBodyTextColumn() {
+        if (!columnExists("email_records", "body")) {
+            jdbcTemplate.execute("ALTER TABLE email_records ADD COLUMN body TEXT");
+            log.info("Added email_records.body TEXT column");
+            return;
+        }
+
+        String udtName = jdbcTemplate.queryForObject(
+                """
+                        SELECT udt_name
+                        FROM information_schema.columns
+                        WHERE table_schema = current_schema()
+                          AND table_name = 'email_records'
+                          AND column_name = 'body'
+                        """,
+                String.class);
+        if ("oid".equalsIgnoreCase(udtName)) {
+            jdbcTemplate.execute(
+                    """
+                            ALTER TABLE email_records
+                            ALTER COLUMN body TYPE text
+                            USING convert_from(lo_get(body), 'UTF8')
+                            """);
+            log.info("Converted email_records.body from PostgreSQL oid to text");
+            return;
+        }
+        if (!"text".equalsIgnoreCase(udtName)) {
+            jdbcTemplate.execute("ALTER TABLE email_records ALTER COLUMN body TYPE text USING body::text");
+            log.info("Converted email_records.body from {} to text", udtName);
+        }
     }
 
     private void ensureJsonbColumn(String columnName) {

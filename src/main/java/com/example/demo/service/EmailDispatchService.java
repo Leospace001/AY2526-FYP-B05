@@ -34,6 +34,14 @@ public class EmailDispatchService {
     private String routingKey;
 
     @Transactional
+    public void dispatchIfDue(Long recordId, java.time.LocalDateTime scheduledSendTime) {
+        if (scheduledSendTime != null && scheduledSendTime.isAfter(AppTimeZone.now())) {
+            return;
+        }
+        dispatchToQueue(recordId);
+    }
+
+    @Transactional
     public void dispatchIfDue(EmailRecord record) {
         if (record.isSent() || record.isDispatched()) {
             return;

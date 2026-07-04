@@ -13,10 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import com.example.demo.config.AppTimeZone;
 import com.example.demo.dto.EmailRequestDto;
-import com.example.demo.mapper.EmailRecordMapper;
-import com.example.demo.model.EmailRecord;
 import com.example.demo.model.User;
-import com.example.demo.repository.EmailRecordRepository;
+import com.example.demo.repository.EmailRecordJdbcRepository;
 
 @Service
 public class EmailProducer {
@@ -24,10 +22,7 @@ public class EmailProducer {
     private static final Logger logger = LoggerFactory.getLogger(EmailProducer.class);
 
     @Autowired
-    private EmailRecordMapper emailRecordMapper;
-
-    @Autowired
-    private EmailRecordRepository emailRecordRepository;
+    private EmailRecordJdbcRepository emailRecordJdbcRepository;
 
     @Autowired
     private EmailDispatchService emailDispatchService;
@@ -38,16 +33,9 @@ public class EmailProducer {
     public void sendEmailToQueue(EmailRequestDto emailDto, User user) {
         validateEmailRequest(emailDto);
 
-        EmailRecord record = emailRecordMapper.emailRequestDtoToEmailRecord(emailDto);
-        record.setRecipients(new ArrayList<>(emailDto.getRecipients()));
-        record.setScheduledSendTime(emailDto.getSendTime());
-        record.setCreatedBy(user);
-        record.setSent(false);
-        record.setDispatched(false);
-
         try {
+            List<String> attachmentPaths = new ArrayList<>();
             if (emailDto.getAttachments() != null && !emailDto.getAttachments().isEmpty()) {
-                List<String> attachmentPaths = new ArrayList<>();
                 for (MultipartFile file : emailDto.getAttachments()) {
                     if (!file.isEmpty()) {
                         String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
@@ -57,12 +45,18 @@ public class EmailProducer {
                         attachmentPaths.add(targetPath.toString());
                     }
                 }
-                record.setAttachmentPaths(attachmentPaths);
             }
 
-            record = emailRecordRepository.save(record);
-            emailDispatchService.dispatchIfDue(record);
-            logger.info("Successfully saved email record ID: {}", record.getId());
+            Long recordId = emailRecordJdbcRepository.insertEmail(
+                    user.getId(),
+                    new ArrayList<>(emailDto.getRecipients()),
+                    emailDto.getSubject(),
+                    emailDto.getBody(),
+                    attachmentPaths,
+                    emailDto.getSendTime());
+
+            emailDispatchService.dispatchIfDue(recordId, emailDto.getSendTime());
+            logger.info("Successfully saved email record ID: {}", recordId);
 
         } catch (Exception e) {
             logger.error("Failed to process and queue email request", e);

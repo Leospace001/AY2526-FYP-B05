@@ -23,5 +23,6 @@ public class EmailRecordSummaryDto {
     private boolean sent;
     private boolean dispatched;
     private boolean editable;
+    private List<String> attachmentPaths;
     private String timeZone = AppTimeZone.ID;
 }
