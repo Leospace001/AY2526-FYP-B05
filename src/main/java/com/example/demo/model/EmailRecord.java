@@ -1,14 +1,13 @@
 package com.example.demo.model;
 
+import com.example.demo.config.StringListJsonbConverter;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "email_records")
@@ -20,8 +19,8 @@ public class EmailRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "recipients", columnDefinition = "jsonb")
+    @Convert(converter = StringListJsonbConverter.class)
+    @Column(name = "recipients", columnDefinition = "jsonb", nullable = false)
     private List<String> recipients = new ArrayList<>();
 
     private String subject;
@@ -30,8 +29,8 @@ public class EmailRecord {
     @Column(columnDefinition = "TEXT")
     private String body;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "attachment_paths", columnDefinition = "jsonb")
+    @Convert(converter = StringListJsonbConverter.class)
+    @Column(name = "attachment_paths", columnDefinition = "jsonb", nullable = false)
     private List<String> attachmentPaths = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.demo.config.AppTimeZone;
 import com.example.demo.dto.EmailMessageDto;
 import com.example.demo.model.EmailRecord;
+import com.example.demo.repository.EmailRecordJdbcRepository;
 import com.example.demo.repository.EmailRecordRepository;
 
 @Service
@@ -22,6 +23,9 @@ public class EmailDispatchService {
 
     @Autowired
     private EmailRecordRepository emailRecordRepository;
+
+    @Autowired
+    private EmailRecordJdbcRepository emailRecordJdbcRepository;
 
     @Value("${rabbitmq.exchange.name}")
     private String exchange;
@@ -38,6 +42,14 @@ public class EmailDispatchService {
             return;
         }
         dispatchToQueue(record);
+    }
+
+    @Transactional
+    public void dispatchToQueue(Long recordId) {
+        EmailMessageDto messageDto = new EmailMessageDto(recordId);
+        rabbitTemplate.convertAndSend(exchange, routingKey, messageDto);
+        emailRecordJdbcRepository.markDispatched(recordId);
+        logger.info("Queued email record ID: {}", recordId);
     }
 
     @Transactional

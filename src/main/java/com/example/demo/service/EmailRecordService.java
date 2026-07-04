@@ -9,55 +9,43 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.demo.config.AppTimeZone;
 import com.example.demo.dto.EmailRecordSummaryDto;
 import com.example.demo.dto.UpdateScheduledEmailDto;
-import com.example.demo.model.EmailRecord;
 import com.example.demo.model.User;
-import com.example.demo.repository.EmailRecordRepository;
+import com.example.demo.repository.EmailRecordJdbcRepository;
 
 @Service
 public class EmailRecordService {
 
     @Autowired
-    private EmailRecordRepository emailRecordRepository;
+    private EmailRecordJdbcRepository emailRecordJdbcRepository;
 
     @Autowired
     private EmailDispatchService emailDispatchService;
 
     @Transactional(readOnly = true)
     public List<EmailRecordSummaryDto> listSentByUser(User user) {
-        return emailRecordRepository.findByCreatedBy_IdAndSentTrueOrderByUpdatedAtDesc(user.getId())
-                .stream()
-                .map(this::toSummaryDto)
-                .toList();
+        return emailRecordJdbcRepository.findSentByUser(user.getId());
     }
 
     @Transactional(readOnly = true)
     public List<EmailRecordSummaryDto> listScheduledByUser(User user) {
-        return emailRecordRepository
-                .findByCreatedBy_IdAndSentFalseAndScheduledSendTimeNotNullAndScheduledSendTimeAfterOrderByScheduledSendTimeAsc(
-                        user.getId(), AppTimeZone.now())
-                .stream()
-                .map(this::toSummaryDto)
-                .toList();
+        return emailRecordJdbcRepository.findScheduledByUser(user.getId(), AppTimeZone.now());
     }
 
     @Transactional(readOnly = true)
     public List<EmailRecordSummaryDto> listOutboxByUser(User user) {
-        return emailRecordRepository.findByCreatedBy_IdOrderByCreatedAtDesc(user.getId())
-                .stream()
-                .map(this::toSummaryDto)
-                .toList();
+        return emailRecordJdbcRepository.findOutboxByUser(user.getId());
     }
 
     @Transactional(readOnly = true)
     public EmailRecordSummaryDto getOutboxItem(User user, Long id) {
-        EmailRecord record = getOwnedRecord(user, id);
-        return toSummaryDto(record);
+        return emailRecordJdbcRepository.findSummaryByIdAndUser(id, user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Email not found."));
     }
 
     @Transactional
     public EmailRecordSummaryDto updateScheduledEmail(User user, Long id, UpdateScheduledEmailDto update) {
-        EmailRecord record = getOwnedRecord(user, id);
-        if (!isEditable(record)) {
+        EmailRecordSummaryDto existing = getOutboxItem(user, id);
+        if (!existing.isEditable()) {
             throw new IllegalArgumentException("Only unsent scheduled emails can be edited.");
         }
         if (update.getRecipients() == null || update.getRecipients().isEmpty()) {
@@ -74,56 +62,30 @@ public class EmailRecordService {
                     "Scheduled send time must be in the future (" + AppTimeZone.LABEL + ").");
         }
 
-        record.setRecipients(new ArrayList<>(update.getRecipients()));
-        record.setSubject(update.getSubject().trim());
-        record.setBody(update.getBody());
-        record.setScheduledSendTime(update.getSendTime());
-        return toSummaryDto(emailRecordRepository.save(record));
+        emailRecordJdbcRepository.updateScheduledEmail(
+                id,
+                user.getId(),
+                new ArrayList<>(update.getRecipients()),
+                update.getSubject().trim(),
+                update.getBody(),
+                update.getSendTime());
+        return getOutboxItem(user, id);
     }
 
     @Transactional
     public void cancelScheduledEmail(User user, Long id) {
-        EmailRecord record = getOwnedRecord(user, id);
-        if (!isEditable(record)) {
+        EmailRecordSummaryDto existing = getOutboxItem(user, id);
+        if (!existing.isEditable()) {
             throw new IllegalArgumentException("Only unsent scheduled emails can be cancelled.");
         }
-        emailRecordRepository.delete(record);
+        emailRecordJdbcRepository.deleteForUser(id, user.getId());
     }
 
     @Scheduled(fixedRate = 30000)
     @Transactional
     public void dispatchDueScheduledEmails() {
-        List<EmailRecord> dueRecords = emailRecordRepository
-                .findBySentFalseAndDispatchedFalseAndScheduledSendTimeLessThanEqual(AppTimeZone.now());
-        for (EmailRecord record : dueRecords) {
-            emailDispatchService.dispatchToQueue(record);
+        for (Long recordId : emailRecordJdbcRepository.findDueRecordIds(AppTimeZone.now())) {
+            emailDispatchService.dispatchToQueue(recordId);
         }
-    }
-
-    private EmailRecord getOwnedRecord(User user, Long id) {
-        return emailRecordRepository.findByIdAndCreatedBy_Id(id, user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Email not found."));
-    }
-
-    private boolean isEditable(EmailRecord record) {
-        return !record.isSent()
-                && !record.isDispatched()
-                && record.getScheduledSendTime() != null
-                && record.getScheduledSendTime().isAfter(AppTimeZone.now());
-    }
-
-    private EmailRecordSummaryDto toSummaryDto(EmailRecord record) {
-        return new EmailRecordSummaryDto(
-                record.getId(),
-                record.getRecipients() != null ? record.getRecipients() : List.of(),
-                record.getSubject(),
-                record.getBody(),
-                record.getScheduledSendTime(),
-                record.getCreatedAt(),
-                record.getUpdatedAt(),
-                record.isSent(),
-                record.isDispatched(),
-                isEditable(record),
-                AppTimeZone.ID);
     }
 }

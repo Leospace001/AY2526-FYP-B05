@@ -18,9 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.demo.config.AppTimeZone;
 import com.example.demo.dto.EmailAttachmentDto;
 import com.example.demo.dto.EmailMessageDto;
+import com.example.demo.dto.EmailSendDetails;
 import com.example.demo.dto.MailBoxDto;
-import com.example.demo.repository.EmailRecordRepository;
-import com.example.demo.model.EmailRecord;
+import com.example.demo.repository.EmailRecordJdbcRepository;
 import org.springframework.mail.MailException;
 
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ public class EmailService {
     private JavaMailSender mailSender;
 
     @Autowired
-    private EmailRecordRepository emailRecordRepository;
+    private EmailRecordJdbcRepository emailRecordJdbcRepository;
 
     @Value("${spring.mail.username}")
     private String senderEmailAddress;
@@ -62,13 +62,13 @@ public class EmailService {
         userActivityLogger.info("Picked up email job for Record ID: {}", messageDto.getEmailRecordId());
 
         // 1. Fetch the full record from the DB
-        Optional<EmailRecord> optionalRecord = emailRecordRepository.findById(messageDto.getEmailRecordId());
+        Optional<EmailSendDetails> optionalRecord = emailRecordJdbcRepository.findSendDetails(messageDto.getEmailRecordId());
         if (optionalRecord.isEmpty()) {
             userActivityLogger.error("EmailRecord not found for ID: {}", messageDto.getEmailRecordId());
             return;
         }
 
-        EmailRecord record = optionalRecord.get();
+        EmailSendDetails record = optionalRecord.get();
 
         if (record.isSent()) {
             userActivityLogger.info("Email record {} already sent, skipping.", record.getId());
@@ -78,15 +78,14 @@ public class EmailService {
         if (record.getScheduledSendTime() != null
                 && record.getScheduledSendTime().isAfter(AppTimeZone.now())) {
             userActivityLogger.info("Email record {} is not due yet, skipping.", record.getId());
-            record.setDispatched(false);
-            emailRecordRepository.save(record);
+            emailRecordJdbcRepository.resetDispatched(record.getId());
             return;
         }
 
         sendEmailImmediately(record);
     }
 
-    private void sendEmailImmediately(EmailRecord record) {
+    private void sendEmailImmediately(EmailSendDetails record) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -96,7 +95,6 @@ public class EmailService {
             helper.setSubject(record.getSubject());
             EmailInlineImageProcessor.setHtmlBodyWithInlineImages(helper, record.getBody());
 
-            // 3. Attach files using FileSystemResource and the saved paths
             if (record.getAttachmentPaths() != null) {
                 for (String path : record.getAttachmentPaths()) {
                     File file = new File(path);
@@ -111,9 +109,7 @@ public class EmailService {
 
             mailSender.send(message);
 
-            // 4. Mark as sent in DB
-            record.setSent(true);
-            emailRecordRepository.save(record);
+            emailRecordJdbcRepository.markSent(record.getId());
             userActivityLogger.info("Email sent successfully for Record ID: {}", record.getId());
 
         } catch (MailException e) {
