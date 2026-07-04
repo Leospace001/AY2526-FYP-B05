@@ -118,7 +118,7 @@ export default function PlantIdentifier() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Api-Key': "GiCgOhgptbTTwql1LwNIPdSqieD8KSGQMXwbo6G81d7BQBcEyv" 
+                    'Api-Key': "VXFfrdvC1z9Tn46bzbg2pTxgyeQSvMWHGMsaq4xIJ6dSjmSd3Q" 
                 },
                 body: JSON.stringify({
                     images: [previewUrl], 
