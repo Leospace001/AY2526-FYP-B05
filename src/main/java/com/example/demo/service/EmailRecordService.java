@@ -1,7 +1,6 @@
 package com.example.demo.service;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -75,7 +74,7 @@ public class EmailRecordService {
                     "Scheduled send time must be in the future (" + AppTimeZone.LABEL + ").");
         }
 
-        record.setRecipients(new LinkedHashSet<>(update.getRecipients()));
+        record.setRecipients(new ArrayList<>(update.getRecipients()));
         record.setSubject(update.getSubject().trim());
         record.setBody(update.getBody());
         record.setScheduledSendTime(update.getSendTime());
@@ -116,7 +115,7 @@ public class EmailRecordService {
     private EmailRecordSummaryDto toSummaryDto(EmailRecord record) {
         return new EmailRecordSummaryDto(
                 record.getId(),
-                new ArrayList<>(record.getRecipients()),
+                record.getRecipients() != null ? record.getRecipients() : List.of(),
                 record.getSubject(),
                 record.getBody(),
                 record.getScheduledSendTime(),

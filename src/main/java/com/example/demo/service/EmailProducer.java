@@ -4,7 +4,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +39,7 @@ public class EmailProducer {
         validateEmailRequest(emailDto);
 
         EmailRecord record = emailRecordMapper.emailRequestDtoToEmailRecord(emailDto);
-        record.setRecipients(new LinkedHashSet<>(emailDto.getRecipients()));
+        record.setRecipients(new ArrayList<>(emailDto.getRecipients()));
         record.setScheduledSendTime(emailDto.getSendTime());
         record.setCreatedBy(user);
         record.setSent(false);
@@ -58,7 +57,7 @@ public class EmailProducer {
                         attachmentPaths.add(targetPath.toString());
                     }
                 }
-                record.setAttachmentPaths(new LinkedHashSet<>(attachmentPaths));
+                record.setAttachmentPaths(attachmentPaths);
             }
 
             record = emailRecordRepository.save(record);
