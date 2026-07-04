@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     Alert,
     Avatar,
@@ -362,7 +362,7 @@ export default function EmailInbox() {
                                 <TableRow>
                                     <TableCell colSpan={4} align="center" sx={{ py: 5 }}>
                                         <CircularProgress size={32} sx={{ mb: 1 }} />
-                                        <Typography display="block" color="text.secondary">
+                                        <Typography sx={{ display: 'block' }} color="text.secondary">
                                             Connecting to IMAP server...
                                         </Typography>
                                     </TableCell>
