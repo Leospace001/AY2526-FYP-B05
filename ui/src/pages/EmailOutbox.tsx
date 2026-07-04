@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { formatHongKongDateTime } from '../utils/hongKongTime';
 import { htmlToPlainPreview, looksLikeOidBody } from '../utils/emailTextPreview';
 import {
     Alert, Avatar, Box, Button, Chip, CircularProgress, Divider,
-    IconButton, List, ListItem, ListItemButton, ListItemText, Paper, Tab, Tabs, Typography,
+    IconButton, Paper, Tab, Table, TableBody, TableCell, TableContainer,
+    TableHead, TablePagination, TableRow, TableSortLabel, Tabs, Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
@@ -31,6 +32,40 @@ export interface EmailRecordSummary {
 }
 
 type OutboxTab = 'sent' | 'scheduled';
+type SortField = 'datetime' | 'to' | 'subject' | 'status';
+type SortDirection = 'asc' | 'desc';
+
+function sentAt(email: EmailRecordSummary): string | null {
+    return email.updatedAt ?? email.createdAt ?? null;
+}
+
+function formatRecipients(values: string[] | undefined): string {
+    if (!values || values.length === 0) {
+        return '—';
+    }
+    return values.join(', ');
+}
+
+function compareStrings(a: string, b: string): number {
+    return a.localeCompare(b, undefined, { sensitivity: 'base' });
+}
+
+function compareDates(a: string | null | undefined, b: string | null | undefined): number {
+    const timeA = a ? new Date(a).getTime() : 0;
+    const timeB = b ? new Date(b).getTime() : 0;
+    return timeA - timeB;
+}
+
+function rowDateTime(email: EmailRecordSummary, tab: OutboxTab): string | null {
+    return tab === 'scheduled' ? email.scheduledSendTime : sentAt(email);
+}
+
+function statusLabel(email: EmailRecordSummary, tab: OutboxTab): string {
+    if (tab === 'sent') {
+        return 'Sent';
+    }
+    return email.dispatched ? 'Queued' : 'Pending';
+}
 
 export default function EmailOutbox() {
     const navigate = useNavigate();
@@ -40,6 +75,10 @@ export default function EmailOutbox() {
     const [selectedEmail, setSelectedEmail] = useState<EmailRecordSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [sortField, setSortField] = useState<SortField>('datetime');
+    const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
 
     useEffect(() => {
         setTab(searchParams.get('tab') === 'scheduled' ? 'scheduled' : 'sent');
@@ -47,11 +86,16 @@ export default function EmailOutbox() {
 
     useEffect(() => {
         setSelectedEmail(null);
+        setPage(0);
+        setSortField('datetime');
+        setSortDirection(searchParams.get('tab') === 'scheduled' ? 'asc' : 'desc');
+
         const fetchEmails = async () => {
             setLoading(true);
             setError('');
             try {
-                const endpoint = tab === 'sent' ? '/api/emails/sent' : '/api/emails/scheduled';
+                const currentTab = searchParams.get('tab') === 'scheduled' ? 'scheduled' : 'sent';
+                const endpoint = currentTab === 'sent' ? '/api/emails/sent' : '/api/emails/scheduled';
                 const response = await api.get<EmailRecordSummary[]>(endpoint);
                 setEmails(response.data);
             } catch (err: unknown) {
@@ -64,16 +108,57 @@ export default function EmailOutbox() {
         };
 
         fetchEmails();
-    }, [tab]);
+    }, [searchParams]);
 
-    const handleTabChange = (_: React.SyntheticEvent, value: OutboxTab) => {
+    const handleTabChange = (_: SyntheticEvent, value: OutboxTab) => {
         setTab(value);
         setSearchParams(value === 'scheduled' ? { tab: 'scheduled' } : {});
     };
 
+    const handleSort = (field: SortField) => {
+        if (sortField === field) {
+            setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+        } else {
+            setSortField(field);
+            setSortDirection(field === 'datetime' && tab === 'scheduled' ? 'asc' : 'desc');
+        }
+    };
+
+    const sortedEmails = useMemo(() => {
+        const sorted = [...emails];
+        sorted.sort((a, b) => {
+            let result = 0;
+            switch (sortField) {
+                case 'datetime':
+                    result = compareDates(rowDateTime(a, tab), rowDateTime(b, tab));
+                    break;
+                case 'to':
+                    result = compareStrings(formatRecipients(a.recipients), formatRecipients(b.recipients));
+                    break;
+                case 'subject':
+                    result = compareStrings(a.subject ?? '', b.subject ?? '');
+                    break;
+                case 'status':
+                    result = compareStrings(statusLabel(a, tab), statusLabel(b, tab));
+                    break;
+                default:
+                    result = 0;
+            }
+            return sortDirection === 'asc' ? result : -result;
+        });
+        return sorted;
+    }, [emails, sortDirection, sortField, tab]);
+
+    const paginatedEmails = useMemo(
+        () => sortedEmails.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+        [page, rowsPerPage, sortedEmails],
+    );
+
     const emptyMessage = tab === 'sent'
         ? 'You have not sent any emails yet.'
         : 'You have no scheduled emails.';
+
+    const dateColumnLabel = tab === 'scheduled' ? 'Scheduled (HKT)' : 'Sent (HKT)';
 
     if (selectedEmail) {
         const attachmentCount = selectedEmail.attachmentPaths?.length ?? 0;
@@ -101,7 +186,7 @@ export default function EmailOutbox() {
 
                 <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 3, mb: 3 }}>
                     <Typography variant="body1" sx={{ mb: 1 }}>
-                        <strong>To:</strong> {selectedEmail.recipients?.join(', ') || '—'}
+                        <strong>To:</strong> {formatRecipients(selectedEmail.recipients)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                         <strong>Created:</strong> {formatHongKongDateTime(selectedEmail.createdAt)}
@@ -112,7 +197,7 @@ export default function EmailOutbox() {
                         </Typography>
                     ) : (
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                            <strong>Sent:</strong> {formatHongKongDateTime(selectedEmail.updatedAt)}
+                            <strong>Sent:</strong> {formatHongKongDateTime(sentAt(selectedEmail))}
                         </Typography>
                     )}
                     {attachmentCount > 0 && (
@@ -165,8 +250,8 @@ export default function EmailOutbox() {
     }
 
     return (
-        <Box sx={{ p: 4, maxWidth: '900px', margin: '0 auto' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 2 }}>
+        <Box sx={{ p: 4, maxWidth: 1200, margin: '0 auto' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 2, flexWrap: 'wrap' }}>
                 <IconButton onClick={() => navigate('/email')} sx={{ bgcolor: '#f0f0f0' }}>
                     <ArrowBackIcon />
                 </IconButton>
@@ -188,32 +273,111 @@ export default function EmailOutbox() {
                 </Tabs>
             </Paper>
 
-            {loading && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-                    <CircularProgress />
-                </Box>
-            )}
+            {error && <Alert severity="error" variant="filled" sx={{ mb: 2 }}>{error}</Alert>}
 
-            {!loading && error && <Alert severity="error" variant="filled">{error}</Alert>}
+            <Paper sx={{ borderRadius: 3, boxShadow: 3, overflow: 'hidden' }}>
+                <TableContainer>
+                    <Table size="small">
+                        <TableHead>
+                            <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                                <TableCell sortDirection={sortField === 'datetime' ? sortDirection : false}>
+                                    <TableSortLabel
+                                        active={sortField === 'datetime'}
+                                        direction={sortField === 'datetime' ? sortDirection : 'asc'}
+                                        onClick={() => handleSort('datetime')}
+                                    >
+                                        {dateColumnLabel}
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell sortDirection={sortField === 'to' ? sortDirection : false}>
+                                    <TableSortLabel
+                                        active={sortField === 'to'}
+                                        direction={sortField === 'to' ? sortDirection : 'asc'}
+                                        onClick={() => handleSort('to')}
+                                    >
+                                        To
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell sortDirection={sortField === 'subject' ? sortDirection : false}>
+                                    <TableSortLabel
+                                        active={sortField === 'subject'}
+                                        direction={sortField === 'subject' ? sortDirection : 'asc'}
+                                        onClick={() => handleSort('subject')}
+                                    >
+                                        Subject
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell sortDirection={sortField === 'status' ? sortDirection : false}>
+                                    <TableSortLabel
+                                        active={sortField === 'status'}
+                                        direction={sortField === 'status' ? sortDirection : 'asc'}
+                                        onClick={() => handleSort('status')}
+                                    >
+                                        Status
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell align="right">Actions</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
+                                        <CircularProgress size={32} />
+                                    </TableCell>
+                                </TableRow>
+                            ) : paginatedEmails.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} align="center" sx={{ py: 5, color: '#7f8c8d' }}>
+                                        {emptyMessage}
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                paginatedEmails.map((email) => {
+                                    const preview = htmlToPlainPreview(email.body);
+                                    const attachmentCount = email.attachmentPaths?.length ?? 0;
 
-            {!loading && !error && (
-                <Paper sx={{ borderRadius: 3, boxShadow: 3, overflow: 'hidden' }}>
-                    {emails.length === 0 ? (
-                        <Typography sx={{ p: 4, textAlign: 'center', color: '#7f8c8d' }}>
-                            {emptyMessage}
-                        </Typography>
-                    ) : (
-                        <List disablePadding>
-                            {emails.map((email, index) => {
-                                const preview = htmlToPlainPreview(email.body);
-                                const attachmentCount = email.attachmentPaths?.length ?? 0;
-
-                                return (
-                                    <React.Fragment key={email.id}>
-                                        <ListItem
-                                            disablePadding
-                                            secondaryAction={
-                                                email.editable ? (
+                                    return (
+                                        <TableRow
+                                            key={email.id}
+                                            hover
+                                            sx={{ cursor: 'pointer' }}
+                                            onClick={() => setSelectedEmail(email)}
+                                        >
+                                            <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                                                {formatHongKongDateTime(rowDateTime(email, tab))}
+                                            </TableCell>
+                                            <TableCell sx={{ maxWidth: 220, wordBreak: 'break-word' }}>
+                                                {formatRecipients(email.recipients)}
+                                            </TableCell>
+                                            <TableCell sx={{ maxWidth: 320, wordBreak: 'break-word' }}>
+                                                <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#2c3e50' }}>
+                                                    {email.subject || '(No Subject)'}
+                                                </Typography>
+                                                {preview && (
+                                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                                        {preview}
+                                                    </Typography>
+                                                )}
+                                                {attachmentCount > 0 && (
+                                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                                        {attachmentCount} attachment{attachmentCount === 1 ? '' : 's'}
+                                                    </Typography>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                {tab === 'sent' ? (
+                                                    <Chip size="small" label="Sent" color="success" />
+                                                ) : (
+                                                    <Chip
+                                                        size="small"
+                                                        label={email.dispatched ? 'Queued' : 'Pending'}
+                                                        color={email.dispatched ? 'info' : 'warning'}
+                                                    />
+                                                )}
+                                            </TableCell>
+                                            <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                                                {email.editable ? (
                                                     <Button
                                                         size="small"
                                                         startIcon={<EditIcon />}
@@ -229,60 +393,28 @@ export default function EmailOutbox() {
                                                     >
                                                         View
                                                     </Button>
-                                                )
-                                            }
-                                        >
-                                            <ListItemButton
-                                                sx={{ p: 2, pr: 12 }}
-                                                onClick={() => setSelectedEmail(email)}
-                                            >
-                                                <ListItemText
-                                                    primary={
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#2c3e50' }}>
-                                                                {email.subject || '(No Subject)'}
-                                                            </Typography>
-                                                            {tab === 'scheduled' && (
-                                                                <Chip
-                                                                    size="small"
-                                                                    label={email.dispatched ? 'Queued' : 'Pending'}
-                                                                    color={email.dispatched ? 'info' : 'warning'}
-                                                                />
-                                                            )}
-                                                            {tab === 'sent' && (
-                                                                <Chip size="small" label="Sent" color="success" />
-                                                            )}
-                                                        </Box>
-                                                    }
-                                                    secondary={
-                                                        <>
-                                                            <Typography component="span" variant="body2" sx={{ display: 'block', color: '#34495e' }}>
-                                                                To: {email.recipients?.join(', ') || '—'}
-                                                            </Typography>
-                                                            {preview && (
-                                                                <Typography component="span" variant="body2" sx={{ display: 'block', color: 'text.secondary', mt: 0.5 }}>
-                                                                    {preview}
-                                                                </Typography>
-                                                            )}
-                                                            <Typography component="span" variant="body2" sx={{ display: 'block', color: 'text.secondary', mt: 0.5 }}>
-                                                                {tab === 'scheduled'
-                                                                    ? `Scheduled: ${formatHongKongDateTime(email.scheduledSendTime)}`
-                                                                    : `Sent: ${formatHongKongDateTime(email.updatedAt)}`}
-                                                                {attachmentCount > 0 ? ` · ${attachmentCount} attachment${attachmentCount === 1 ? '' : 's'}` : ''}
-                                                            </Typography>
-                                                        </>
-                                                    }
-                                                />
-                                            </ListItemButton>
-                                        </ListItem>
-                                        {index < emails.length - 1 && <Divider />}
-                                    </React.Fragment>
-                                );
-                            })}
-                        </List>
-                    )}
-                </Paper>
-            )}
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+                <TablePagination
+                    component="div"
+                    count={sortedEmails.length}
+                    page={page}
+                    onPageChange={(_, newPage) => setPage(newPage)}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={(e) => {
+                        setRowsPerPage(parseInt(e.target.value, 10));
+                        setPage(0);
+                    }}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                />
+            </Paper>
         </Box>
     );
 }

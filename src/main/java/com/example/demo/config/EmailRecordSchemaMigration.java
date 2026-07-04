@@ -61,7 +61,23 @@ public class EmailRecordSchemaMigration implements ApplicationRunner {
         }
 
         dropLegacyCollectionTables();
+        backfillMissingTimestamps();
         log.info("EmailRecord schema uses jsonb columns on email_records (legacy collection tables removed if present).");
+    }
+
+    private void backfillMissingTimestamps() {
+        jdbcTemplate.update(
+                """
+                        UPDATE email_records
+                        SET created_at = COALESCE(created_at, scheduled_send_time, NOW())
+                        WHERE created_at IS NULL
+                        """);
+        jdbcTemplate.update(
+                """
+                        UPDATE email_records
+                        SET updated_at = COALESCE(updated_at, created_at, scheduled_send_time, NOW())
+                        WHERE sent = true AND updated_at IS NULL
+                        """);
     }
 
     private void ensureBodyTextColumn() {

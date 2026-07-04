@@ -53,8 +53,9 @@ public class EmailRecordJdbcRepository {
         Long id = jdbcTemplate.queryForObject(
                 """
                         INSERT INTO email_records
-                          (recipients, subject, body, attachment_paths, created_by, scheduled_send_time, sent, dispatched)
-                        VALUES (?::jsonb, ?, ?, ?::jsonb, ?, ?, false, false)
+                          (recipients, subject, body, attachment_paths, created_by, scheduled_send_time,
+                           sent, dispatched, created_at, updated_at)
+                        VALUES (?::jsonb, ?, ?, ?::jsonb, ?, ?, false, false, ?, ?)
                         RETURNING id
                         """,
                 Long.class,
@@ -63,7 +64,9 @@ public class EmailRecordJdbcRepository {
                 body,
                 toJson(attachmentPaths != null ? attachmentPaths : List.of()),
                 userId,
-                scheduledSendTime != null ? Timestamp.valueOf(scheduledSendTime) : null);
+                scheduledSendTime != null ? Timestamp.valueOf(scheduledSendTime) : null,
+                Timestamp.valueOf(AppTimeZone.now()),
+                Timestamp.valueOf(AppTimeZone.now()));
         if (id == null) {
             throw new IllegalStateException("Could not save email record.");
         }
@@ -72,7 +75,7 @@ public class EmailRecordJdbcRepository {
 
     public List<EmailRecordSummaryDto> findSentByUser(Long userId) {
         return jdbcTemplate.query(
-                SUMMARY_COLUMNS + " WHERE created_by = ? AND sent = true ORDER BY updated_at DESC",
+                SUMMARY_COLUMNS + " WHERE created_by = ? AND sent = true ORDER BY COALESCE(updated_at, created_at) DESC",
                 summaryRowMapper,
                 userId);
     }
@@ -143,7 +146,10 @@ public class EmailRecordJdbcRepository {
     }
 
     public void markSent(Long id) {
-        jdbcTemplate.update("UPDATE email_records SET sent = true WHERE id = ?", id);
+        jdbcTemplate.update(
+                "UPDATE email_records SET sent = true, updated_at = ? WHERE id = ?",
+                Timestamp.valueOf(AppTimeZone.now()),
+                id);
     }
 
     public void resetDispatched(Long id) {
