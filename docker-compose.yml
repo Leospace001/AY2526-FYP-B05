@@ -15,6 +15,7 @@ services:
       restart: unless-stopped
   rabbitmq:
     image: rabbitmq:3-management
+    restart: unless-stopped
     container_name: rabbitmq
     # volumes:
     #   - ./rabbitmq_data:/var/lib/rabbitmq

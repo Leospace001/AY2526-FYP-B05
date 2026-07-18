@@ -2,14 +2,14 @@ const SAMPLE_DATA: Record<string, Record<string, string>> = {
     forgot_password: {
         name: 'Demo User',
         token: 'sample-reset-token',
-        domainUrl: 'http://localhost',
-        tokenUrl: 'http://localhost/reset?token=sample-reset-token',
+        domainUrl: 'https://leospace.cc',
+        tokenUrl: 'https://leospace.cc/reset?token=sample-reset-token',
     },
     welcome_registration: {
         name: 'Demo',
         username: 'demo_user',
-        domainUrl: 'http://localhost',
-        loginUrl: 'http://localhost/login',
+        domainUrl: 'https://leospace.cc',
+        loginUrl: 'https://leospace.cc/login',
     },
 };
 
