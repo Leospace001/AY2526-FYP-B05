@@ -20,7 +20,7 @@ password:   postgres
 
 ### Website frontend (Admin account)
 ```
-http://localhost:5173/
+https://leospace.cc/
 username:   admin
 password:   P@ssw0rd
 ```
