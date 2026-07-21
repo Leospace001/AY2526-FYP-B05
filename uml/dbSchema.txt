@@ -1,0 +1,217 @@
+---
+title: Sample Database Schema
+---
+erDiagram
+    users ||--o{ user_identities : has
+    users ||--o{ user_role_assignments : has
+    role ||--o{ user_role_assignments : grants
+    users ||--o{ password_reset : requests
+    users ||--o{ stocks : creates
+    users ||--o{ orders : places
+    orders ||--o{ order_item : contains
+    stocks ||--o{ order_item : sold_in
+    users ||--o| carts : owns
+    carts ||--o{ cart_items : contains
+    stocks ||--o{ cart_items : added_as
+    users ||--o{ delivery_addresses : has
+    users ||--o{ payment_methods : has
+    users ||--o{ email_records : creates
+    users ||--o{ chat_groups : creates
+    chat_groups ||--o{ chat_group_members : includes
+    users ||--o{ chat_group_members : joins
+    chat_groups ||--o{ chat_messages : has
+    users ||--o{ chat_messages : sends
+
+    users {
+        BIGINT id PK
+        VARCHAR username UK
+        VARCHAR email
+        VARCHAR firstname
+        VARCHAR lastname
+        VARCHAR password
+        INT age
+        INT phone
+        BOOLEAN local_login_enabled
+        VARCHAR avatar_path
+        VARCHAR avatar_url
+        BOOLEAN active
+    }
+
+    user_identities {
+        BIGINT id PK
+        BIGINT user_id FK
+        VARCHAR provider
+        VARCHAR provider_user_id
+        VARCHAR email
+    }
+
+    role {
+        BIGINT id PK
+        VARCHAR name UK
+        VARCHAR description
+        BOOLEAN is_active
+        BIGINT created_by FK
+    }
+
+    user_role_assignments {
+        BIGINT id PK
+        BIGINT user_id FK
+        BIGINT role_id FK
+        TIMESTAMP assigned_date
+        BOOLEAN active
+    }
+
+    password_reset {
+        BIGINT id PK
+        VARCHAR token
+        BIGINT created_by FK
+        TIMESTAMP expiry_date
+        BOOLEAN active
+    }
+
+    employee {
+        BIGINT id PK
+        VARCHAR employee_id UK
+        VARCHAR first_name
+        VARCHAR last_name
+        VARCHAR login_id UK
+        DATE date_of_birth
+        VARCHAR department
+        DOUBLE salary
+    }
+
+    employee_history {
+        BIGINT id PK
+        BIGINT employee_id
+        VARCHAR action
+        VARCHAR details
+        TIMESTAMP timestamp
+    }
+
+    stocks {
+        BIGINT id PK
+        VARCHAR name
+        DOUBLE selling_price
+        DOUBLE cost
+        INT quantity
+        INT minimum_level
+        BIGINT created_by FK
+        BIGINT approved_by FK
+        BOOLEAN active
+    }
+
+    orders {
+        BIGINT id PK
+        BIGINT created_by FK
+        BIGINT updated_by FK
+        BIGINT approved_by FK
+        DOUBLE order_total
+        BOOLEAN active
+    }
+
+    order_item {
+        BIGINT id PK
+        BIGINT order_id FK
+        BIGINT stock_id FK
+        INT quantity
+        DOUBLE unit_price
+        BIGINT approved_by FK
+    }
+
+    carts {
+        BIGINT id PK
+        BIGINT user_id UK
+    }
+
+    cart_items {
+        BIGINT id PK
+        BIGINT cart_id FK
+        BIGINT stock_id FK
+        INT quantity
+    }
+
+    delivery_addresses {
+        BIGINT id PK
+        BIGINT user_id FK
+        VARCHAR label
+        VARCHAR recipient_name
+        VARCHAR city
+        VARCHAR country
+        BOOLEAN is_default
+        BOOLEAN active
+    }
+
+    payment_methods {
+        BIGINT id PK
+        BIGINT user_id FK
+        VARCHAR label
+        VARCHAR card_brand
+        VARCHAR card_last_four
+        INT expiry_month
+        INT expiry_year
+        BOOLEAN is_default
+        BOOLEAN active
+    }
+
+    email_records {
+        BIGINT id PK
+        JSONB recipients
+        VARCHAR subject
+        TEXT body
+        JSONB attachment_paths
+        BIGINT created_by FK
+        BOOLEAN sent
+        BOOLEAN dispatched
+    }
+
+    email_templates {
+        BIGINT id PK
+        VARCHAR template_key UK
+        VARCHAR display_name
+        VARCHAR subject
+        TEXT html_content
+    }
+
+    chat_groups {
+        BIGINT id PK
+        VARCHAR name
+        BIGINT created_by_id FK
+        BOOLEAN active
+    }
+
+    chat_group_members {
+        BIGINT id PK
+        BIGINT group_id FK
+        BIGINT user_id FK
+        VARCHAR role
+        TIMESTAMP joined_at
+        BOOLEAN active
+    }
+
+    chat_messages {
+        BIGINT id PK
+        BIGINT group_id FK
+        BIGINT sender_id FK
+        VARCHAR content
+        TIMESTAMP sent_at
+    }
+
+    log_events {
+        BIGINT id PK
+        VARCHAR username
+        VARCHAR path
+        VARCHAR http_method
+        TIMESTAMP logged_in_at
+    }
+
+    app_settings {
+        BIGINT id PK
+        VARCHAR setting_key UK
+        VARCHAR setting_value
+    }
+
+    student {
+        BIGINT id PK
+        VARCHAR first_name
+        VARCHAR last_name
+    }
