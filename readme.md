@@ -2,6 +2,8 @@
 
 ![Use Case Diagram](uml/useCaseDiagram.png)
 
+![Data Flow Diagram](uml/dataFlowDiagram.png)
+
 ### Clone the project from github
 ```
 git clone https://github.com/Leospace001/AY2526-FYP-B05.git

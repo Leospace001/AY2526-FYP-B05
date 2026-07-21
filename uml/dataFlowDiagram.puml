@@ -1,0 +1,90 @@
+@startuml
+!pragma layout smetana
+title Spring Boot Backend — Level-1 Data Flow Diagram\n(from Java controllers, services & integrations)
+
+skinparam shadowing false
+skinparam defaultFontName SansSerif
+skinparam backgroundColor #FFFFFF
+skinparam rectangle {
+  BackgroundColor #FEFEFE
+  BorderColor #333333
+}
+skinparam database {
+  BackgroundColor #E8F4FC
+  BorderColor #333333
+}
+skinparam circle {
+  BackgroundColor #FFF8E7
+  BorderColor #333333
+}
+
+left to right direction
+
+' --- External entities ---
+rectangle "Frontend\nClient" as Client
+rectangle "OAuth\n(Google / GitHub)" as OAuth
+rectangle "Gemini API" as Gemini
+rectangle "Google Drive" as Drive
+rectangle "Mail Server\n(SMTP / IMAP)" as Mail
+rectangle "RabbitMQ" as MQ
+
+' --- Processes ---
+circle "1.0\nAuthenticate\n& Manage Users" as P1
+circle "2.0\nShop &\nOrders" as P2
+circle "3.0\nProcess\nEmail" as P3
+circle "4.0\nGroup\nChat" as P4
+circle "5.0\nManage\nEmployees" as P5
+circle "6.0\nAI &\nDrive" as P6
+circle "7.0\nAdmin\nOperations" as P7
+
+' --- Data stores ---
+database "D1 Users &\nRoles" as D1
+database "D2 Catalog,\nCart & Orders" as D2
+database "D3 Email &\nTemplates" as D3
+database "D4 Chat\nGroups" as D4
+database "D5 Employees\n& History" as D5
+database "D6 Files\n(uploads)" as D6
+database "D7 Logs &\nSettings" as D7
+
+' Client <-> processes
+Client --> P1 : credentials /\nregister / JWT
+Client --> P2 : cart / checkout /\norder requests
+Client --> P3 : compose / schedule /\ninbox requests
+Client --> P4 : group & message\ndata (REST / WS)
+Client --> P5 : employee CRUD /\nsearch / history
+Client --> P6 : prompts /\nfile requests
+Client --> P7 : admin requests
+
+P1 --> Client : JWT / profile
+P2 --> Client : catalog / cart /\norders
+P3 --> Client : inbox / outbox
+P4 --> Client : messages /\nbroadcasts
+P5 --> Client : employee data
+P6 --> Client : AI reply /\nfile data
+P7 --> Client : logs / settings /\ntemplates
+
+' External systems
+OAuth <--> P1 : OAuth profile
+P3 --> MQ : email jobs
+MQ --> P3 : queued emails
+P3 <--> Mail : send / fetch mail
+P6 <--> Gemini : prompt / reply
+P6 <--> Drive : list / upload /\ndownload
+P7 --> MQ : test message
+
+' Data stores
+P1 <--> D1 : users / roles /\nreset tokens
+P1 --> D6 : avatars
+P2 <--> D2 : stock / cart /\norders / addresses /\npayments
+P2 --> D6 : stock images
+P3 <--> D3 : email records /\ntemplates
+P3 --> D6 : attachments
+P4 <--> D4 : groups /\nmembers / messages
+P5 <--> D5 : employees /\nhistory
+P5 --> D6 : ID proofs
+P7 <--> D7 : log events /\napp settings
+P7 <--> D3 : email templates
+P7 <--> D1 : user admin
+P7 --> D6 : serve images
+
+@enduml
