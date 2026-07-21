@@ -1,90 +1,71 @@
 @startuml
-!pragma layout smetana
-title Spring Boot Backend — Level-1 Data Flow Diagram\n(from Java controllers, services & integrations)
+' Gane-Sarson Level-1 DFD for Spring Boot backend.
+' The rendered PNG (dataFlowDiagram.png) uses Gane-Sarson shapes
+' matching: Process (rounded + header), External Entity (rectangle),
+' Data Store (open rectangle with double left bar), Data Flow (labeled arrow).
+' This .puml file documents the same logical model.
 
-skinparam shadowing false
-skinparam defaultFontName SansSerif
-skinparam backgroundColor #FFFFFF
-skinparam rectangle {
-  BackgroundColor #FEFEFE
-  BorderColor #333333
-}
-skinparam database {
-  BackgroundColor #E8F4FC
-  BorderColor #333333
-}
-skinparam circle {
-  BackgroundColor #FFF8E7
-  BorderColor #333333
-}
+title Spring Boot Backend — Level-1 Data Flow Diagram\n(Gane-Sarson notation)
 
-left to right direction
-
-' --- External entities ---
-rectangle "Frontend\nClient" as Client
+rectangle "Frontend Client" as Client
 rectangle "OAuth\n(Google / GitHub)" as OAuth
-rectangle "Gemini API" as Gemini
-rectangle "Google Drive" as Drive
 rectangle "Mail Server\n(SMTP / IMAP)" as Mail
 rectangle "RabbitMQ" as MQ
+rectangle "Gemini API" as Gemini
+rectangle "Google Drive" as Drive
 
-' --- Processes ---
-circle "1.0\nAuthenticate\n& Manage Users" as P1
-circle "2.0\nShop &\nOrders" as P2
-circle "3.0\nProcess\nEmail" as P3
-circle "4.0\nGroup\nChat" as P4
-circle "5.0\nManage\nEmployees" as P5
-circle "6.0\nAI &\nDrive" as P6
-circle "7.0\nAdmin\nOperations" as P7
+rectangle "1.0\n----\nAuthenticate &\nManage Users" as P1
+rectangle "2.0\n----\nShop &\nOrders" as P2
+rectangle "3.0\n----\nProcess\nEmail" as P3
+rectangle "4.0\n----\nGroup\nChat" as P4
+rectangle "5.0\n----\nManage\nEmployees" as P5
+rectangle "6.0\n----\nAI &\nDrive" as P6
+rectangle "7.0\n----\nAdmin\nOperations" as P7
 
-' --- Data stores ---
-database "D1 Users &\nRoles" as D1
-database "D2 Catalog,\nCart & Orders" as D2
-database "D3 Email &\nTemplates" as D3
-database "D4 Chat\nGroups" as D4
-database "D5 Employees\n& History" as D5
-database "D6 Files\n(uploads)" as D6
-database "D7 Logs &\nSettings" as D7
+collections "D1 Users & Roles" as D1
+collections "D2 Catalog / Cart / Orders" as D2
+collections "D3 Email & Templates" as D3
+collections "D4 Chat Groups" as D4
+collections "D5 Employees & History" as D5
+collections "D6 Files (uploads)" as D6
+collections "D7 Logs & Settings" as D7
 
-' Client <-> processes
-Client --> P1 : credentials /\nregister / JWT
-Client --> P2 : cart / checkout /\norder requests
-Client --> P3 : compose / schedule /\ninbox requests
-Client --> P4 : group & message\ndata (REST / WS)
-Client --> P5 : employee CRUD /\nsearch / history
-Client --> P6 : prompts /\nfile requests
-Client --> P7 : admin requests
+Client <--> P1 : credentials / JWT
+Client <--> P2 : cart / checkout
+Client <--> P3 : compose / inbox
+Client <--> P4 : chat REST / WS
+Client <--> P5 : employee CRUD
+Client <--> P6 : prompts / files
+Client <--> P7 : admin requests
 
-P1 --> Client : JWT / profile
-P2 --> Client : catalog / cart /\norders
-P3 --> Client : inbox / outbox
-P4 --> Client : messages /\nbroadcasts
-P5 --> Client : employee data
-P6 --> Client : AI reply /\nfile data
-P7 --> Client : logs / settings /\ntemplates
-
-' External systems
 OAuth <--> P1 : OAuth profile
+P3 <--> Mail : send / fetch mail
 P3 --> MQ : email jobs
 MQ --> P3 : queued emails
-P3 <--> Mail : send / fetch mail
-P6 <--> Gemini : prompt / reply
-P6 <--> Drive : list / upload /\ndownload
 P7 --> MQ : test message
+P6 <--> Gemini : prompt / reply
+P6 <--> Drive : list / upload / download
 
-' Data stores
-P1 <--> D1 : users / roles /\nreset tokens
+P1 <--> D1 : users / roles
 P1 --> D6 : avatars
-P2 <--> D2 : stock / cart /\norders / addresses /\npayments
+P2 <--> D2 : stock / cart / orders
 P2 --> D6 : stock images
-P3 <--> D3 : email records /\ntemplates
+P3 <--> D3 : email records
 P3 --> D6 : attachments
-P4 <--> D4 : groups /\nmembers / messages
-P5 <--> D5 : employees /\nhistory
+P4 <--> D4 : groups / messages
+P5 <--> D5 : employees / history
 P5 --> D6 : ID proofs
-P7 <--> D7 : log events /\napp settings
-P7 <--> D3 : email templates
+P7 <--> D7 : logs / settings
+P7 <--> D3 : templates
 P7 <--> D1 : user admin
-P7 --> D6 : serve images
+P7 <--> D6 : serve images
+
+legend right
+  |= Shape |= Meaning |
+  | Rounded box with header | Process |
+  | Rectangle | External Entity |
+  | Open store (|| name) | Data Store |
+  | Labeled arrow | Data Flow |
+endlegend
 
 @enduml
