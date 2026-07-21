@@ -1,4 +1,6 @@
-![alt text](uml/classDiagram.png)
+![Class Diagram](uml/classDiagram.png)
+
+![Use Case Diagram](uml/useCaseDiagram.png)
 
 ### Clone the project from github
 ```

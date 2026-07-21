@@ -1,0 +1,70 @@
+@startuml
+!pragma layout smetana
+title Employee Management System — Use Case Diagram\n(derived from frontend JavaScript)
+
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam defaultFontName SansSerif
+skinparam usecase {
+  BackgroundColor #FEFEFE
+  BorderColor #333333
+}
+skinparam actor {
+  BackgroundColor #FEFEFE
+  BorderColor #333333
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #555555
+}
+skinparam note {
+  BackgroundColor #FFF8DC
+  BorderColor #999999
+}
+
+left to right direction
+
+actor "User\n(HR / Admin)" as User
+
+rectangle "Employee Management System" {
+  usecase "Login" as UC_Login
+  usecase "Logout" as UC_Logout
+  usecase "Toggle Theme" as UC_Theme
+
+  usecase "Add Employee" as UC_Add
+  usecase "Upload ID Proof" as UC_Upload
+  usecase "Search Employees" as UC_Search
+  usecase "View Employee Details" as UC_View
+  usecase "Edit Employee" as UC_Edit
+  usecase "Delete Employee" as UC_Delete
+  usecase "Delete Multiple Employees" as UC_BatchDelete
+  usecase "View Employee History" as UC_History
+}
+
+User --> UC_Login
+User --> UC_Logout
+User --> UC_Theme
+User --> UC_Add
+User --> UC_Search
+User --> UC_View
+User --> UC_Edit
+User --> UC_Delete
+User --> UC_BatchDelete
+User --> UC_History
+
+UC_Add ..> UC_Upload : <<extend>>
+UC_Edit ..> UC_Upload : <<extend>>
+
+note right of UC_Search
+  Filters: employee ID, name,
+  login ID, department, DOB range.
+  Supports pagination.
+end note
+
+note right of UC_Upload
+  Optional PDF ID proof
+  (10KB–1MB) during add/edit
+end note
+
+@enduml
