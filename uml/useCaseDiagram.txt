@@ -1,0 +1,89 @@
+@startuml
+!pragma layout smetana
+title Spring Boot Backend — Use Case Diagram\n(from Java controllers & SecurityConfig)
+
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam defaultFontName SansSerif
+skinparam usecase {
+  BackgroundColor #FEFEFE
+  BorderColor #333333
+}
+skinparam actor {
+  BackgroundColor #FEFEFE
+  BorderColor #333333
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #555555
+}
+skinparam note {
+  BackgroundColor #FFF8DC
+  BorderColor #999999
+}
+
+left to right direction
+
+actor "Guest" as Guest
+actor "User\n(ROLE_USER)" as User
+actor "Admin\n(ROLE_ADMIN)" as Admin
+
+Admin --|> User
+
+rectangle "Spring Boot Application" {
+  usecase "Register Account" as UC_Register
+  usecase "Login\n(password / OAuth)" as UC_Login
+  usecase "Reset Password" as UC_Password
+
+  usecase "Manage Profile\n& Avatar" as UC_Profile
+  usecase "Browse Catalog" as UC_Catalog
+  usecase "Manage Cart\n& Checkout" as UC_Cart
+  usecase "View / Place Orders" as UC_Orders
+  usecase "Manage Addresses\n& Payment Methods" as UC_CheckoutData
+
+  usecase "Send / Schedule Email" as UC_Email
+  usecase "Group Chat" as UC_Chat
+  usecase "Chat with Gemini" as UC_Gemini
+  usecase "Use Google Drive" as UC_Drive
+
+  usecase "Manage Employees" as UC_Employees
+
+  usecase "Manage Stock" as UC_Stock
+  usecase "Manage Users\n& Roles" as UC_Users
+  usecase "Manage Email Templates\n& Settings" as UC_Templates
+  usecase "View Activity Logs\n& Dashboard" as UC_Logs
+}
+
+Guest --> UC_Register
+Guest --> UC_Login
+Guest --> UC_Password
+
+User --> UC_Profile
+User --> UC_Catalog
+User --> UC_Cart
+User --> UC_Orders
+User --> UC_CheckoutData
+User --> UC_Email
+User --> UC_Chat
+User --> UC_Gemini
+User --> UC_Drive
+User --> UC_Employees
+
+Admin --> UC_Stock
+Admin --> UC_Users
+Admin --> UC_Templates
+Admin --> UC_Logs
+
+note right of UC_Employees
+  CRUD, search, ID proof,
+  history (authenticated)
+end note
+
+note right of UC_Users
+  Enable/disable users,
+  grant/revoke ADMIN,
+  list all chat groups
+end note
+
+@enduml

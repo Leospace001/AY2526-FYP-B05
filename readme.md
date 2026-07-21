@@ -1,4 +1,8 @@
-![alt text](uml/classDiagram.png)
+![Class Diagram](uml/classDiagram.png)
+
+![Use Case Diagram](uml/useCaseDiagram.png)
+
+![Data Flow Diagram](uml/dataFlowDiagram.png)
 
 ### Clone the project from github
 ```

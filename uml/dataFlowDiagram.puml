@@ -1,0 +1,71 @@
+@startuml
+' Gane-Sarson Level-1 DFD for Spring Boot backend.
+' The rendered PNG (dataFlowDiagram.png) uses Gane-Sarson shapes
+' matching: Process (rounded + header), External Entity (rectangle),
+' Data Store (open rectangle with double left bar), Data Flow (labeled arrow).
+' This .puml file documents the same logical model.
+
+title Spring Boot Backend — Level-1 Data Flow Diagram\n(Gane-Sarson notation)
+
+rectangle "Frontend Client" as Client
+rectangle "OAuth\n(Google / GitHub)" as OAuth
+rectangle "Mail Server\n(SMTP / IMAP)" as Mail
+rectangle "RabbitMQ" as MQ
+rectangle "Gemini API" as Gemini
+rectangle "Google Drive" as Drive
+
+rectangle "1.0\n----\nAuthenticate &\nManage Users" as P1
+rectangle "2.0\n----\nShop &\nOrders" as P2
+rectangle "3.0\n----\nProcess\nEmail" as P3
+rectangle "4.0\n----\nGroup\nChat" as P4
+rectangle "5.0\n----\nManage\nEmployees" as P5
+rectangle "6.0\n----\nAI &\nDrive" as P6
+rectangle "7.0\n----\nAdmin\nOperations" as P7
+
+collections "D1 Users & Roles" as D1
+collections "D2 Catalog / Cart / Orders" as D2
+collections "D3 Email & Templates" as D3
+collections "D4 Chat Groups" as D4
+collections "D5 Employees & History" as D5
+collections "D6 Files (uploads)" as D6
+collections "D7 Logs & Settings" as D7
+
+Client <--> P1 : credentials / JWT
+Client <--> P2 : cart / checkout
+Client <--> P3 : compose / inbox
+Client <--> P4 : chat REST / WS
+Client <--> P5 : employee CRUD
+Client <--> P6 : prompts / files
+Client <--> P7 : admin requests
+
+OAuth <--> P1 : OAuth profile
+P3 <--> Mail : send / fetch mail
+P3 --> MQ : email jobs
+MQ --> P3 : queued emails
+P7 --> MQ : test message
+P6 <--> Gemini : prompt / reply
+P6 <--> Drive : list / upload / download
+
+P1 <--> D1 : users / roles
+P1 --> D6 : avatars
+P2 <--> D2 : stock / cart / orders
+P2 --> D6 : stock images
+P3 <--> D3 : email records
+P3 --> D6 : attachments
+P4 <--> D4 : groups / messages
+P5 <--> D5 : employees / history
+P5 --> D6 : ID proofs
+P7 <--> D7 : logs / settings
+P7 <--> D3 : templates
+P7 <--> D1 : user admin
+P7 <--> D6 : serve images
+
+legend right
+  |= Shape |= Meaning |
+  | Rounded box with header | Process |
+  | Rectangle | External Entity |
+  | Open store (|| name) | Data Store |
+  | Labeled arrow | Data Flow |
+endlegend
+
+@enduml
