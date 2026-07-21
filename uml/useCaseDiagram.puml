@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title Employee Management System — Use Case Diagram\n(derived from frontend JavaScript)
+title Spring Boot Backend — Use Case Diagram\n(derived from Java controllers & SecurityConfig)
 
 skinparam shadowing false
 skinparam packageStyle rectangle
@@ -25,46 +25,110 @@ skinparam note {
 
 left to right direction
 
-actor "User\n(HR / Admin)" as User
+actor "Guest" as Guest
+actor "User\n(ROLE_USER)" as User
+actor "Admin\n(ROLE_ADMIN)" as Admin
 
-rectangle "Employee Management System" {
-  usecase "Login" as UC_Login
-  usecase "Logout" as UC_Logout
-  usecase "Toggle Theme" as UC_Theme
+Admin --|> User
 
-  usecase "Add Employee" as UC_Add
-  usecase "Upload ID Proof" as UC_Upload
-  usecase "Search Employees" as UC_Search
-  usecase "View Employee Details" as UC_View
-  usecase "Edit Employee" as UC_Edit
-  usecase "Delete Employee" as UC_Delete
-  usecase "Delete Multiple Employees" as UC_BatchDelete
-  usecase "View Employee History" as UC_History
+rectangle "Spring Boot Application" {
+  package "Authentication" as PAuth {
+    usecase "Register Account" as UC_Register
+    usecase "Login" as UC_Login
+    usecase "Login with OAuth" as UC_OAuth
+    usecase "Forgot Password" as UC_Forgot
+    usecase "Reset Password" as UC_Reset
+  }
+
+  package "Profile & Shopping" as PShop {
+    usecase "Manage Own Profile" as UC_Profile
+    usecase "Upload Avatar" as UC_Avatar
+    usecase "Browse Catalog" as UC_Catalog
+    usecase "Manage Cart" as UC_Cart
+    usecase "Checkout" as UC_Checkout
+    usecase "View / Place Orders" as UC_Orders
+    usecase "Manage Delivery Addresses" as UC_Address
+    usecase "Manage Payment Methods" as UC_Payment
+  }
+
+  package "Communication &\nIntegrations" as PComm {
+    usecase "Send / Schedule Email" as UC_Email
+    usecase "Manage Chat Groups" as UC_ChatGroups
+    usecase "Send Chat Messages" as UC_ChatMsg
+    usecase "Chat with Gemini" as UC_Gemini
+    usecase "Use Google Drive" as UC_Drive
+  }
+
+  package "Employees" as PEmp {
+    usecase "Manage Employees" as UC_Employees
+    usecase "Upload Employee ID Proof" as UC_EmpId
+    usecase "View Employee History" as UC_EmpHistory
+  }
+
+  package "Administration\n(ROLE_ADMIN)" as PAdmin {
+    usecase "View Admin Dashboard" as UC_Dashboard
+    usecase "Manage Stock Catalog" as UC_Stock
+    usecase "Manage Users" as UC_ManageUsers
+    usecase "Grant / Revoke Admin Role" as UC_AdminRole
+    usecase "Enable / Disable User" as UC_DisableUser
+    usecase "View Activity Logs" as UC_Logs
+    usecase "Manage Email Templates" as UC_Templates
+    usecase "Configure Registration Email" as UC_RegEmail
+    usecase "List All Chat Groups" as UC_AllGroups
+  }
 }
 
-User --> UC_Login
-User --> UC_Logout
-User --> UC_Theme
-User --> UC_Add
-User --> UC_Search
-User --> UC_View
-User --> UC_Edit
-User --> UC_Delete
-User --> UC_BatchDelete
-User --> UC_History
+Guest --> UC_Register
+Guest --> UC_Login
+Guest --> UC_OAuth
+Guest --> UC_Forgot
+Guest --> UC_Reset
 
-UC_Add ..> UC_Upload : <<extend>>
-UC_Edit ..> UC_Upload : <<extend>>
+User --> UC_Profile
+User --> UC_Avatar
+User --> UC_Catalog
+User --> UC_Cart
+User --> UC_Checkout
+User --> UC_Orders
+User --> UC_Address
+User --> UC_Payment
+User --> UC_Email
+User --> UC_ChatGroups
+User --> UC_ChatMsg
+User --> UC_Gemini
+User --> UC_Drive
+User --> UC_Employees
+User --> UC_EmpHistory
 
-note right of UC_Search
-  Filters: employee ID, name,
-  login ID, department, DOB range.
-  Supports pagination.
+Admin --> UC_Dashboard
+Admin --> UC_Stock
+Admin --> UC_ManageUsers
+Admin --> UC_AdminRole
+Admin --> UC_DisableUser
+Admin --> UC_Logs
+Admin --> UC_Templates
+Admin --> UC_RegEmail
+Admin --> UC_AllGroups
+
+UC_OAuth ..> UC_Login : <<extend>>
+UC_Register ..> UC_Avatar : <<extend>>
+UC_Checkout ..> UC_Cart : <<include>>
+UC_Employees ..> UC_EmpId : <<extend>>
+
+note right of UC_Employees
+  EmployeeController:
+  CRUD, search, bulk delete
+  (authenticated; no role gate)
 end note
 
-note right of UC_Upload
-  Optional PDF ID proof
-  (10KB–1MB) during add/edit
+note bottom of UC_Email
+  /api/emails/** permitAll
+  in SecurityConfig
+end note
+
+note bottom of UC_Stock
+  StockController
+  @PreAuthorize ADMIN
 end note
 
 @enduml
